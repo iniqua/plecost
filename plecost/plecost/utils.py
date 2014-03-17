@@ -38,9 +38,9 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 
 __all__ = ["colorize", "generate_error_page", "get_diff_ratio", "get_data_folder", "check_redirects"]
 
-from urlparse import urlparse
 from random import choice, randint
 from difflib import SequenceMatcher
+from urlparse import urlparse, urljoin
 from string import ascii_letters, digits
 
 try:
@@ -168,6 +168,13 @@ def download(path, connection, follow_redirects=True):
     r = connection.getresponse()
 
     headers, status, content = dict(r.getheaders()), r.status, r.read()
+
+    if follow_redirects:
+        if status in (301,302):
+            path = urljoin(path, headers['location'])
+            connection.request("GET", path)
+            r = connection.getresponse()
+            headers, status, content = dict(r.getheaders()), r.status, r.read()
 
     return headers, status, content
 
