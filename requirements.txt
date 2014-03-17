@@ -1,0 +1,3 @@
+colorizer
+chardet
+BeautifulSoup<4.0
