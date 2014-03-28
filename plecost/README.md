@@ -94,57 +94,6 @@ Examples:
 How its works?
 --------------
 
-```
-$ python plecost.py -w plugin_list_50.txt iniqua.com
-```
-
-```
-
-///////////////////////////////////////////////////////
-// ..................................DMI...
-// .............................:MMMM......
-// .........................$MMMMM:........
-// .........M.....,M,=NMMMMMMMMD...........
-// ........MMN...MMMMMMMMMMMM,.............
-// .......MMMMMMMMMMMMMMMMM~...............
-// .......MMMMMMMMMMMMMMM..................
-// ....?MMMMMMMMMMMMMMMN$I.................
-// .?.MMMMMMMMMMMMMMMMMMMMMM...............
-// .MMMMMMMMMMMMMMN........................
-// 7MMMMMMMMMMMMMON$.......................
-// ZMMMMMMMMMMMMMMMMMM.......plecost.......
-// .:MMMMMMMZ~7MMMMMMMMMO..................
-// ....~+:.................................
-//
-// Plecost - Wordpress finger printer Tool - v0.3.0
-//
-// Developed by:
-//        Francisco Jesus Gomez aka ffranz | @ffranz - ffranz-[at]-iniqua.com
-//        Daniel Garcia aka cr0hn | @ggdaniel - cr0hn-[at]-cr0hn.com
-//
-// Info: http://iniqua.com/labs/
-// Bug report: plecost@iniqua.com
-
-[*] Testing target connection... ok!
-[*] Testing for WordPress installation... ok!
-[*] Getting WordPress version... 3.8.1 (latest: 3.8.1)
-[*] Looking for plugins... 
-    [i] Plugin found: Jetpack by WordPress.com
-        |_Latest version: 2.7
-        |_Installed version: 2.9.2
-    [i] Plugin found: Akismet
-        |_Latest version: 2.5.9
-        |_Installed version: 2.6.0
-        |_CVE list:
-        |__CVE-2006-4743: (http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2006-4743)
-        |__CVE-2007-2714: (http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2007-2714)
-        |__CVE-2009-2334: (http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2009-2334)
-    [i] Plugin found: Google Analyticator
-        |_Latest version: 6.4.7.1
-        |_Installed version: 6.4.7.3
-
-```
-
 ![Run example](https://raw.githubusercontent.com/iniqua/plecost/readme/plecost/doc/screenshots/runexample.png "Run example")
 
 Where to fish?
