@@ -145,7 +145,7 @@ $ python plecost.py -w plugin_list_50.txt iniqua.com
 
 ```
 
-![Run example](https://raw.github.com/plecost/plecost/develop/doc/screenshots/runexample.png "Run plugin example")
+![Run example](https://raw.githubusercontent.com/iniqua/plecost/readme/plecost/doc/screenshots/runexample.png "Run example")
 
 Where to fish?
 --------------
