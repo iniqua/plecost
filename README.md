@@ -2,7 +2,7 @@ Plecost
 =======
 
 
-![Logo](https://raw.githubusercontent.com/iniqua/plecost/readme/plecost/doc/screenshots/logo_plecost.jpg "Plecost Logo")
+![Logo](https://raw.githubusercontent.com/iniqua/plecost/develop/plecost/doc/screenshots/logo_plecost.jpg "Plecost Logo")
 
 Wordpress finger printer tool, plecost search and retrieve information about the plugins versions installed in Wordpress systems. Additionally displays CVE code associated with each plugin, if there.
 
@@ -97,7 +97,7 @@ Examples:
 How its works?
 --------------
 
-![Run example](https://raw.githubusercontent.com/iniqua/plecost/readme/plecost/doc/screenshots/runexample.png "Run example")
+![Run example](https://raw.githubusercontent.com/iniqua/plecost/develop/plecost/doc/screenshots/runexample.png "Run example")
 
 Where to fish?
 --------------
