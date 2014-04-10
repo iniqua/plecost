@@ -170,7 +170,7 @@ def download(path, connection, follow_redirects=True):
     headers, status, content = dict(r.getheaders()), r.status, r.read()
 
     if follow_redirects:
-        if status in (301,302):
+        if status in (301, 302):
             path = urljoin(path, headers['location'])
             connection.request("GET", path)
             r = connection.getresponse()
