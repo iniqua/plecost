@@ -145,11 +145,11 @@ Examples:
 
     # Updater
     gr_update = parser.add_argument_group("update options")
-    #gr_update.add_argument('--update-core', dest="UPDATE_CORE", type=int, help="Update Plecost core.", default=False)
-    gr_update.add_argument('--update-cve', dest="UPDATE_CVE", type=int, help="Update CVE database.", default=False)
+    #gr_update.add_argument('--update-core', dest="UPDATE_CORE", action="store_true", help="Update Plecost core.", default=False)
+    gr_update.add_argument('--update-cve', dest="UPDATE_CVE", action="store_true", help="Update CVE database.", default=False)
     gr_update.add_argument('--update-plugins', dest="UPDATE_PLUGINS", action="store_true",
                            help="Update plugins.", default=False)
-    gr_update.add_argument('--update-all', dest="UPDATE_ALL", type=int, help="Update CVE, plugins, and core.", default=False)
+    gr_update.add_argument('--update-all', dest="UPDATE_ALL", action="store_true", help="Update CVE, plugins, and core.", default=False)
 
     args = parser.parse_args()
 
