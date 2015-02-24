@@ -1,34 +1,18 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
+# Plecost: Wordpress finger printer tool.
 #
-# Project name: Open Methodology for Security Tool Developers
-# Project URL: https://github.com/cr0hn/OMSTD
+# @url: http://iniqua.com/labs/
+# @url: https://github.com/iniqua/plecost
 #
-# Copyright (c) 2015, cr0hn<-AT->cr0hn.com
-# All rights reserved.
+# @author:Francisco J. Gomez aka ffranz (http://iniqua.com/)
+# @author:Daniel Garcia aka cr0hn (http://www.cr0hn.com/me/)
 #
-# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-# following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the
-# following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-# following disclaimer in the documentation and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
-# products derived from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# Code is licensed under -- GPLv2, http://www.gnu.org/licenses/gpl.html --
 #
 
-__author__ = 'cr0hn - cr0hn<-at->cr0hn.com (@ggdaniel)'
+
 
 
 __all__ = ["is_remote_a_wordpress", "get_wordpress_version"]
@@ -38,9 +22,10 @@ import asyncio
 
 from urllib.parse import urljoin
 
+from ..db import DB
 from ..wordlist import get_wordlist
 from ..data import PlecostWordPressInfo
-from ..utils import get_diff_ratio, update_progress, download
+from ..utils import get_diff_ratio, update_progress, download, colorize
 
 
 # ----------------------------------------------------------------------
@@ -93,6 +78,7 @@ def is_remote_a_wordpress(base_url, error_page, downloader):
             return False
     else:
         return True
+
 
 # ----------------------------------------------------------------------
 @asyncio.coroutine
@@ -208,3 +194,42 @@ def get_wordpress_version(url, downloader):
 
     return PlecostWordPressInfo(current_version=return_current_version,
                                 last_version=last_version)
+
+
+# ----------------------------------------------------------------------
+def get_wordpress_vulnerabilities(wordpress_info, db):
+    """
+    Get CVEs associated to the installed Wordpress version
+
+    :param wordpress_info: PlecostWordPressInfo instance
+    :type wordpress_info: PlecostWordPressInfo
+
+    :param db: cve database instance
+    :type db: DB
+
+    """
+    if not isinstance(wordpress_info, PlecostWordPressInfo):
+        raise TypeError("Expected PlecostWordPressInfo, got '%s' instead" % type(wordpress_info))
+    if not isinstance(db, DB):
+        raise TypeError("Expected DB, got '%s' instead" % type(db))
+
+    _current_version = wordpress_info.current_version
+
+    if _current_version is "unknown" or \
+            not _current_version:
+        return []
+
+    cves = db.query_wordpress(_current_version)
+
+    # Print CVE list
+    res = []
+    res_append = res.append
+    if cves:
+        res_append("\n    |_CVE list:")
+        for cve in cves:
+            text = "    |__%(cve)s: (http://cve.mitre.org/cgi-bin/cvename.cgi?name=%(cve)s)" % \
+                   {"cve": colorize(cve, "red")}
+
+            res_append(text)
+
+    return "\n".join(res)

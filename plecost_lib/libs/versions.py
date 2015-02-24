@@ -24,12 +24,14 @@ import asyncio
 from datetime import datetime
 from functools import partial
 from urllib.parse import urlparse
+from os.path import join
 
+from .db import DB
 from .data import *  # noqa
 from .exceptions import *  # noqa
 from .plugins_utils import plugins_testing
-from .utils import colorize, generate_error_page, download
-from .wordpress_core import is_remote_a_wordpress, get_wordpress_version
+from .utils import colorize, generate_error_page, download, get_data_folder
+from .wordpress_core import is_remote_a_wordpress, get_wordpress_version, get_wordpress_vulnerabilities
 
 
 # ----------------------------------------------------------------------
@@ -59,11 +61,16 @@ def find_versions(args):
     is_color = args.colorize
     start_time = datetime.now()
     no_check_wordpress = args.no_check_wordpress
+    no_check_plugins = args.no_check_plugins
+    no_check_wordpress_version = args.no_check_wordpress_version
 
     # Non-blocking config
     loop = asyncio.get_event_loop()
     con = aiohttp.TCPConnector(conn_timeout=10, share_cookies=True, loop=loop)
     _download = partial(download, max_redirect=0, connector=con, loop=loop)
+
+    # Get CVE database
+    db = DB(path=join(get_data_folder(), "cve.db"))
 
     # --------------------------------------------------------------------------
     # Test availability of target
@@ -82,11 +89,10 @@ def find_versions(args):
             raise PlecostTargetNotAvailable("Redirection detected, but can't determinate the new location")
     log(colorize(" ok!\n"))
 
+    # --------------------------------------------------------------------------
+    # Check if remote host is a WordPress
+    # --------------------------------------------------------------------------
     if no_check_wordpress is False:
-
-            # --------------------------------------------------------------------------
-            # Check if remote host is a WordPress
-            # --------------------------------------------------------------------------
             log("[*] Looking for WordPress installation...\n")
             # Error page content.
             headers, status, error_page = loop.run_until_complete(_download(generate_error_page(url)))
@@ -98,15 +104,16 @@ def find_versions(args):
 
             log("\n   %s" % colorize(" ok!\n"))
 
-            # --------------------------------------------------------------------------
-            # Check WordPress version
-            # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+    # Check WordPress version
+    # --------------------------------------------------------------------------
+    if no_check_wordpress_version is False:
             log("[*] Getting WordPress version... ")
 
             wordpress_version = loop.run_until_complete(get_wordpress_version(url, _download))
-
+            # wordpress_version.
             if wordpress_version:
-                log("%s (latest: %s)\n" %
+                log("%s (latest: %s)" %
                     (
                         colorize("%s" % wordpress_version.current_version, "red"),
                         colorize("%s" % wordpress_version.latest_version)
@@ -114,30 +121,40 @@ def find_versions(args):
             else:
                     log(colorize("Unknown!\n", "red"))
 
+            # --------------------------------------------------------------------------
+            # Looking for CVEs for installed Wordpress version
+            # --------------------------------------------------------------------------
+            log(get_wordpress_vulnerabilities(wordpress_version, db))
+
+            log("\n")
     # --------------------------------------------------------------------------
     # Check the plugins
     # --------------------------------------------------------------------------
     # Read plugins file and remove \n and \r
-    plugins = []
-    plugins_append = plugins.append
+    plugins_info = []
 
-    with open(args.wordlist, "rU") as f:
-        for plugin in f:
-            plugins_append(plugin.replace("\n", "").replace("\r", ""))
+    if no_check_plugins is False:
+        plugins = []
+        plugins_append = plugins.append
 
-    # Prepare csv file
-    cve_info = csv.reader(plugins)
-    error_page = ""
-    # Find plugins
-    log("[*] Looking for plugins (wordlist: %s) ... " % args.wordlist[args.wordlist.rfind("/") + 1:], 0)
+        with open(args.wordlist, "rU") as f:
+            for plugin in f:
+                plugins_append(plugin.replace("\n", "").replace("\r", ""))
 
-    plugins_info = loop.run_until_complete(plugins_testing(url,
-                                                           error_page,
-                                                           log,
-                                                           cve_info,
-                                                           concurrency,
-                                                           loop,
-                                                           con=con))
+        # Prepare csv file
+        cve_info = csv.reader(plugins)
+        error_page = ""
+        # Find plugins
+        log("[*] Looking for plugins (wordlist: %s) ... " % args.wordlist[args.wordlist.rfind("/") + 1:], 0)
+
+        plugins_info = loop.run_until_complete(plugins_testing(url,
+                                                               error_page,
+                                                               log,
+                                                               cve_info,
+                                                               db,
+                                                               concurrency,
+                                                               loop,
+                                                               con=con))
     log("\n[*] Done! \n")
 
     # Set finish time
