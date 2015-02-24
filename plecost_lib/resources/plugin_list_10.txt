@@ -1,0 +1,10 @@
+wordpress-seo,WordPress SEO by Yoast,1.7.3.3
+jetpack,Jetpack by WordPress.com,3.3.2
+contact-form-7,Contact Form 7,4.1
+woocommerce,WooCommerce - excelling eCommerce,2.3.5
+google-analytics-for-wordpress,Google Analytics by Yoast,5.3.2
+akismet,Akismet,3.0.4
+nextgen-gallery,NextGEN Gallery,2.0.74
+all-in-one-seo-pack,All in One SEO Pack,2.2.5.1
+wordpress-importer,WordPress Importer,0.6.1
+better-wp-security,iThemes Security (formerly Better WP Security),4.6.8

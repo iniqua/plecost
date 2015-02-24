@@ -1,0 +1,999 @@
+wordpress-seo,WordPress SEO by Yoast,1.7.3.3
+jetpack,Jetpack by WordPress.com,3.3.2
+contact-form-7,Contact Form 7,4.1
+woocommerce,WooCommerce - excelling eCommerce,2.3.5
+google-analytics-for-wordpress,Google Analytics by Yoast,5.3.2
+akismet,Akismet,3.0.4
+nextgen-gallery,NextGEN Gallery,2.0.74
+all-in-one-seo-pack,All in One SEO Pack,2.2.5.1
+wordpress-importer,WordPress Importer,0.6.1
+better-wp-security,iThemes Security (formerly Better WP Security),4.6.8
+google-analytics-dashboard-for-wp,Google Analytics Dashboard for WP,4.4.6
+black-studio-tinymce-widget,Black Studio TinyMCE Widget,2.2.3
+nextgen-facebook,"NextGEN Facebook - Advanced Social SEO for Facebook, Google",7.8
+wordfence,Wordfence Security,5.3.6
+ml-slider,Meta Slider,3.3
+google-sitemap-generator,Google XML Sitemaps,4.0.8
+wysija-newsletters,MailPoet Newsletters,2.6.15
+pluscaptcha,PlusCaptcha,2.0.14
+advanced-custom-fields,Advanced Custom Fields,4.4.0
+si-contact-form,Fast Secure Contact Form,4.0.33
+wpsso,WordPress Social Sharing Optimization - Improves Shared Content on Social Websites,2.8
+captcha,Captcha,4.0.9
+siteorigin-panels,Page Builder by SiteOrigin,2.0.7
+buddypress,BuddyPress,2.2.1
+yith-woocommerce-wishlist,YITH WooCommerce Wishlist,2.0.3
+contact-form-plugin,Contact Form,3.86
+tinymce-advanced,TinyMCE Advanced,4.1.7
+w3-total-cache,W3 Total Cache,0.9.4.1
+mailchimp-for-wp,MailChimp for WordPress,2.2.5
+wp-super-cache,WP Super Cache,1.4.2
+really-simple-captcha,Really Simple CAPTCHA,1.8.0.1
+contact-form-7-to-database-extension,Contact Form DB,2.8.32
+wp-pagenavi,WP-PageNavi,2.87
+updraftplus,UpdraftPlus Backup and Restoration,1.9.60
+redirection,Redirection,2.3.14
+wp-retina-2x,WP Retina 2x,3.0.4
+woosidebars,WooSidebars,1.4.1
+shareaholic,Shareaholic ,7.6.0.9
+p3-profiler,P3 (Plugin Performance Profiler),1.5.3.8
+add-meta-tags,Add Meta Tags,2.6.8
+photo-gallery,Photo Gallery,1.2.15
+wptouch,WPtouch Mobile Plugin,3.6.6
+ultimate-coming-soon-page,Ultimate Coming Soon Page,1.13.0
+googleanalytics,Google Analytics,1.0.6
+regenerate-thumbnails,Regenerate Thumbnails,2.2.4
+bulletproof-security,BulletProof Security,.51.7
+wp-google-maps,WP Google Maps,6.1.4
+worker,ManageWP Worker,4.0.5
+wp-spamshield,WP-SpamShield Anti-Spam,1.7.7
+duplicator,Duplicator,0.5.12
+all-in-one-event-calendar,All-in-One Event Calendar,2.2.0
+all-in-one-wp-security-and-firewall,All In One WP Security ,3.9.0
+backupwordpress,BackUpWordPress,3.1.4
+user-role-editor,User Role Editor,4.18.3
+google-publisher,Google AdSense,1.1.0
+post-types-order,Post Types Order,1.7.7
+easy-google-fonts,Easy Google Fonts,1.3.5
+social-networks-auto-poster-facebook-twitter-g,NextScripts: Social Networks Auto-Poster,3.4.12
+add-to-any,Share Buttons by AddToAny,1.5.2
+wpsso-ssb,WPSSO Social Sharing Buttons - Facebook G,1.1.7
+wp-slimstat,WP Slimstat,3.9.6
+social-media-feather,Social Media Feather - lightweight social media sharing and follow buttons,1.7.4
+list-category-posts,List category posts,0.56
+breadcrumb-navxt,Breadcrumb NavXT,5.2.0
+wp-fastest-cache,WP Fastest Cache,0.8.4.4
+wp-smushit,WP Smush.it,1.7
+custom-post-type-ui,Custom Post Type UI,1.0.2
+wp-lightbox-2,WP Lightbox 2,3.0.1
+coming-soon,Coming Soon Page ,4.1.0
+the-events-calendar,The Events Calendar,3.9.1
+bbpress,bbPress,2.5.4
+disable-comments,Disable Comments,1.2
+wp-multibyte-patch,WP Multibyte Patch,2.2
+types,Types - Custom Fields and Custom Post Types Management,1.6.5.1
+polylang,Polylang,1.6.5
+google-sitemap-plugin,Google Sitemap by BestWebSoft,2.9.6
+google-maps-widget,Google Maps Widget,2.25
+download-manager,WordPress Download Manager,2.7.88
+sexybookmarks,Shareaholic ,7.6.0.9
+soliloquy-lite,Responsive WordPress Slider - Soliloquy Lite,2.2.1
+woocommerce-colors,WooCommerce Colors,1.0.4
+custom-contact-forms,Custom Contact Forms,6.4.6
+simple-page-ordering,Simple Page Ordering,2.2.4
+duplicate-post,Duplicate Post,2.6
+sucuri-scanner,"Sucuri Security - Auditing, Malware Scanner and Security Hardening",1.7.6
+wp-maintenance-mode,WP Maintenance Mode,2.0.3
+rvg-optimize-database,Optimize Database after Deleting Revisions,3.1.3
+backwpup,BackWPup Free - WordPress Backup Plugin,3.1.4
+slider-image,Slider,2.6.8
+imsanity,Imsanity,2.3.4
+wp-optimize-by-xtraffic,WP Optimize By xTraffic,4.1.11
+limit-login-attempts,Limit Login Attempts,1.7.1
+wp-simple-firewall,WordPress Simple Security Firewall,4.4.1
+squirrly-seo,SEO by SQUIRRLY,3.4.4
+floating-social-media-icon,Floating Social Media Icon,1.3.9
+easing-slider,Easing Slider,2.2.1.1
+gallery-plugin,Gallery,4.2.8
+wp-statistics,WP Statistics,8.8
+responsive-menu,Responsive Menu,2.4
+shortcodes-ultimate,Shortcodes Ultimate,4.9.3
+count-per-day,Count per Day,3.4
+contact-bank,WP Contact Bank - Contact Forms Builder,2.0.98
+broken-link-checker,Broken Link Checker,1.10.4
+responsive-lightbox,Responsive Lightbox by dFactory,1.4.10
+gallery-bank,Gallery Bank - Responsive Photo Gallery,3.0.103
+ninja-forms,Ninja Forms,2.8.13
+wpclef,Clef Two-Factor Authentication,2.2.9.1
+disqus-comment-system,Disqus Comment System,2.84
+addthis,Smart Website Tools by AddThis,4.0.3
+lightbox-gallery,Lightbox Gallery,0.8
+adrotate,AdRotate,3.11.1
+tablepress,TablePress,1.5.1
+ewww-image-optimizer,EWWW Image Optimizer,2.2.2
+share-this,ShareThis: Share Buttons and Social Analytics,7.0.20
+wp-user-avatar,WP User Avatar,1.9.18
+quick-cache,Quick Cache (Speed Without Compromise),150129
+advanced-responsive-video-embedder,Advanced Responsive Video Embedder,5.3.3
+custom-sidebars,Custom Sidebars,2.1.0.2
+fancybox-for-wordpress,FancyBox for WordPress,3.0.5
+sidekick,Sidekick,2.1.0
+maxbuttons,MaxButtons: WordPress Button Generator,1.34
+flash-album-gallery,Grand Flagallery - Photo Gallery Plugin,4.30
+newstatpress,NewStatPress,0.9.6
+child-theme-configurator,Child Theme Configurator,1.7.1
+liveforms,Live Forms - Visual Form Builder,3.0.1
+wp-optimize,WP-Optimize,1.8.9.7
+subscribe2,Subscribe2,10.18.4
+favicon-by-realfavicongenerator,Favicon by RealFaviconGenerator,1.2.11
+so-widgets-bundle,SiteOrigin Widgets Bundle,1.1.2
+tweet-old-post,Revive Old Post (Former Tweet Old Post),6.9.6.3
+widget-importer-exporter,Widget Importer ,1.2
+instagram-feed,Instagram Feed,1.3.3
+gallery-images,Image Gallery,1.2.1
+wp-mail-smtp,WP Mail SMTP,0.9.5
+yith-woocommerce-compare,YITH WooCommerce Compare,1.2.3
+register-plus-redux,Register Plus Redux,4.1.1
+iwp-client,InfiniteWP Client,1.3.10
+easy-digital-downloads,Easy Digital Downloads,2.2.8
+form-maker,Form Maker,1.7.27
+wp-photo-album-plus,WP Photo Album Plus,5.5.1
+recent-tweets-widget,Recent Tweets Widget,1.4
+theme-check,Theme Check,20141222.1
+profile-builder,"Profile Builder - front-end user registration, login and edit profile",2.1.2
+simple-social-buttons,Simple Social Buttons,1.7.8
+redux-framework,Redux Framework,3.4.1
+custom-login,Custom Login,3.2
+stop-spammer-registrations-plugin,Stop Spammers,6.02
+seo-image,SEO Friendly Images,3.0.5
+si-captcha-for-wordpress,SI CAPTCHA Anti-Spam,2.7.7.5
+virtue-toolkit,Virtue ,2.8
+newsletter,Newsletter,3.6.7
+youtube-embed-plus,YouTube,9.4
+meta-box,Meta Box,4.4.2
+yith-woocommerce-ajax-search,YITH WooCommerce Ajax Search,1.2.2
+facebook,Facebook,1.5.5
+cleantalk-spam-protect,Anti-spam by CleanTalk (no CAPTCHA),4.19
+wp-sitemap-page,WP Sitemap Page,1.5.3
+google-analyticator,Google Analyticator,6.4.8
+portfolio-gallery,Portfolio Gallery,1.3.5
+cms-tree-page-view,CMS Tree Page View,1.2.31
+custom-facebook-feed,Custom Facebook Feed,2.3
+gotmls,Anti-Malware and Brute-Force Security by ELI,4.14.59
+simple-share-buttons-adder,Simple Share Buttons Adder,5.5
+nk-google-analytics,NK Google Analytics,1.4.6
+mashsharer,"Mashshare - Social Media Icons SEO Share Buttons for Facebook, Twitter, Subscribe",2.2.6
+contact-form-builder,Contact Form Builder,1.0.17
+link-library,Link Library,5.9.2.4
+wp-rss-aggregator,WP RSS Aggregator,4.6.10
+easy-fancybox,Easy FancyBox,1.5.7
+user-access-manager,User Access Manager,1.2.6.2
+image-widget,Image Widget,4.1
+printfriendly,Print Friendly and PDF Button,3.3.9
+yet-another-related-posts-plugin,Yet Another Related Posts Plugin (YARPP),4.2.4
+options-framework,Options Framework,1.8.3
+like-box,Facebook Like Box,0.5.1
+maintenance,Maintenance,2.4
+force-regenerate-thumbnails,Force Regenerate Thumbnails,2.0.3
+codestyling-localization,Codestyling Localization,1.99.30
+wpfront-user-role-editor,WPFront User Role Editor,2.5.1
+ultimate-tinymce,Ultimate TinyMCE,5.7
+wp-postviews,WP-PostViews,1.69
+wc-shortcodes,WP Canvas - Shortcodes,1.63
+jquery-t-countdown-widget,T(-) Countdown,2.2.19
+testimonials-widget,Testimonials Widget,3.0.4
+simple-custom-css,Simple Custom CSS,3.2
+wp-clone-by-wp-academy,WP Clone by WP Academy,2.1.8
+leaflet-maps-marker,"Leaflet Maps Marker (Google Maps, OpenStreetMap, Bing Maps)",3.9.6
+jw-player-plugin-for-wordpress,JW Player for Flash ,2.1.10
+wordpress-simple-paypal-shopping-cart,WordPress Simple Paypal Shopping Cart,4.0.7
+wpsso-am,WPSSO App Meta - for Apple's mobile Safari and Twitter's App Card,1.1.2
+wp-to-twitter,WP to Twitter,3.0.0
+cookie-notice,Cookie Notice by dFactory,1.2.18.1
+wpsso-plm,WPSSO Place and Location Meta - for Facebook ,1.1.2
+sumome,Double your Email Subscribers ,1.10
+simple-social-icons,Simple Social Icons,1.0.7
+woocommerce-jetpack,WooCommerce Jetpack,2.1.3
+easy-testimonials,Easy Testimonials,1.20.2
+wp-edit,WP Edit,3.0.1
+all-in-one-wp-migration,All-in-One WP Migration,2.0.4
+events-manager,Events Manager,5.5.5
+wp-review,WP Review,3.2.9
+use-any-font,Use Any Font,4.3
+mainwp-child,MainWP Child,2.0.8
+video-thumbnails,Video Thumbnails,2.12
+wp-missed-schedule,WP Missed Schedule Fix Failed Future Posts,2014.0221.2015
+search-and-replace,Search and Replace,2.7.0
+wp-polls,WP-Polls,2.68
+event-organiser,Event Organiser,2.12.0
+facebook-comments-plugin,Facebook Comments,2.2.3
+wp-dbmanager,WP-DBManager,2.75
+iframe,iframe,3.0
+velvet-blues-update-urls,Velvet Blues Update URLs,3.2.3
+formget-contact-form,FormGet Contact Form,5.2
+wp-construction-mode,WP Construction Mode,3.01
+google-document-embedder,Google Doc Embedder,2.5.19
+booking,Booking Calendar,5.3.1
+page-links-to,Page Links To,2.9.4
+google-captcha,Google Captcha (reCAPTCHA) by BestWebSoft,1.13
+wordpress-ping-optimizer,WordPress Ping Optimizer,2.34.7
+yith-woocommerce-zoom-magnifier,YITH WooCommerce Zoom Magnifier,1.1.5
+ag-custom-admin,AG Custom Admin,1.4.6
+mqtranslate,mqTranslate,2.10
+cloudflare,CloudFlare,1.3.16
+lightbox-plus,Lightbox Plus Colorbox,2.7
+option-tree,OptionTree,2.5.1
+simple-history,Simple History,2.0.21
+mp3-jplayer,MP3-jPlayer,2.3
+intuitive-custom-post-order,Intuitive Custom Post Order,3.0.4
+wordpress-popular-posts,WordPress Popular Posts,3.2.1
+add-link-to-facebook,Add Link to Facebook,1.214
+newsletter-sign-up,Newsletter Sign-Up,2.0.5
+contact-form-maker,Contact Form Maker,1.7.27
+wp-e-commerce,WP eCommerce,3.9.1
+rating-widget,Rating-Widget: Star Rating System,2.4.2
+zopim-live-chat,Zopim Live Chat,1.3.6
+grand-media,"Gmedia Gallery - Photo Gallery, Image Slider, Music Player, Video Player, Media Library",1.5.5
+buddypress-media,"rtMedia for WordPress, BuddyPress and bbPress",3.7.33
+yikes-inc-easy-mailchimp-extender,Easy MailChimp Forms,5.3.2
+wp-members,WP-Members,2.9.8.1
+anti-spam,Anti-spam,3.5
+enable-media-replace,Enable Media Replace,3.0.3
+wp-external-links,WP External Links (nofollow new window seo),1.60
+my-calendar,My Calendar,2.3.24
+wp-db-backup,WP-DB-Backup,2.2.4
+comprehensive-google-map-plugin,Comprehensive Google Map Plugin,9.1.2
+admin-menu-editor,Admin Menu Editor,1.4.2
+qtranslate,qTranslate,2.5.39
+simple-backup,Simple Backup,2.7.10
+wordpress-backup-to-dropbox,WordPress Backup to Dropbox,4.1
+editorial-calendar,Editorial Calendar,3.4
+wp-product-review,WP Product Review,2.4.9
+mailchimp,MailChimp List Subscribe Form,1.4.2
+ultimate-member,Ultimate Member,1.0.64
+antispam-bee,Antispam Bee,2.6.4
+business-directory-plugin,Business Directory Plugin,3.5.7
+bulk-delete,Bulk Delete,5.4.1
+cyclone-slider-2,Cyclone Slider 2,2.9.7
+wowslider,WOW Slider,7.8
+master-slider,Master Slider - Responsive Touch Slider,2.0.4
+easy-wp-smtp,Easy WP SMTP,1.1.4
+wp-mail-bank,WP Mail Bank - PHPMailer ,1.10
+users-ultra,Users Ultra,1.4.56
+easy-social-icons,Easy Social Icons,1.2.3.1
+alo-easymail,ALO EasyMail Newsletter,2.5.06
+zedity,Zedity,4.14.0
+s2member,"s2Member Framework (Member Roles, Capabilities, Membership, PayPal Members)",150203
+awesome-weather,Awesome Weather Widget,1.4.3.1
+wp-content-copy-protection,WP Content Copy Protection,1.1.4
+ultimate-social-media-icons,Ultimate Social Media and Share Icons,1.1.1.8
+seo-ultimate,SEO Ultimate,7.6.5.1
+foobox-image-lightbox,FooBox Image Lightbox,1.0.4
+autoptimize,Autoptimize,1.9.2
+easy-media-gallery,Easy Media Gallery - Best Gallery ,1.3.01
+wp-live-chat-support,WP Live Chat Support,4.2.9
+simple-tags,Simple Tags,2.4
+taxonomy-terms-order,Category Order and Taxonomy Terms Order,1.4.1
+qtranslate-x,qTranslate X,3.1
+wordpress-reset,WordPress Reset,1.3.3
+nextcellent-gallery-nextgen-legacy,NextCellent Gallery - NextGEN Legacy,1.9.25.3
+loginradius-for-wordpress,"Social Login, Social Sharing and Social Data Integration",6.5
+underconstruction,underConstruction,1.12
+envira-gallery-lite,Responsive WordPress Gallery - Envira Gallery Lite,1.1.5
+wonderm00ns-simple-facebook-open-graph-tags,"Facebook Open Graph, Google",1.5.2
+subscribe-to-comments-reloaded,Subscribe To Comments Reloaded,150207
+slider-wd,Slider WD,1.0.6
+official-statcounter-plugin-for-wordpress,StatCounter - Free Real Time Visitor Stats,1.7.0
+woocommerce-csvimport,Woocommerce CSV importer,2.2.2
+theme-my-login,Theme My Login,6.3.10
+megamenu,Max Mega Menu,1.5.3
+nextend-facebook-connect,Nextend Facebook Connect,1.5.4
+widget-logic,Widget Logic,0.57
+wp-shortcode,WP Shortcode by MyThemeShop,1.3
+landing-pages,WordPress Landing Pages,1.8.0
+dsidxpress,dsIDXpress IDX Plugin,2.1.19
+content-views-query-and-display-post-page,Query posts by category... and display posts on page in grid layout without coding - Content Views,1.5.2
+wp-job-manager,WP Job Manager,1.20.1
+wiziapp-create-your-own-native-iphone-app,"WiziApp - Adaptive Mobile Themes, Android ",3.2.6
+amr-shortcode-any-widget,amr shortcode any widget,2.4
+yith-woocommerce-ajax-navigation,YITH WooCommerce Ajax Navigation,1.4.1
+rotatingtweets,Rotating Tweets (Twitter widget and shortcode),1.7.9
+hyper-cache,Hyper Cache,3.1.9
+custom-field-template,Custom Field Template,2.3
+ultimate-maintenance-mode,Ultimate Maintenance Mode,1.6.0
+store-locator-le,Store Locator Plus,4.2.36
+header-footer,Header and Footer,1.6.2
+loco-translate,Loco Translate,1.5.1
+all-in-one-favicon,All In One Favicon,4.3
+media-library-assistant,Media Library Assistant,2.02
+wp-migrate-db,WP Migrate DB,0.6.1
+store-locator,WordPress Store Locator,3.38.2
+synved-shortcodes,WordPress Shortcodes,1.6.33
+genesis-simple-edits,Genesis Simple Edits,2.1.1
+password-protected,Password Protected,1.9
+simple-image-widget,Simple Image Widget,4.2.1
+wp-filebase,WP-Filebase Download Manager,3.1.00
+wp-insert,Wp-Insert,2.0.15
+simple-download-monitor,Simple Download Monitor,3.1.9
+resize-image-after-upload,Resize Image After Upload,1.7
+simple-map,Simple Map,2.4.0
+nav-menu-roles,Nav Menu Roles,1.6.4
+wp-security-scan,Acunetix WP Security,4.0.5
+responsive-photo-gallery,Responsive Photo Gallery,2.2
+contact-form-7-honeypot,Contact Form 7 Honeypot,1.6.2
+quick-pagepost-redirect-plugin,Quick Page,5.0.6
+recent-facebook-posts,Recent Facebook Posts,2.0.4
+slideshow-gallery,Tribulant Slideshow Gallery,1.5.3
+wp-tab-widget,WP Tab Widget,1.2
+paid-memberships-pro,Paid Memberships Pro,1.7.15.2
+wp-postratings,WP-PostRatings,1.80
+facebook-button-plugin,Facebook Like Button,2.36
+wordpress-23-related-posts-plugin,WordPress Related Posts,3.5.3
+coschedule-by-todaymade,CoSchedule by Todaymade,2.3.1
+simple-follow-me-social-buttons-widget,Simple Follow Me Social Buttons Widget,3.2
+simple-lightbox,Simple Lightbox,2.3.1
+bwp-minify,Better WordPress Minify,1.3.3
+wordpress-popup,WordPress PopUp,4.7.0.3
+social-polls-by-opinionstage,Polls by OpinionStage,10.4.0
+easyrecipe,Easy Recipe,3.2.2929
+rss-post-importer,RSS Post Importer,2.0.16
+blogger-importer,Blogger Importer,0.7
+relevanssi,Relevanssi - A Better Search,3.3.8
+query-monitor,Query Monitor,2.6.10
+syntaxhighlighter,SyntaxHighlighter Evolved,3.1.11
+lightbox,Lightbox,1.4.5
+really-simple-facebook-twitter-share-buttons,Really Simple Share,4.0
+ckeditor-for-wordpress,CKEditor for WordPress,4.4.5
+duracelltomi-google-tag-manager,DuracellTomi's Google Tag Manager for WordPress,0.9.1
+wp-google-fonts,WP Google Fonts,3.1.1
+spider-event-calendar,WordPress Event Calendar,1.4.11
+popupally,PopupAlly,1.4.2
+xhanch-my-twitter,Xhanch - My Twitter,2.7.8
+slideshow-jquery-image-gallery,Slideshow,2.2.21
+powerpress,Blubrry PowerPress Podcasting plugin,6.0.1
+easy-theme-and-plugin-upgrades,Easy Theme and Plugin Upgrades,1.0.4
+calculated-fields-form,Calculated Fields Form,1.0.12
+wordpress-mobile-pack,WordPress Mobile Pack,2.1.1
+sitemap,Sitemap,4.3
+atcontent,AtContent ,7.12.9.2
+woocommerce-customizer,WooCommerce Customizer,2.1.0
+email-encoder-bundle,Email Encoder Bundle - Protect Email Address,1.3.0
+google-language-translator,Google Language Translator,4.0.9
+google-calendar-events,Google Calendar Events,2.1.7
+pretty-link,Pretty Link Lite,1.6.5
+easy-coming-soon,Easy Coming Soon,1.6.2
+wp-all-import,Import any XML or CSV File to WordPress,3.2.3
+easy-facebook-likebox,Easy Facebook Like Box,3.1
+recent-posts-widget-extended,Recent Posts Widget Extended,0.9.9
+easy-table,Easy Table,1.5.2
+yop-poll,YOP Poll,5.6
+woocommerce-multilingual,WooCommerce Multilingual - run WooCommerce with WPML,3.5.1
+seo-automatic-links,SEO Smart Links,3.0.1
+wordpress-social-login,WordPress Social Login,2.2.3
+wp-social-bookmarking-light,WP Social Bookmarking Light,1.7.9
+popup-maker,Popup Maker,1.1.10
+column-shortcodes,Column Shortcodes,0.6.6
+affinitomics,Affinitomics,0.9.0
+feed-them-social,"Feed Them Social (Facebook, Instagram, Twitter, etc)",1.7.0
+icegram,Icegram,1.8.6
+addquicktag,AddQuicktag,2.4.1
+nospamnx,NoSpamNX,5.1.17
+easy-bootstrap-shortcodes,Easy Bootstrap Shortcode,4.3.7
+facebook-auto-publish,Facebook Auto Publish,1.2
+wp-clean-up-optimizer,WP Clean Up Optimizer - Optimize WordPress,2.0.24
+fv-wordpress-flowplayer,FV WordPress Flowplayer,2.3.12
+woocommerce-delivery-notes,WooCommerce Print Invoice ,4.1.4
+display-widgets,Display Widgets,2.03
+woocommerce-xml-csv-product-import,Import Products from any XML or CSV to WooCommerce,1.2.1
+login-customizer,Custom Login Page Customizer,1.0.1
+email-subscribers,Email Subscribers,2.6
+yet-another-stars-rating,Yasr - Yet Another Stars Rating,0.7.9
+custom-login-page,A5 Custom Login Page,2.5.3
+twitter-facebook-google-plusone-share,"Add Twitter, Facebook Like, Google plus one Social share",2.4.3
+codepress-admin-columns,Admin Columns,2.3.3
+wordpress-https,WordPress HTTPS (SSL),3.3.6
+really-simple-twitter-feed-widget,Really Simple Twitter Feed Widget,3.0
+bwp-google-xml-sitemaps,"Better WordPress Google XML Sitemaps (with sitemapindex, multi-site and Google News sitemap support)",1.3.1
+beaver-builder-lite-version,Beaver Builder - WordPress Page Builder,1.4.6
+m-wp-popup,WP Popup Plugin,0.5.17
+search-everything,Search Everything,8.1.3
+transposh-translation-filter-for-wordpress,Transposh WordPress Translation,0.9.6
+meteor-slides,Meteor Slides,1.5.3
+pricing-table,Pricing Table,1.3.9
+cta,WordPress Calls to Action,2.3.0
+safe-redirect-manager,Safe Redirect Manager,1.7.6
+easy-adsense-lite,Easy Plugin for AdSense,7.60
+bruteprotect,BruteProtect,2.4
+e-mailit,Share Buttons by E-MAILiT,7.4.3
+wp-recaptcha,WP-reCAPTCHA,4.1
+better-font-awesome,Better Font Awesome,1.0.9
+simple-301-redirects,Simple 301 Redirects,1.06
+woocommerce-checkout-manager,WooCommerce Checkout Manager,3.6.6
+smart-youtube,Smart YouTube PRO,4.3
+visual-form-builder,Visual Form Builder,2.8.1
+responsive-add-ons,Responsive Add Ons,1.0.6
+advanced-access-manager,Advanced Access Manager,2.8.5
+revision-control,Revision Control,2.3.1
+widget-settings-importexport,Widget Settings Importer,1.5.0
+font,Font - official webfonts plugin. NO CODING! Just click ,7.5
+quick-adsense,Quick Adsense,1.9.2
+social-media-widget,Social Media Widget,4.0.2
+woocommerce-poor-guys-swiss-knife,WooCommerce Poor Guys Swiss Knife,2.2.4
+fancy-gallery,Fancy Gallery,1.5.17
+jquery-updater,jQuery Updater,2.1.3
+login-lockdown,Login LockDown,1.6.1
+oauth-twitter-feed-for-developers,oAuth Twitter Feed for Developers,2.2.1
+advanced-iframe,Advanced iFrame,6.3.1
+tac,Theme Authenticity Checker (TAC),1.5.2
+seriously-simple-podcasting,Seriously Simple Podcasting,1.8.10
+coming-soon-page,Coming soon and Maintenance mode,1.0.2
+simple-page-sidebars,Simple Page Sidebars,1.1.8
+easy-pricing-tables,Easy Pricing Tables Lite by Fatcat Apps,2.0
+all-404-redirect-to-homepage,All 404 Redirect to Homepage,1.3
+rename-wp-login,Rename wp-login.php (unmaintained),2.5.1
+cms-commander-client,CMS Commander Client,2.13
+wp-paginate,WP-Paginate,1.3.1
+xcloner-backup-and-restore,XCloner - Backup and Restore,3.1.2
+cookie-law-info,Cookie Law Info,1.2.1
+simple-membership,Simple Membership,2.1
+simple-subscribe,Simple Subscribe,1.8.1
+instagram-slider-widget,Instagram Slider Widget,1.2.1
+insert-headers-and-footers,Insert Headers and Footers,1.3.2
+exploit-scanner,Exploit Scanner,1.4
+pixcodes,PixCodes,2.3.0
+nimble-portfolio,WordPress Picture ,2.1.3
+sendpress,SendPress Newsletters,1.1.2.22
+custom-permalinks,Custom Permalinks,0.7.20
+wordpress-mu-domain-mapping,WordPress MU Domain Mapping,0.5.5.1
+real-estate-listing-realtyna-wpl,WPL Real Estate,2.2.0
+antivirus,AntiVirus,1.3.8
+speed-booster-pack,Speed Booster Pack,2.7
+jigoshop,Jigoshop,1.15.5
+oa-social-login,Social Login,4.6
+woocommerce-pdf-invoices-packing-slips,WooCommerce PDF Invoices ,1.5.4
+faster-pagination,Faster Pagination,1.0
+formidable,Formidable Forms,1.07.11
+digg-digg,Digg Digg,5.3.6
+wp-twitter-feeds,WP Twitter Feeds,1.4.7
+woocommerce-product-archive-customiser,WooCommerce Product Archive Customiser,0.5.0
+taxonomy-metadata,Taxonomy Metadata,0.4
+popups,Popups - WordPress Popup,1.2.3.3
+flickr-justified-gallery,Flickr Justified Gallery,3.3.5
+player,WordPress Video Player,1.5.6
+plugnedit,Plug-N-Edit Drag ,5.0.7
+debug-bar,Debug Bar,0.8.2
+import-html-pages,HTML Import 2,2.5.1
+page-list,Page-list,5.0
+download-monitor,Download Monitor,1.6.3
+fg-joomla-to-wordpress,FG Joomla to WordPress,1.44.1
+image-watermark,Image Watermark,1.4.1
+gigpress,GigPress,2.3.8
+gallery-video,Video Gallery,1.1.5
+mappress-google-maps-for-wordpress,MapPress Easy Google Maps,2.42.1
+members,Members,0.2.4
+user-switching,User Switching,1.0.3
+crayon-syntax-highlighter,Crayon Syntax Highlighter,2.6.9
+one-click-close-comments,One Click Close Comments,2.3.2
+vkontakte-api,VKontakte API,3.19
+custom-share-buttons-with-floating-sidebar,Custom Share Buttons with Floating Sidebar,1.8
+simply-exclude,Simply Exclude,2.0.6.3
+theme-test-drive,Theme Test Drive,2.9
+job-manager,Job Manager,0.7.22
+use-google-libraries,Use Google Libraries,1.6.2
+special-recent-posts,Special Recent Posts,2.0.4
+adminimize,Adminimize,1.8.4
+contact-form-with-a-meeting-scheduler-by-vcita,Contact Form Plugin by vCita,3.8.0
+custom-field-suite,Custom Field Suite,2.4
+easy-columns,WP Easy Columns,2.1.3
+peters-login-redirect,Peter's Login Redirect,2.8.2
+php-code-widget,PHP Code Widget,2.2
+email-newsletter,Email newsletter,20.11.1
+ik-facebook,IK Facebook Plugin,2.9.5
+wp-slimstat-shortcodes,WP SlimStat Shortcodes,2.5.1
+clickdesk-live-support-chat-plugin,ClickDesk Live Support - Live Chat - Help Desk Plugin for Websites,4.4
+wp-database-backup,WP Database Backup,2.1.3
+easy-twitter-feed-widget,Easy Twitter Feed Widget Plugin,0.3
+wp-google-map-plugin,WP Google Map Plugin,2.3.6
+rustolat,Rus-To-Lat,0.3
+404-to-start,404 to Start,1.5.8.1
+advanced-code-editor,Advanced Code Editor,2.2.6
+content-aware-sidebars,Content Aware Sidebars,2.6
+ecommerce-product-catalog,eCommerce Product Catalog by impleCode,2.1.6
+mobile-smart,Mobile Smart,1.3.8
+wp-ultimate-csv-importer,WP Ultimate CSV Importer Plugin,3.6.75
+pdf-print,PDF ,1.7.8
+really-static,Really Static,0.31
+ps-auto-sitemap,PS Auto Sitemap,1.1.8
+twitter-plugin,Twitter,2.39
+simplified-social-share,Simplified Social Sharing,2.7.1
+cresta-social-share-counter,Cresta Social Share Counter,2.4
+saphali-woocommerce-lite,Saphali Woocommerce Russian,1.5.5
+adsense-plugin,Google AdSense by BestWebSoft,1.32
+ifeature-slider,iFeature Slider,1.0
+gravityforms-nl,Gravity Forms (nl),2.9.1
+rs-feedburner,RS FeedBurner,1.4.3
+pinterest-pin-it-button,Pinterest ,2.0.8
+add-from-server,Add From Server,3.2.0.3
+wp-subscribe,WP Subscribe,1.0.2
+login-with-ajax,Login With Ajax,3.1.4
+wr-pagebuilder,Page Builder by WooRockets.com,2.4.8
+wp-backitup,WP Backitup,1.10.4
+wp-ajaxify-comments,WP Ajaxify Comments,1.2.0
+woocommerce-sequential-order-numbers,WooCommerce Sequential Order Numbers,1.4.0
+contact-form-to-email,Contact Form to Email,1.1.2
+contus-video-gallery,WORDPRESS VIDEO GALLERY,2.8
+enhanced-media-library,Enhanced Media Library,2.0.3
+xml-sitemap-feed,XML Sitemap ,4.3.2
+post-thumbnail-editor,Post Thumbnail Editor,2.4.4
+smart-slider-2,Smart Slider 2,2.3.11
+q2w3-fixed-widget,Q2W3 Fixed Widget (Sticky Widget),4.0.6
+adminer,Adminer,1.3.2
+ad-injection,Ad Injection,1.2.0.18
+facebook-page-promoter-lightbox,Facebook Page Promoter Lightbox,3.0
+wpcat2tag-importer,Categories to Tags Converter,0.5
+skype-online-status,Skype Online Status,2.9.7
+events-made-easy,Events Made Easy,1.5.24
+very-simple-contact-form,Very Simple Contact Form,2.9
+flamingo,Flamingo,1.2
+wp-video-lightbox,WP Video Lightbox,1.7.1
+facebook-by-weblizar,Facebook,1.1
+genesis-enews-extended,Genesis eNews Extended,1.4.1
+sem-external-links,External Links,6.5
+advanced-excerpt,Advanced Excerpt,4.2.3
+olevmedia-shortcodes,Olevmedia Shortcodes,1.1.8
+social-share-button,Social Share Button,1.9
+wp-rss-multi-importer,WP RSS Multi Importer,3.13
+fruitful-shortcodes,Fruitful Shortcodes,1.3
+ajax-thumbnail-rebuild,AJAX Thumbnail Rebuild,1.12
+simple-custom-post-order,Simple Custom Post Order,2.2
+mce-table-buttons,MCE Table Buttons,3.2
+wp-editor,WP Editor,1.2.5.1
+commentluv,CommentLuv,2.93.8
+wp-easycart,WordPress Shopping Cart,3.0.19
+visitor-maps,Visitor Maps and Who's Online,1.5.8.6
+pods,Pods - Custom Content Types and Fields,2.5.1.1
+ultimate-under-construction,Ultimate Under Construction,1.7
+secure-wordpress,Acunetix Secure WordPress,3.0.3
+backup-wp,Backup,2.7
+unique-headers,Unique Headers,1.3.11
+jquery-collapse-o-matic,Collapse-O-Matic,1.6.5
+wck-custom-fields-and-custom-post-types-creator,WCK - Custom Fields and Custom Post Types Creator,1.1.4
+gzip-ninja-speed-compression,GZip Ninja Speed Compression,1.2.3
+php-text-widget,PHP Text Widget,1.0.8
+wp-forecast,wp-forecast,5.4
+postie,Postie,1.6.12
+wassup,WassUp Real Time Analytics,1.8.6
+gwolle-gb,Gwolle-GB,1.1.9
+leads,WordPress Leads,1.5.9
+testimonials-by-woothemes,Testimonials by WooThemes,1.5.3
+get-the-image,Get the Image,1.0.1
+dynamic-featured-image,Dynamic Featured Image,3.3.1
+woocommerce-dynamic-gallery,WooCommerce Dynamic Gallery,1.3.2
+woocommerce-correios,WooCommerce Correios,2.2.1
+multisite-language-switcher,Multisite Language Switcher,1.0.4
+aftership-woocommerce-tracking,AfterShip - WooCommerce Tracking,1.3.5
+social,Social,3.0
+auto-post-thumbnail,Auto Post Thumbnail,3.3.3
+osm,OSM - OpenStreetMap,3.0
+tubepress,TubePress,3.1.6
+post-type-switcher,Post Type Switcher,1.5
+wp-file-upload,WordPress File Upload,2.5.4
+pronamic-ideal,Pronamic iDEAL,3.5.0
+better-delete-revision,Better Delete Revision,1.6.1
+woocommerce-menu-bar-cart,WooCommerce Menu Cart,2.5.5
+w4-post-list,W4 Post List,2.0.2
+sidebar-login,Sidebar Login,2.7.1
+cpt-bootstrap-carousel,CPT Bootstrap Carousel,1.9
+woocommerce-custom-product-tabs-lite,WooCommerce Custom Product Tabs Lite,1.2.7
+genesis-simple-hooks,Genesis Simple Hooks,2.1.0
+simple-local-avatars,Simple Local Avatars,2.0
+hello-dolly,Hello Dolly,1.6
+disable-wordpress-updates,Disable All WordPress Updates,1.4.4
+top-10,Top 10  - Popular posts plugin for WordPress,2.0.3
+bj-lazy-load,BJ Lazy Load,0.7.5
+email-users,Email Users,4.7.1
+code-snippets,Code Snippets,2.0
+geodirectory,GeoDirectory - Ultimate Business Directory,1.3.8
+restrict-widgets,Restrict Widgets,1.2.7
+wp-parsidate,wp-parsidate,2.1.3
+akeebabackupcore,Akeeba Backup CORE for WordPress,1.2.2
+video-embed-thumbnail-generator,Video Embed ,4.4.2
+portfolio-post-type,Portfolio Post Type,0.9.1
+menu-icons,Menu Icons,0.7.0
+page-layout-builder,MiniMax - Page Layout Builder,1.8.5
+codepeople-post-map,CP Google Maps,1.0.1
+microblog-poster,Microblog Poster,1.4.7
+youtube-channel-gallery,Youtube Channel Gallery,1.8.7
+gabfire-widget-pack,Gabfire Widget Pack,1.4.3
+contact-form-7-datepicker,Contact Form 7 Datepicker,2.4.5
+mythemeshop-connect,MyThemeShop Connect,1.2.1
+uji-countdown,Uji Countdown,2.0.3
+better-search-replace,Better Search Replace,1.0.3
+spider-facebook,WordPress Facebook,1.0.10
+dynamic-widgets,Dynamic Widgets,1.5.9
+wc-vendors,WC Vendors,1.4.5
+modal-dialog,Modal Dialog,3.2.3
+wp-print,WP-Print,2.55
+footer-putter,Footer Putter,1.12
+showcase-visual-composer-addon,Showcase - Visual Composer Addon,1.0.1
+ithemes-exchange,iThemes Exchange: Simple WP Ecommerce,1.11.11
+google-maps-builder,Google Maps Builder,1.0.3
+sportspress,SportsPress - Manage Leagues ,1.6.1
+paypal-donations,PayPal Donations,1.8.7
+likebtn-like-button,Like Button Voting ,2.1.3
+compact-wp-audio-player,Compact WP Audio Player,1.9.3
+ultimate-product-catalogue,Ultimate Product Catalogue Plugin,3.0.4
+site-is-offline-plugin,Site Offline or Coming Soon,1.6.4
+lightbox-slider,Lightbox Slider Gallery,1.5
+facebook-like-box-widget,Facebook Like Box Widget,2.7
+rss-importer,RSS Importer,0.2
+magic-action-box,Magic Action Box,2.15.5
+leadin,Leadin,2.2.11
+sociable,Sociable,4.3.4.1
+custom-content-shortcode,Custom Content Shortcode,1.7.7
+vipers-video-quicktags,Viper's Video Quicktags,6.5.2
+social-count-plus,Social Count Plus,3.0.2
+paypal-for-woocommerce,PayPal for WooCommerce,1.1.6.2
+insert-php,Insert PHP,1.2
+clean-and-simple-contact-form-by-meg-nicholas,Contact Form Clean and Simple,4.4.3
+remove-dashboard-access-for-non-admins,Remove Dashboard Access,1.1.2
+feedwordpress,FeedWordPress,2014.0805
+verify-google-webmaster-tools,Verify Google Webmaster Tools,1.3
+display-posts-shortcode,Display Posts Shortcode,2.4
+acurax-social-media-widget,Social Media Widget by Acurax (aka  Acurax Social Media Widget),2.2
+post-duplicator,Post Duplicator,2.4
+captcha-bank,Captcha Bank - Bullet Proof Captcha,2.1.10
+pubsubhubbub,PubSubHubbub,1.6.5
+wp-no-category-base,WP No Category Base,1.1.1
+genesis-responsive-slider,Genesis Responsive Slider,0.9.2
+login-sidebar-widget,Login Widget With Shortcode,4.2.2
+webriti-smtp-mail,Easy SMTP Mail,1.5
+blogvault-real-time-backup,blogVault Real-time Backup,1.16
+platinum-seo-pack,Platinum SEO Pack,1.3.8
+categories-images,Categories Images,2.4.2
+all-in-one-webmaster,All in One Webmaster,9.7
+wp-share-buttons,Share Buttons,1.0.6
+portfolio,Portfolio,2.31
+flexible-posts-widget,Flexible Posts Widget,3.5.0
+related-posts-by-zemanta,Related Posts by Zemanta,1.11.1
+carousel-horizontal-posts-content-slider,Carousel Horizontal Posts Content Slider,3.2.5
+pie-register,Pie Register,2.0.14
+multiple-post-thumbnails,Multiple Post Thumbnails,1.6.4
+wp-robots-txt,WP Robots Txt,1.1
+media-from-ftp,Media from FTP,3.8
+sg-cachepress,SG CachePress,2.1.7
+wp-listings,WP Listings,1.2.1
+wp-useronline,WP-UserOnline,2.85
+bad-behavior,Bad Behavior,2.2.16
+wp-nested-pages,Nested Pages,1.3.10
+google-drive-wp-media,Google Drive WP Media,2.3
+worpit-admin-dashboard-plugin,iControlWP - Take Control of WordPress,2.11.3
+custom-registration-form-builder-with-submission-manager,Custom User Registration Form Builder,1.3.12
+simple-ads-manager,Simple Ads Manager,2.5.94
+custom-post-widget,Savvii Custom Post Widget,2.7.4
+bepro-listings,BePro Listings,2.1.94
+ecwid-shopping-cart,Ecwid Shopping Cart,2.8
+contextual-related-posts,Contextual Related Posts,2.0.1
+accesspress-social-icons,AccessPress Social Icons,1.1.4
+ditty-news-ticker,Ditty News Ticker,1.4.15
+aqua-page-builder,Aqua Page Builder,1.1.4
+woocommerce-mijireh-checkout,WooCommerce Mijireh Checkout,1.0.2
+no-comments,No Comments,1.0.6
+sz-google,SZ - Google for WordPress,1.8.7
+seo-wizard,SEO,3.0.2
+category-posts,Category Posts Widget,4.0
+strictly-autotags,Strictly Auto Tags,2.9.8
+font-awesome-4-menus,Font Awesome 4 Menus,4.3.0.1
+simple-image-sizes,Simple Image Sizes,3.0.1
+broken-link-manager,Broken Link Manager,0.3.5
+wp-job-manager-locations,WP Job Manager - Predefined Regions,1.7.0
+custom-post-type-permalinks,Custom Post Type Permalinks,0.9.6
+ajax-load-more,Ajax Load More,2.5.1
+yith-pre-launch,YITH Pre-Launch,1.0.7
+ps-disable-auto-formatting,PS Disable Auto Formatting,1.0.9
+mobiloud-mobile-app-plugin,Mobiloud Mobile Apps - Native iPhone Apps and Android Apps for your WordPress site,3.1.5
+wc-gallery,WP Canvas - Gallery,1.28
+press-permit-core,Press Permit Core,2.1.54
+carousel-without-jetpack,Gallery Carousel Without JetPack,0.7.4
+statpress,StatPress,1.4.3
+siteguard,SiteGuard WP Plugin,1.2.0
+related-posts,Related Posts,3.5.3
+homepage-control,Homepage Control,1.0.1
+jquery-archive-list-widget,jQuery Archive List Widget,3.0.2
+minimal-coming-soon-maintenance-mode,Minimal Coming Soon ,1.0
+wp-flexible-map,WP Flexible Map,1.9.1
+smooth-slider,Smooth Slider,2.6.5
+widget-context,Widget Context,1.0.3
+background-manager,Background Manager,1.2.5.2
+dropdown-menu-widget,Dropdown Menu Widget,1.9.4
+meeting-scheduler-by-vcita,WordPress Appointment Booking and Online Scheduling Plugin by vCita,3.6.0
+wp-admin-ui-customize,WP Admin UI Customize,1.5.2.6
+mainwp,MainWP,2.0.8.1
+wp125,WP125,1.5.3
+wp-shop-original,WP Shop,3.4.3.10
+youtube-video-player,YouTube Embed,1.0.3
+logo-slider,Logo Slider,1.4.3
+membership,Membership,3.4.4.3
+metronet-reorder-posts,Reorder Posts,2.1.2
+affinitomics-taxonomy-converter,Affinitomics ,0.9
+wp-smtp,WP SMTP,1.1.9
+cforms2,cformsII - contact form,14.8.1
+ninjafirewall,NinjaFirewall (WP edition),1.3.7
+dreamgrow-scroll-triggered-box,Dreamgrow Scroll Triggered Box,2.1.2
+wp-share-buttons-analytics-by-getsocial,Share Buttons by GetSocial.io,2.0.0
+wp-maintenance,WP Maintenance,2.3
+whmcs-bridge,WHMCS Bridge,3.2.8
+woocommerce-nl,WooCommerce (nl),1.1.6
+all-in-one-schemaorg-rich-snippets,All In One Schema.org Rich Snippets,1.2.0
+wp-job-manager-contact-listing,WP Job Manager - Contact Listing,1.0.4
+bootstrap-3-shortcodes,Bootstrap Shortcodes for WordPress,3.3.5
+woocommerce-exporter,WooCommerce - Store Exporter,1.8.2
+html-sitemap,HTML Page Sitemap,1.1.4
+connections,Connections Business Directory,8.1.7
+wp-stats,WP-Stats,2.51
+gravity-forms-pdf-extended,Gravity PDF,3.7.0
+wp-social-sharing,WP Social Sharing,1.6
+seo-facebook-comments,SEO Facebook Comment,1.5.2
+crazy-bone,Crazy Bone,0.5.5
+advanced-post-slider,Advanced post slider,2.2.0
+alpine-photo-tile-for-instagram,Alpine PhotoTile for Instagram,1.2.7.3
+wp-instagram-widget,WP Instagram Widget,1.3.1
+baw-post-views-count,Post Views Count,2.19.11
+woocommerce-predictive-search,WooCommerce Predictive Search,2.2.5
+orbisius-child-theme-creator,Child Theme Creator by Orbisius,1.2.5
+facebook-members,Facebook Members,5.8
+cp-related-posts,CP Related Posts,1.0.6
+wp-responsive-menu,WP Responsive Menu,2.0.5
+social-metrics-tracker,Social Metrics Tracker,1.4.2
+wpsc-support-tickets,IDB Support Tickets,4.9.47
+contactuscom,Contact Form by ContactUs,5.0.7
+woocommerce-pagseguro,WooCommerce PagSeguro,2.8.1
+woocommerce-email-validation,WooCommerce Email Validation,1.2.7
+disable-xml-rpc,Disable XML-RPC,1.0.1
+google,The Google,1.3.5
+quiz-master-next,Quiz Master Next,4.1.0
+smart-forms,Smart Forms,2.1.8
+exec-php,Exec-PHP,4.9
+search-regex,Search Regex,1.4.15
+ulogin,uLogin - ,2.0.11
+social-media-auto-publish,Social Media Auto Publish,1.4
+one-click-child-theme,One-Click Child Theme,1.2
+woocommerce-product-sort-and-display,WooCommerce Product Sort and Display,1.1.3
+floating-social-bar,Floating Social Bar,1.1.5
+wp-mobile-detector,WP Mobile Detector Mobile Plugin,1.8
+creative-image-slider,Creative Image Slider - The Best WordPress Image Slider and Portfolio plugin,1.0.3
+raw-html,Raw HTML,1.4.14
+google-xml-sitemap,Google XML Sitemap,0.1.1
+clean-login,Clean Login,1.1.8
+wp-recaptcha-integration,WordPress ReCaptcha Integration,1.0.9
+white-label-cms,White Label CMS,1.5.2
+yakadanda-instagram,Yakadanda Instagram,0.1.9
+sexy-author-bio,Sexy Author Bio,1.3.6
+automatic-youtube-video-posts,Automatic Youtube Video Posts Plugin,3.3
+facebook-publish,Facebook Publish,1.3.2
+lockdown-wp-admin,Lockdown WP Admin,2.2
+facebook-popup-box,Facebook Popup Like Box,1.3.2
+unyson,Unyson,2.1.25
+visitors-traffic-real-time-statistics,Visitors Traffic Real Time Statistics,1.0.0.8
+automatic-post-tagger,Automatic Post Tagger,1.7
+sb-rss-feed-plus,SB RSS feed plus,1.4.9
+role-scoper,Role Scoper,1.3.64
+ziplist-recipe-plugin,ZipList Recipe Plugin,3.1
+wp-awesome-faq,WP Awesome FAQ Plugin,1.5.0
+custom-menu-wizard,Custom Menu Wizard Widget,3.1.3
+dmsguestbook,DMSGuestbook,1.17.5
+woocommerce-mailchimp,WooCommerce MailChimp,1.3.6
+awesome-filterable-portfolio,Awesome Filterable Portfolio,1.8.5
+link-manager,Link Manager,0.1
+templatesnext-toolkit,TemplatesNext ToolKit,1.1.0
+wp-security-audit-log,WP Security Audit Log,1.4.0
+bootstrap-shortcodes,Bootstrap Shortcodes,3.2.1
+simple-maintenance-mode,WordPress Maintenance Mode,1.03
+wp-content-copy-protector,WP Content Copy Protection ,1.5.0.1
+dw-question-answer,DW Question ,1.3.2
+tabby-responsive-tabs,Tabby Responsive Tabs,1.2.1
+google-analytics-dashboard,Google Analytics Dashboard,2.1.1
+yith-maintenance-mode,YITH Maintenance Mode,1.1.4
+wp-store-locator,WP Store Locator,1.2.24
+wpsite-follow-us-badges,WPsite Follow Us Badges,2.0.5
+wp-lister-for-ebay,WP-Lister for eBay,2.0.7.8
+cyr3lat,Cyr to Lat enhanced,3.5
+piklist,PIKLIST ,0.9.4.25
+usc-e-shop,Welcart e-Commerce,1.4.13
+mw-wp-form,MW WP Form,2.2.7
+varnish-http-purge,Varnish HTTP Purge,3.6
+login-security-solution,Login Security Solution,0.50.0
+seamless-donations,Seamless Donations,3.3.2
+searchterms-tagging-2,SEO SearchTerms Tagging 2,1.535
+quick-featured-images,Quick Featured Images,9.1
+ose-firewall,Centrora Security,4.2.1
+amazonsimpleadmin,AmazonSimpleAdmin,0.9.15
+instapage,Instapage WordPress Plugin,1.6.8
+wp-filemanager,wp-FileManager,1.4.0
+woocommerce-products-per-page,WooCommerce Products Per Page,1.1.5
+twitter-auto-publish,Twitter Auto Publish,1.2
+css-javascript-toolbox,CSS ,8.0.3
+wp-mobile-edition,WP Mobile Edition,2.2.4
+new-google-plus-badge-widget,New Google Plus Badge Widget,1.1
+font-awesome,Font Awesome Icons,3.2.1
+facebook-thumb-fixer,Facebook Thumb Fixer,1.4.9
+leverage-browser-caching-ninjas,Leverage Browser Caching Ninjas,2.1
+wp-miniaudioplayer,mb.miniAudioPlayer - an HTML5 audio player for your mp3 files,1.6.2
+music-store,Music Store,1.0.3
+simple-photo-gallery,Simple Photo Gallery,1.7.6
+event-list,Event List,0.7.1
+wpmandrill,wpMandrill,1.33
+foogallery,Foo Gallery,1.2.1
+cryptx,CryptX,3.2.10
+table-of-contents-plus,Table of Contents Plus,1408
+asesor-cookies-para-la-ley-en-espana,Asesor de Cookies para normativa espa,0.18
+json-rest-api,JSON REST API (WP API),1.1.1
+frontier-post,Frontier Post,3.3.8
+wp-author-date-and-meta-remover,"WP Author, Date and Meta Remover",1.0.2
+seo-redirection,SEO Redirection Plugin,2.2
+facebook-pagelike-widget,Facebook Widget,2.2
+contentad,Content.ad,1.1.8
+soundcloud-is-gold,SoundCloud Is Gold,2.3.1
+enhanced-text-widget,Enhanced Text Widget,1.4.4
+configure-smtp,Configure SMTP,3.1
+global-admin-bar-hide-or-remove,Global Hide Admin Toolbar,1.6.1
+pwebcontact,Perfect Easy ,2.0.6
+social-locker,OnePress Social Locker,3.7.2
+wordpress-notification-bar,WordPress Notification Bar,1.3.0
+sharexy,Sharexy - Powerful Social Sharing Buttons,4.2.2
+wp-clean-up,WP Clean Up,1.2.3
+tumblr-importer,Tumblr Importer,0.8
+osd-social-media-sharing,OSD Social Media Sharing,3.4.1
+wp-support-plus-responsive-ticket-system,WP Support Plus Responsive Ticket System,5.1
+jquery-mega-menu,JQuery Mega Menu Widget,1.3.10
+jonradio-multiple-themes,jonradio Multiple Themes,7.0.3
+head-cleaner,Head Cleaner,1.4.2.12
+easy-video-player,Easy Video Player,1.0.7
+wp-total-hacks,WP Total Hacks,1.9.1
+wp-tiles,WP Tiles,1.0.1
+features-by-woothemes,Features by WooThemes,1.4.3
+baw-login-logout-menu,BAW Login,1.3.2
+exclude-pages,Exclude Pages,1.92
+wordpress-language,WordPress Language,1.2.1
+advanced-ads,Advanced Ads,1.4.0
+styles,Styles,1.1.9
+smart-donations,Donations Made Easy - Smart Donations,4.0.9
+pagerestrict,Page Restrict,2.2.1
+wordpress-easy-paypal-payment-or-donation-accept-plugin,WP Easy Paypal Payment Accept,4.3
+wp-math-captcha,Math Captcha,1.2.4
+another-wordpress-classifieds-plugin,Another WordPress Classifieds Plugin,3.3.2
+infinite-scroll,Infinite-Scroll,2.6.2
+patch-for-revolution-slider,Patch for Revolution Slider,2.3.2
+disable-google-fonts,Disable Google Fonts,1.1
+fancy-box,FancyBox,1.1.0
+twitter-widget-pro,Twitter Widget Pro,2.6.0
+wunderground,Weather Underground,2.0.11
+fourteen-colors,Fourteen Colors,1.2
+vaultpress,VaultPress,1.7.0
+wp-piwik,WP-Piwik,0.9.9.12
+video-sidebar-widgets,Video Sidebar Widgets,5.8
+woocommerce-products-slider,Woocommerce Products Slider,1.4
+mailchimp-forms-by-mailmunch,MailChimp Forms by MailMunch,1.0.8
+woocommerce-germanized,WooCommerce Germanized,1.2.3
+advanced-ajax-page-loader,Advanced AJAX Page Loader,2.7.1
+uptolike-share,Uptolike Share Buttons,1.3.7
+wp-masonry-layout,Masonry Layout (Pinterest Like Grid),1.4.1
+wp-csv,WP CSV,1.6.6
+add-admin-css,Add Admin CSS,1.3.3
+twitter-cards-meta,Twitter Cards Meta,1.1.7
+ad-widget,WordPress Ad Widget,2.8.0
+clone-posts,Clone Posts,1.0
+gravityforms-html5-placeholders,Gravity Forms HTML5 Placeholders,2.7.4
+really-simple-csv-importer,Really Simple CSV Importer,1.1
+wp-jquery-lightbox,WP jQuery Lightbox,1.4.5
+paypal-donation-buttons,PayPal Donation Buttons,1.0.9
+easy-pie-maintenance-mode,Easy Pie Maintenance Mode,0.6.4
+jquery-responsive-select-menu,jQuery Responsive Select Menu,1.4.2
+wp2yt-uploader,YouTube for WordPress,2.0.4.3
+advanced-sidebar-menu,Advanced Sidebar Menu,5.0.3
+wponlinebackup,Online Backup for WordPress,3.0.4
+uber-login-logo,Uber Login Logo,1.5.1
+wp-auto-affiliate-links,WP Auto Affiliate Links,4.9.3.1
+hupso-share-buttons-for-twitter-facebook-google,"Hupso Share Buttons for Twitter, Facebook ",3.9.25
+xml-sitemaps,XML Sitemaps,2.3
+phpsword-favicon-manager,PhpSword Favicon Manager,1.0
+responsive-lightbox-lite,Responsive Lightbox,1.3.2
+stops-core-theme-and-plugin-updates,Disable Updates Manager,4.7.0
+pdf-embedder,PDF Embedder,1.0.4
+wp-facebook-open-graph-protocol,WP Facebook Open Graph protocol,2.0.11
+svg-vector-icon-plugin,WordPress Icons - SVG,2.3.3
+typekit-fonts-for-wordpress,Typekit Fonts for WordPress,1.7.1
+ultimate-landing-page-and-coming-soon-page,Ultimate Landing Page and Coming Soon Page,1.1.34
+xili-language,xili-language,2.16.1
+shortpixel-image-optimiser,ShortPixel Image Optimiser,2.0.3
+easy-pie-coming-soon,Coming Soon Page,0.5.8
+advanced-custom-fields-font-awesome,Advanced Custom Fields: Font Awesome,1.6.2
+yith-woocommerce-advanced-reviews,YITH WooCommerce Advanced Reviews,1.0.7
+wr-megamenu,Mega Menu by WooRockets.com,1.0.6
+wp-noexternallinks,WP No External Links,3.5.9.2
+multi-device-switcher,Multi Device Switcher,1.4.0
+notify-users-e-mail,Post Notification by Email (Old Notify Users Email),4.1.2
+wp-socializer,WP Socializer,2.4.9.8
+google-seo-author-snippets,Google SEO Pressor for Rich snippets,1.2.4
+bm-custom-login,BM Custom Login,1.7.1
+reveal-ids-for-wp-admin-25,Reveal IDs,1.4.5
+videojs-html5-video-player-for-wordpress,Video.js - HTML5 Video Player for WordPress,4.5.0
+zm-ajax-login-register,zM Ajax Login ,1.0.8
+hide-title,Hide Title,1.0.3
+wp-user-frontend,WP User Frontend,1.3.2
+sticky-menu-or-anything-on-scroll,Sticky Menu (or Anything!) on Scroll,1.2
+soundy-background-music,Soundy Background Music,3.0
+lazy-load,Lazy Load,0.5
+cimy-user-extra-fields,Cimy User Extra Fields,2.6.4
+scroll-triggered-boxes,Scroll Triggered Boxes,1.4.3
+limit-attempts,Limit Attempts,1.0.7
+wp-super-cache-clear-cache-menu,WP Super Cache - Clear all cache,1.3.1
+weaverx-theme-support,Weaver X Theme Support,1.0.1
+stripe-for-woocommerce,Stripe for WooCommerce,1.36
+amazon-s3-and-cloudfront,Amazon S3 and Cloudfront,0.8.2
+sisow-for-woocommerce,WooCommerce - Sisow Payment Options,4.2.1
+itro-popup,ITRO Popup Plugin,4.6.2
+custom-user-profile-photo,Custom User Profile Photo,0.2.5
+groups,Groups,1.4.13
+sola-newsletters,Sola Newsletters,4.0.2
+restricted-site-access,Restricted Site Access,5.1
+wp-hide-dashboard,WP Hide Dashboard,2.2.1
+wp-minify-fix,WP Minify Fix,1.4.0
+spam-free-wordpress,Spam Free WordPress,2.2.4
+advanced-image-styles,Advanced Image Styles,0.3
+nginx-helper,Nginx,1.8.4
+slidedeck2,SlideDeck 2 Lite Responsive Content Slider,2.3.10
+ns-cloner-site-copier,NS Cloner - Site Copier,3.0.4.9
+wangguard,WangGuard,1.6.2
+google-apps-login,Google Apps Login,2.8.3
+kimili-flash-embed,Kimili Flash Embed,2.5.1
+wp-gallery-custom-links,WP Gallery Custom Links,1.10.1
+slickr-flickr,Slickr Flickr,2.3.3
+aryo-activity-log,Activity Log,2.1.15
+maintenance-page,Maintenance Page,1.0.4
+uji-popup,Uji Popup,1.1.2
+aesop-story-engine,Aesop Story Engine,1.5
+remove-query-strings-from-static-resources,Remove Query Strings From Static Resources,1.3
+user-submitted-posts,User Submitted Posts,20140930
+quick-chat,Quick Chat,4.13
+wp-easy-gallery,WP Easy Gallery » WordPress Gallery Plugin,4.0.1
+user-login-log,User Login Log,1.6
+easy-watermark,Easy Watermark,0.6.0
+multilingual-press,Multilingual Press,2.1.2
+drafts-scheduler,Drafts Scheduler,1.9.2
+super-socializer,Super Socializer,4.0.2
+export-user-data,Export User Data,1.2.0
+advanced-wp-columns,Advanced WP Columns,2.0.6
+private-only,Private Only,3.5.1
+google-maps-bank,WP Google Maps Bank - Google Maps Builder,1.0.7
+wp-email-template,WP Email Template,1.2.1
+newsletters-lite,Tribulant Newsletters,4.4.5
+responsive-header-image-slider,SP Responsive header image slider,2.0.1
+woocommerce-de,WooCommerce German (de_DE),3.2.0
+woo-widget-product-slideshow,WooCommerce Widget Product Slider,1.1.5
+wp-jalali,wp-jalali,5.0.0
+wp-no-tag-base,WP-No-Tag-Base,1.2.4
+wpdiscuz,wpDiscuz - WordPress Comments,2.0.9
+carousel-slider,Carousel Slider,1.3
+qtranslate-slug,Qtranslate Slug,1.1.13
+mycred,myCRED,1.6.1
+birchschedule,BirchPress Scheduler - Appointment Booking ,1.10
+wp-better-emails,WP Better Emails,0.2.8
+automatic-updater,Advanced Automatic Updates,1.0.2
+html-javascript-adder,HTML Javascript Adder,3.9
+feedzy-rss-feeds,FEEDZY RSS Feeds,2.4
+erident-custom-login-and-dashboard,Erident Custom Login and Dashboard,3.3.1
+aweber-web-form-widget,AWeber Web Form Plugin,1.1.12
+ultimate-posts-widget,Ultimate Posts Widget,2.0.3
+video-playlist-and-gallery-plugin,"Post video players, slideshow albums, photo galleries and music ",1.133
+any-mobile-theme-switcher,Any Mobile Theme Switcher,1.6
+recent-posts-widget-with-thumbnails,Recent Posts Widget With Thumbnails,2.3
+page-scroll-to-id,Page scroll to id,1.5.9
+mailpoet-woocommerce-add-on,MailPoet WooCommerce Add-on,2.0.2
+scroll-back-to-top,Scroll Back To Top,1.1.3
+no-page-comment,No Page Comment,1.0.7
+wpremote,The WP Remote WordPress Plugin,2.7.6
+wp-cloudy,WP Cloudy,2.9.4.3
+new-user-approve,New User Approve,1.7.2
+dk-pricr-responsive-pricing-table,Responsive Pricing Table,3.5.1
+json-api,JSON API,1.1.1

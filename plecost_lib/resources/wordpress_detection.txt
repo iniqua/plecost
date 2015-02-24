@@ -1,4 +1,3 @@
-wp-admin/js/common.js
 wp-includes/js/jquery/jquery.js
 wp-includes/js/wp-lists.js
 wp-includes/js/plupload/plupload.js

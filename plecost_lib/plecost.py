@@ -1,82 +1,28 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 #
 # Plecost: Wordpress finger printer tool.
 #
 # @url: http://iniqua.com/labs/
+# @url: https://github.com/iniqua/plecost
 #
 # @author:Francisco J. Gomez aka ffranz (http://iniqua.com/)
-# @author:Daniel Garcia aka cr0hn (http://www.cr0hn.com)
+# @author:Daniel Garcia aka cr0hn (http://www.cr0hn.com/me/)
 #
 # Code is licensed under -- GPLv2, http://www.gnu.org/licenses/gpl.html --
 #
 
-from __future__ import print_function  # Python 3 compatibility
-
-__license__ = """
-Copyright (c) 2014:
-
-    Francisco Jesus Gomez aka ffranz | @ffranz - ffranz-[at]-iniqua.com
-    Daniel Garcia aka cr0hn | @ggdaniel - cr0hn-[at]-cr0hn.com
-
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted
-provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this list of conditions
-and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions
-and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or
-promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
-WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
-OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
-
 import argparse
 
-from functools import partial
+from os import environ
 from traceback import format_exc
-from sys import stdout
-
-from api import run
-from plecost.data import PlecostOptions
-from plecost.wordlist import *
 
 
-#----------------------------------------------------------------------
-def log_function(current_log_level, message, log_level=0):
-    """
-    Auxiliary function to use as log level
+# ----------------------------------------------------------------------
+def banner(version):
+    """Comment"""
 
-    :param current_log_level: Log level selected at the moment of running the program
-    :type current_log_level: int
-
-    :param message: Message to display
-    :type message: basestring
-    
-    :param log_level: log level: 0-4
-    :type log_level: int
-    """
-    if log_level <= current_log_level:
-        print(message, end='')
-        stdout.flush()
-
-
-if __name__ == '__main__':
-
-    print('''
+    return ('''
 ///////////////////////////////////////////////////////
 // ..................................DMI...
 // .............................:MMMM......
@@ -89,28 +35,41 @@ if __name__ == '__main__':
 // .?.MMMMMMMMMMMMMMMMMMMMMM...............
 // .MMMMMMMMMMMMMMN........................
 // 7MMMMMMMMMMMMMON$.......................
-// ZMMMMMMMMMMMMMMMMMM.......plecost.......
+// ZMMMMMMMMMMMMMMMMMM.......libs.......
 // .:MMMMMMMZ~7MMMMMMMMMO..................
 // ....~+:.................................
 //
-// Plecost - Wordpress finger printer Tool - v0.3.0
+// Plecost - Wordpress finger printer Tool - v%s
 //
 // Developed by:
 //        Francisco Jesus Gomez aka ffranz | @ffranz - ffranz-[at]-iniqua.com
 //        Daniel Garcia aka cr0hn | @ggdaniel - cr0hn-[at]-cr0hn.com
 //
 // Info: http://iniqua.com/labs/
-// Bug report: plecost@iniqua.com
-''')
+// Bug report: libs@iniqua.com
+''') % version
+
+
+# ----------------------------------------------------------------------
+def main():
+
+    from .api import run, __version__
+    from .libs.data import PlecostOptions, PlecostDatabaseQuery
+    from .libs.utils import log
+    from .libs.db import db_query
 
     examples = '''
 Examples:
 
-    * Scan target using default 200 most common plugins:
+    * Scan target using default 50 most common plugins:
         plecost TARGET
+    * Update plugin list
+        plecost --update-plugins
+    * Update vulnerability database:
+        plecost --update-cve
     * List available word lists:
-        plecost --list-wordlist
-    * Use embedded 2000 most commont word list:
+        plecost -l
+    * Use embedded 2000 most common word list:
         plecost -w plugin_list_2000.txt TARGET
     * Scan, using 10 concurrent network connections:
         plecost -w plugin_list_2000.txt --concurrency 10 TARGET
@@ -120,21 +79,26 @@ Examples:
         plecost -vvv --concurrency 10 -o report.json TARGET
     '''
 
-    #parser = argparse.ArgumentParser(description='Plecost: Wordpress finger printer tool')
     parser = argparse.ArgumentParser(description='Plecost: Wordpress finger printer tool', epilog=examples,
                                      formatter_class=argparse.RawTextHelpFormatter)
 
     # Main options
     parser.add_argument("target", metavar="TARGET", nargs="*")
-    parser.add_argument("-v", "--verbose", action="count", help="increase output verbosity", default=0)
+    parser.add_argument("-v", "--verbosity", dest="verbose", action="count", help="verbosity level: -v, -vv, -vvv.", default=0)
     parser.add_argument('-o', dest="OUTPUT_FILE", help="report file with extension: xml|json", default=None)
-    #parser.add_argument('--no-color', dest="NO_COLOR", action="store_true", help="don't colorize console output", default=False)
+
+    # Scanner options
+    gr_wordlist = parser.add_argument_group("scanner options")
+    gr_wordlist.add_argument('-np', '--no-plugins', dest="NO_PLUGINS_VERSIONS", action="store_true", default=False,
+                             help="do not try to find plugins versions")
+    gr_wordlist.add_argument('-nc', '--no-check-wordpress', dest="NO_CHECK_WORDPRESS", action="store_true",
+                             default=False, help="do not check Wordpress availability")
 
     # Wordlist
     gr_wordlist = parser.add_argument_group("wordlist options")
     gr_wordlist.add_argument('-w', '--wordlist', dest="WORDLIST", help="set custom word list. Default 200 most common",
                              default=None)
-    gr_wordlist.add_argument('--list-wordlist', dest="LIST_WORDLIST", help="list embedded available word list",
+    gr_wordlist.add_argument('-l', '--list-wordlist', dest="LIST_WORDLIST", help="list embedded available word list",
                              action="store_true", default=False)
 
     # Performance options
@@ -142,6 +106,8 @@ Examples:
     gr_performance.add_argument('--concurrency', dest="CONCURRENCY", type=int, help="number of parallel processes.",
                                 default=4)
     gr_performance.add_argument('--proxy', dest="PROXY", help="proxy as format proxy:port.", default=None)
+    gr_performance.add_argument('-nb', dest="NO_BANNER", action="store_true", help="don't display banner",
+                                default=False)
 
     # Updater
     gr_update = parser.add_argument_group("update options")
@@ -151,40 +117,54 @@ Examples:
                            help="Update plugins.", default=False)
     gr_update.add_argument('--update-all', dest="UPDATE_ALL", action="store_true", help="Update CVE, plugins, and core.", default=False)
 
+    # Database query
+    gr_query = parser.add_argument_group("database search")
+    gr_query.add_argument("-sp", "--show-plugins", dest="show_plugin_list", action="store_true",
+                          help="display plugins in database")
+    gr_query.add_argument("-vp", "--plugin-cves", dest="show_plugin_cves", help="display CVEs for plugin")
+    gr_query.add_argument("--cve", dest="cve_details", help="display details of CVE")
+
+
     args = parser.parse_args()
 
+    # Diplay banner
+    if args.NO_BANNER is True:
+        print("\n// Plecost - Wordpress finger printer Tool - v%s\n" % __version__)
+    else:
+        print(banner(__version__))
+
     # Set log function
-    log = partial(log_function, args.verbose)
+    environ["PLECOST_LOG_LEVEL"] = str(args.verbose)
 
     # Update self
     # if args.UPDATE_CORE:
-    #     from plecost.updaters import update_core
+    #     from libs.updaters import update_core
     #     update_core(log)
     #     exit(0)
 
     # Update CVE
     if args.UPDATE_CVE:
-        from plecost.updaters import update_cve
+        from .libs.updaters import update_cve
         update_cve(log)
         exit(0)
 
     # Update plugins
-    if args.UPDATE_CVE:
-        from plecost.updaters import update_plugins
+    if args.UPDATE_PLUGINS:
+        from .libs.updaters import update_plugins
         update_plugins(log)
         exit(0)
 
     # Update all
     if args.UPDATE_ALL:
-        from plecost.updaters import *  #noqa
-        update_core(log)
+        from .libs.updaters import update_cve, update_plugins
+        # update_core(log)
         update_cve(log)
         update_plugins(log)
         exit(0)
 
     # List available word lists
     if args.LIST_WORDLIST:
-        from plecost.wordlist import list_wordlists
+        from .libs.wordlist import list_wordlists
         log("Available word lists:\n")
 
         found = False
@@ -197,6 +177,26 @@ Examples:
             log("   [!] No Word lists available\n")
 
         log("\n")
+        exit(0)
+
+    # --------------------------------------------------------------------------
+    # Data base query
+    # --------------------------------------------------------------------------
+    if args.show_plugin_list or \
+            args.show_plugin_cves or \
+            args.cve_details:
+
+        if args.show_plugin_cves:
+            _action = "plugin_cves"
+        elif args.show_plugin_list:
+            _action = "plugin_list"
+        else:
+            _action = "cve"
+
+        print(db_query(PlecostDatabaseQuery(action=_action,
+                                            parameter=args.show_plugin_cves or args.cve_details)))
+
+        print("[*] Done!\n")
         exit(0)
 
     # Targets selected?
@@ -212,11 +212,29 @@ Examples:
                                 verbosity=args.verbose,
                                 log_function=log,
                                 report=args.OUTPUT_FILE,
-                                wordlist=args.WORDLIST)
+                                wordlist=args.WORDLIST,
+                                no_check_wordpress=args.NO_CHECK_WORDPRESS)
 
         # Run Plecost
         run(config)
-    except Exception, e:
-        if args.verbose > 3:
+    except Exception as e:
+        if args.verbose:
             print(format_exc())
-        print("[!] %s\n" % e)
+        print("\n[!] %s\n" % e)
+
+
+if __name__ == "__main__" and __package__ is None:
+    # --------------------------------------------------------------------------
+    #
+    # INTERNAL USE: DO NOT MODIFY THIS SECTION!!!!!
+    #
+    # --------------------------------------------------------------------------
+    import sys
+    import os
+    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(1, parent_dir)
+    import plecost_lib
+    __package__ = str("plecost_lib")
+    del sys, os
+
+    main()

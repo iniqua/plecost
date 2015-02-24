@@ -1,3 +1,4 @@
-colorizer
 chardet
-BeautifulSoup<4.0
+termcolor
+BeautifulSoup4
+aiohttp

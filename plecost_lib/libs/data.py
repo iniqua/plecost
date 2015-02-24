@@ -1,57 +1,42 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+#
+# Plecost: Wordpress finger printer tool.
+#
+# @url: http://iniqua.com/labs/
+# @url: https://github.com/iniqua/plecost
+#
+# @author:Francisco J. Gomez aka ffranz (http://iniqua.com/)
+# @author:Daniel Garcia aka cr0hn (http://www.cr0hn.com/me/)
+#
+# Code is licensed under -- GPLv2, http://www.gnu.org/licenses/gpl.html --
+#
+
 
 """
 This file contains data structures of Plecost.
 """
 
-__license__ = """
-Copyright (c) 2014:
 
-    Francisco Jesus Gomez aka ffranz | @ffranz - ffranz-[at]-iniqua.com
-    Daniel Garcia aka cr0hn | @ggdaniel - cr0hn-[at]-cr0hn.com
-
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted
-provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this list of conditions
-and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions
-and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or
-promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
-WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
-OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
+import re
 
 from sys import stdout
 from abc import ABCMeta
-from os.path import exists, join
 from datetime import datetime
+from os.path import exists, join
 
 from .utils import get_data_folder
 from .wordlist import list_wordlists
 from .exceptions import PlecostWordListNotFound
 
 
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # API caller structure
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 class PlecostOptions(object):
     """Plecost runner options"""
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def __init__(self, **kwargs):
         """
         :param proxy: Proxy as format: {HOST:PORT}. Default None.
@@ -86,9 +71,10 @@ class PlecostOptions(object):
         self.__log_function = kwargs.get("log_function", stdout.write)
         self.__colorize = kwargs.get("colorize", True)
         self.__wordlist = kwargs.get("wordlist", None)
+        self.__no_check_wordpress = kwargs.get("no_check_wordpress", False)
 
         # Check types and default values
-        if not isinstance(self.__target, basestring):
+        if not isinstance(self.__target, str):
             raise TypeError("Expected basestring, got '%s' instead" % type(self.__target))
         if not isinstance(self.__concurrency, int):
             raise TypeError("Expected int, got '%s' instead" % type(self.__concurrency))
@@ -102,15 +88,27 @@ class PlecostOptions(object):
             self.__target = "http://%s" % self.__target
 
         # Check word list and fix word list path
-        if self.__wordlist in list_wordlists():
+        normal_wordlist = list_wordlists()
+        matches = {w.replace(".txt", ""): w for w in normal_wordlist}
+        if self.__wordlist is None:
+            self.__wordlist = join(get_data_folder(), "plugin_list_50.txt")
+        if self.__wordlist in normal_wordlist:
             self.__wordlist = join(get_data_folder(), self.__wordlist)
-        else:
-            if self.__wordlist is None:
-                self.__wordlist = join(get_data_folder(), "plugin_list_200.txt")
-            elif not exists(self.__wordlist):
-                raise PlecostWordListNotFound("Word list not found")
+        elif self.__wordlist in matches:
+            self.__wordlist = join(get_data_folder(), matches[self.__wordlist])
+        elif not exists(self.__wordlist):
+            raise PlecostWordListNotFound("Word list not found")
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    @property
+    def no_check_wordpress(self):
+        """
+        :return: No check if Wordpress is available
+        :rtype: bool
+        """
+        return self.__no_check_wordpress
+
+    # ----------------------------------------------------------------------
     @property
     def target(self):
         """
@@ -119,7 +117,7 @@ class PlecostOptions(object):
         """
         return self.__target
     
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def proxy(self):
         """
@@ -128,7 +126,7 @@ class PlecostOptions(object):
         """
         return self.__proxy 
     
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def concurrency(self):
         """
@@ -137,7 +135,7 @@ class PlecostOptions(object):
         """
         return self.__concurrency
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def log_function(self):
         """
@@ -146,7 +144,7 @@ class PlecostOptions(object):
         """
         return self.__log_function
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def verbosity(self):
         """
@@ -155,7 +153,7 @@ class PlecostOptions(object):
         """
         return self.__verbosity
     
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def report_filename(self):
         """
@@ -164,7 +162,7 @@ class PlecostOptions(object):
         """
         return self.__report_filename
     
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def colorize(self):
         """
@@ -173,7 +171,7 @@ class PlecostOptions(object):
         """
         return self.__colorize
     
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def wordlist(self):
         """
@@ -183,14 +181,13 @@ class PlecostOptions(object):
         return self.__wordlist
 
 
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Results data structures
-#--------------------------------------------------------------------------
-class _PlecostBase(object):
+# --------------------------------------------------------------------------
+class _PlecostBase(object, metaclass=ABCMeta):
     """Abstract class for all Plecost types"""
-    __metaclass__ = ABCMeta
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def __init__(self, ver1, ver2):
         """
         :param ver1: current version of software to compare to.
@@ -202,9 +199,9 @@ class _PlecostBase(object):
         if ver1 is None or ver1 is None:
             self._outdated = False
         else:
-            if not isinstance(ver1, basestring):
+            if not isinstance(ver1, str):
                 raise TypeError("Expected basestring, got '%s' instead" % type(ver1))
-            if not isinstance(ver2, basestring):
+            if not isinstance(ver2, str):
                 raise TypeError("Expected basestring, got '%s' instead" % type(ver2))
 
             # Is outdated?
@@ -213,7 +210,7 @@ class _PlecostBase(object):
             else:
                 self._outdated = False
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def __version_cmp(self, version1, version2):
         """
         Compare two software versions.
@@ -227,17 +224,29 @@ class _PlecostBase(object):
         :return: 1 if version 1 is greater. -1 if version2 if greater.
         :rtype: int
         """
-        tup = lambda x: [int(y) for y in (x+'.0.0.0.0').split('.')][:4]
+        try:
+            tup = lambda x: [int(y) for y in (x+'.0.0.0.0').split('.')][:4]
+        except TypeError:
+            return -1
 
         if version1.lower() == "trunk":
             return 1
         elif version2.lower() == "trunk":
             return -1
         else:
-            return cmp(tup(version1), tup(version2))
+            if not re.search("([\\d]\\.[\\d]\\.*[\\d]*)", version1) or \
+                    not re.search("([\\d]\\.[\\d]\\.*[\\d]*)", version2):
+                return -1
+            else:
+                # return cmp(tup(version1), tup(version2))
+                if tup(version1) > tup(version2):
+                    return 1
+                elif tup(version1) < tup(version2):
+                    return -1
+                else:
+                    return 0
 
-
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def is_outdated(self):
         """
@@ -247,11 +256,11 @@ class _PlecostBase(object):
         return self._outdated
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 class PlecostWordPressInfo(_PlecostBase):
     """WordPress installation information"""
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def __init__(self, **kwargs):
         """
         :param current_version: Current version number as format: x.x.x.
@@ -263,14 +272,14 @@ class PlecostWordPressInfo(_PlecostBase):
         self.__current_version = kwargs.get("current_version", None)
         self.__last_version_available = kwargs.get("last_version", None)
 
-        if not isinstance(self.__current_version, basestring):
+        if not isinstance(self.__current_version, str):
             raise TypeError("Expected basestring, got '%s' instead" % type(self.__current_version))
-        if not isinstance(self.__last_version_available, basestring):
+        if not isinstance(self.__last_version_available, str):
             raise TypeError("Expected basestring, got '%s' instead" % type(self.__last_version_available))
 
         super(PlecostWordPressInfo, self).__init__(self.__current_version, self.__last_version_available)
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def latest_version(self):
         """
@@ -279,7 +288,7 @@ class PlecostWordPressInfo(_PlecostBase):
         """
         return self.__last_version_available
     
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def current_version(self):
         """
@@ -289,11 +298,11 @@ class PlecostWordPressInfo(_PlecostBase):
         return self.__current_version
 
 
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 class PlecostPluginInfo(_PlecostBase):
     """Plugin information in remote host"""
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def __init__(self, **kwargs):
         """
         :param current_version: Current version number as format: x.x.x.
@@ -321,12 +330,12 @@ class PlecostPluginInfo(_PlecostBase):
         self.__cves = kwargs.get("cves", [])
         self.__exploits = kwargs.get("exploits", [])
 
-        if not isinstance(self.__plugin_uri, basestring):
+        if not isinstance(self.__plugin_uri, str):
             raise TypeError("Expected basestring, got '%s' instead" % type(self.__plugin_uri))
 
         super(PlecostPluginInfo, self).__init__(self.__current_version, self.__last_version)
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def plugin_name(self):
         """
@@ -335,7 +344,7 @@ class PlecostPluginInfo(_PlecostBase):
         """
         return self.__plugin_name if self.__plugin_name else self.__plugin_uri
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def plugin_uri(self):
         """
@@ -344,7 +353,7 @@ class PlecostPluginInfo(_PlecostBase):
         """
         return self.__plugin_uri   
     
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def current_version(self):
         """
@@ -353,7 +362,7 @@ class PlecostPluginInfo(_PlecostBase):
         """
         return self.__current_version
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def latest_version(self):
         """
@@ -362,7 +371,7 @@ class PlecostPluginInfo(_PlecostBase):
         """
         return self.__last_version
     
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def cves(self):
         """
@@ -371,7 +380,7 @@ class PlecostPluginInfo(_PlecostBase):
         """
         return self.__cves
     
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def exploits(self):
         """
@@ -381,11 +390,11 @@ class PlecostPluginInfo(_PlecostBase):
         return self.__exploits
 
 
-#--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 class PlecostResults(object):
     """Plecost results"""
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def __init__(self, **kwargs):
         """
         :param target: tested target
@@ -409,7 +418,7 @@ class PlecostResults(object):
         self.__wordpress_info = kwargs.get("wordpress_info", None)
         self.__plugins = kwargs.get("plugins", None)
 
-        if not isinstance(self.__target, basestring):
+        if not isinstance(self.__target, str):
             raise TypeError("Expected basestring, got '%s' instead" % type(self.__target))
         if not isinstance(self.__wordpress_info, PlecostWordPressInfo):
             raise TypeError("Expected PlecostWordPressInfo, got '%s' instead" % type(self.__wordpress_info))
@@ -426,9 +435,9 @@ class PlecostResults(object):
             if plugin.is_outdated is True:
                 self.__outdated_plugins.append(plugin)
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     # Properties
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def target(self):
         """
@@ -437,7 +446,7 @@ class PlecostResults(object):
         """
         return self.__target
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def wordpress_info(self):
         """
@@ -446,7 +455,7 @@ class PlecostResults(object):
         """
         return self.__wordpress_info
         
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def plugins(self):
         """
@@ -455,7 +464,7 @@ class PlecostResults(object):
         """
         return self.__plugins
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def start_time(self):
         """
@@ -464,7 +473,7 @@ class PlecostResults(object):
         """
         return self.__start_time
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def end_time(self):
         """
@@ -473,7 +482,7 @@ class PlecostResults(object):
         """
         return self.__end_time
 
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def outdated_plugins(self):
         """
@@ -481,6 +490,21 @@ class PlecostResults(object):
         :rtype: `list(PlecostPluginInfo)`
         """
         return self.__outdated_plugins
+
+
+# --------------------------------------------------------------------------
+class PlecostDatabaseQuery:
+    """Query database info"""
+
+    # ----------------------------------------------------------------------
+    def __init__(self, **kwargs):
+        """Constructor"""
+        self.action = kwargs.get("action", None)
+        self.parameter = kwargs.get("parameter", None)
+
+        if not isinstance(self.action, str):
+            raise TypeError("Expected str, got '%s' instead" % type(self.action))
+
 
 
 __all__ = [x for x in dir() if x.startswith("Plecost")]
