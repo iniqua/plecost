@@ -1,15 +1,26 @@
 Version 1.0.0
 =============
 
-- Code rewritten in Python 3
-- Removed threads support, in favor of asyncio connections.
+Internal modifications
+----------------------
+
+- Code REWRITTEN in Python 3.
+- Removed threads support in favor of asyncio connections.
+
+Improvements and fixes
+----------------------
+
 - Improved (a lot) the performance, thanks to asyncio module.
 - Improved vulnerability search for plugins.
-- Added vulnerability search for wordpress version. Now Plecost indicated CVEs to installed wordpress.
-- Some UI improvements: Added progress bar
-- Added different verbosity levels, not only one.
-- Automatic learning of site redirects.
+- Improved verbosity feature, adding different verbosity levels, not only one.
 - Fixed a lot of bugs.
+
+New features
+------------
+
+- Added vulnerability search for wordpress version. Now Plecost indicated CVEs to installed wordpress.
+- Added progress bars
+- Automatic learning of site redirects and follow them.
 - Possibility of install using pip
-- Added command line option to consult plugins vulnerabilites and CVE database.
+- Added command line option to consult plugins vulnerabilities and CVE database.
 - Added CVE searcher for outdated wordpress versions.
