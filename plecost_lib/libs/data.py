@@ -72,6 +72,8 @@ class PlecostOptions(object):
         self.__colorize = kwargs.get("colorize", True)
         self.__wordlist = kwargs.get("wordlist", None)
         self.__no_check_wordpress = kwargs.get("no_check_wordpress", False)
+        self.__no_check_plugins = kwargs.get("no_check_plugins", False)
+        self.__no_check_wordpress_version = kwargs.get("__no_check_wordpress_version", False)
 
         # Check types and default values
         if not isinstance(self.__target, str):
@@ -98,6 +100,24 @@ class PlecostOptions(object):
             self.__wordlist = join(get_data_folder(), matches[self.__wordlist])
         elif not exists(self.__wordlist):
             raise PlecostWordListNotFound("Word list not found")
+
+    # ----------------------------------------------------------------------
+    @property
+    def no_check_wordpress_version(self):
+        """
+        :return: Check wordpress version? False: Yes. True: No
+        :rtype: bool
+        """
+        return self.__no_check_wordpress_version
+
+    # ----------------------------------------------------------------------
+    @property
+    def no_check_plugins(self):
+        """
+        :return: boolean that indicates if plecost must test plugins or not. True: No test. False: test plugins.
+        :rtype: bool
+        """
+        return self.__no_check_plugins
 
     # ----------------------------------------------------------------------
     @property

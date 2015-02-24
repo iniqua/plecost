@@ -1,34 +1,19 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
+# Plecost: Wordpress finger printer tool.
 #
-# Project name: Open Methodology for Security Tool Developers
-# Project URL: https://github.com/cr0hn/OMSTD
+# @url: http://iniqua.com/labs/
+# @url: https://github.com/iniqua/plecost
 #
-# Copyright (c) 2015, cr0hn<-AT->cr0hn.com
-# All rights reserved.
+# @author:Francisco J. Gomez aka ffranz (http://iniqua.com/)
+# @author:Daniel Garcia aka cr0hn (http://www.cr0hn.com/me/)
 #
-# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-# following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the
-# following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-# following disclaimer in the documentation and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
-# products derived from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# Code is licensed under -- GPLv2, http://www.gnu.org/licenses/gpl.html --
 #
 
-__author__ = 'cr0hn - cr0hn<-at->cr0hn.com (@ggdaniel)'
+
+
 
 __all__ = ["plugins_testing"]
 
@@ -39,7 +24,6 @@ from os.path import join
 from functools import partial
 from urllib.parse import urljoin
 
-from ..db import DB
 from ..data import PlecostPluginInfo
 from ..utils import colorize, get_diff_ratio, ConcurrentDownloader, get_data_folder
 
@@ -101,7 +85,7 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
     :param error_page: Error page content as raw.
     :type error_page: basestring
 
-    :param db: cve database object
+    :param db: cve database instance
     :type db: DB
     
     :param log: logging function, as format: log(message, level)
@@ -190,7 +174,7 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
 
 # ----------------------------------------------------------------------
 @asyncio.coroutine
-def plugins_testing(url, error_page, log, data_list, concurrency=4, loop=None, con=None):
+def plugins_testing(url, error_page, log, data_list, db, concurrency=4, loop=None, con=None):
     """
     Try to find plugins in remote url
 
@@ -199,6 +183,9 @@ def plugins_testing(url, error_page, log, data_list, concurrency=4, loop=None, c
 
     :param data_list: list of urls to test
     :type data_list: list
+
+    :param db: cve database instance
+    :type db: DB
 
     :param concurrency: max concurrency to process URLs
     :type concurrency: int
@@ -216,9 +203,6 @@ def plugins_testing(url, error_page, log, data_list, concurrency=4, loop=None, c
     for x in data_list:
         for u in _url_generator(url, x):
             urls[u] = x
-
-    # Get CVE database
-    db = DB(path=join(get_data_folder(), "cve.db"))
 
     # Map function
     fn = partial(_plugin_analyze, urls, error_page, db, log)

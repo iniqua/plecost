@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__author__ = 'cr0hn - cr0hn<-at->cr0hn.com (@ggdaniel)'
+
 
 import re
 import csv

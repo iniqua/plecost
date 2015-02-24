@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__author__ = 'cr0hn - cr0hn<-at->cr0hn.com (@ggdaniel)'
+
 
 import re
 import io
@@ -171,7 +171,7 @@ def _parse_vulnerabilities_from_nvd(stream, log=None, cpe=None):
 
 
 # --------------------------------------------------------------------------
-def _update_cve(log, since=2013):
+def update_cve(log, since=2013):
     """
     Generate the CVE with WordPress vulns related DB and store it into pickled database.
 
