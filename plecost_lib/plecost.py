@@ -46,7 +46,8 @@ def banner(version):
 //        Daniel Garcia aka cr0hn | @ggdaniel - cr0hn-[at]-cr0hn.com
 //
 // Info: http://iniqua.com/labs/
-// Bug report: libs@iniqua.com
+// Repo: https://github.com/iniqua/plecost
+// Bug report: libs@iniqua.com or https://github.com/iniqua/plecost/issues/
 ''') % version
 
 
@@ -69,14 +70,23 @@ Examples:
         plecost --update-cve
     * List available word lists:
         plecost -l
-    * Use embedded 2000 most common word list:
-        plecost -w plugin_list_2000.txt TARGET
+    * Use embedded 1000 most common word list:
+        plecost -w plugin_list_1000.txt TARGET
+        or: plecost -w plugin_list_1000 TARGET
     * Scan, using 10 concurrent network connections:
-        plecost -w plugin_list_2000.txt --concurrency 10 TARGET
+        plecost -w plugin_list_1000.txt --concurrency 10 TARGET
     * Scan using verbose mode and generate xml report:
-        plecost -w plugin_list_2000.txt --concurrency 10 -o report.xml TARGET
+        plecost -w plugin_list_1000.txt --concurrency 10 -o report.xml TARGET
     * Scan using verbose mode and generate json report:
         plecost -vvv --concurrency 10 -o report.json TARGET
+    * Not show banner, and only test wordpress connectivity, without plugin or wordpress testing:
+        plecost -v -np -nc -nv TARGET
+    * Update CVE database:
+        plecost --update-cve
+    * Update plugins list:
+        plecost --update-plugins
+    * List plugins with associated vulnerabilities in local database:
+        plecost --show-plugins
     '''
 
     parser = argparse.ArgumentParser(description='Plecost: Wordpress finger printer tool', epilog=examples,
@@ -92,7 +102,9 @@ Examples:
     gr_wordlist.add_argument('-np', '--no-plugins', dest="NO_PLUGINS_VERSIONS", action="store_true", default=False,
                              help="do not try to find plugins versions")
     gr_wordlist.add_argument('-nc', '--no-check-wordpress', dest="NO_CHECK_WORDPRESS", action="store_true",
-                             default=False, help="do not check Wordpress availability")
+                             default=False, help="do not check Wordpress connectivity")
+    gr_wordlist.add_argument('-nv', '--no-wordpress-version', dest="NO_CHECK_WORDPRESS_VERSION", action="store_true",
+                             default=False, help="do not check Wordpress version")
 
     # Wordlist
     gr_wordlist = parser.add_argument_group("wordlist options")
@@ -213,7 +225,9 @@ Examples:
                                 log_function=log,
                                 report=args.OUTPUT_FILE,
                                 wordlist=args.WORDLIST,
-                                no_check_wordpress=args.NO_CHECK_WORDPRESS)
+                                no_check_wordpress=args.NO_CHECK_WORDPRESS,
+                                no_check_plugins=args.NO_PLUGINS_VERSIONS,
+                                no_check_wordpress_version=args.NO_CHECK_WORDPRESS_VERSION)
 
         # Run Plecost
         run(config)
