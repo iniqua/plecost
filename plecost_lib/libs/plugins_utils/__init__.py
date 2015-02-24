@@ -106,9 +106,6 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
     :return: PlecostPluginInfo instance
     :rtype: PlecostPluginInfo|None
     """
-    if not isinstance(db, DB):
-        raise TypeError("Expected DB, got '%s' instead" % type(db))
-    
     data = data_map[url]
 
     # Plugin properties
