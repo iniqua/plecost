@@ -323,7 +323,7 @@ class ConcurrentDownloader:
             url = yield from self.q.get()
 
             # Download content
-            log("\n    |- Trying: %s..." % colorize(url, "yellow"), log_level=1)
+            log("\n    |- Trying: %s" % colorize(url, "yellow"), log_level=1)
 
             headers, status, content = yield from download(url,
                                                            self.max_tries,
