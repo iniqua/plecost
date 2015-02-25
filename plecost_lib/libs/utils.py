@@ -234,17 +234,17 @@ def download(url, max_tries=3, max_redirect=2, connector=None, loop=None, method
                 allow_redirects=False,
                 loop=_loop)
             if tries > 1:
-                log('try %r for %r success', tries, url)
+                log('\n[!] try %r for %r success\n', tries, url)
             break
         except aiohttp.ClientError as client_error:
-            log("[!] Can't get before %r for %r tries, raised %r" % (
+            log("\n[!] Can't get before %r for %r tries, raised %r\n" % (
                 colorize(tries, "red"), colorize(url, "red"), client_error),
                 log_level=3)
 
         tries += 1
     else:
         # We never broke out of the loop: all tries failed.
-        log('%r failed after %r tries' % (url, max_tries))
+        log('\n[!] %r failed after %r tries\n' % (url, max_tries))
         return
 
     if response.status in (300, 301, 302, 303, 307):
@@ -252,11 +252,11 @@ def download(url, max_tries=3, max_redirect=2, connector=None, loop=None, method
         next_url = urllib.parse.urljoin(url, location)
 
         if max_redirect > 0:
-            log('redirect to %r from %r' % (next_url, url), log_level=1)
+            log('\n[!] redirect to %r from %r\n' % (next_url, url), log_level=1)
             return _loop.run_until_complete(download(location,
                                                      max_redirect=(max_redirect-1)))
         else:
-            log('redirect limit reached for %r from %r' % (next_url, url), log_level=2)
+            log('\n[!] redirect limit reached for %r from %r\n' % (next_url, url), log_level=2)
             return response.headers, response.status, None
     else:
         content = None
@@ -323,7 +323,7 @@ class ConcurrentDownloader:
             url = yield from self.q.get()
 
             # Download content
-            log("\n    |- Trying: %s" % colorize(url, "yellow"), log_level=1)
+            log("\n    |- Trying: %s." % colorize(url, "yellow"), log_level=1)
 
             headers, status, content = yield from download(url,
                                                            self.max_tries,
