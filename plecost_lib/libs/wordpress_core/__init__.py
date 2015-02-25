@@ -115,14 +115,17 @@ def get_wordpress_version(url, downloader):
     # --------------------------------------------------------------------------
     headers, status, curr_content = yield from downloader(urljoin(url, "/readme.html"))
 
-    curr_ver = re.search(r"""(<br[\s]*/>[\s]*[Vv]ersion[\s]*)([\d]\.[\d]\.*[\d]*)""", curr_content)
-    if curr_ver is None:
-        curr_ver = None
-    else:
-        if len(curr_ver.groups()) != 2:
+    curr_ver = None
+    if curr_content is not None:
+
+        curr_ver = re.search(r"""(<br[\s]*/>[\s]*[Vv]ersion[\s]*)([\d]\.[\d]\.*[\d]*)""", curr_content)
+        if curr_ver is None:
             curr_ver = None
         else:
-            curr_ver = curr_ver.group(2)
+            if len(curr_ver.groups()) != 2:
+                curr_ver = None
+            else:
+                curr_ver = curr_ver.group(2)
 
     # --------------------------------------------------------------------------
     # Method 1: Looking for meta tag
@@ -130,14 +133,16 @@ def get_wordpress_version(url, downloader):
     _, _, curr_content_2 = yield from downloader(url)
 
     # Try to find the info
-    cur_ver_2 = re.search(r'''(<meta name=\"generator\" content=\"WordPress[\s]+)([0-9\.]+)''', curr_content_2)
-    if cur_ver_2 is None:
-        cur_ver_2 = None
-    else:
-        if len(cur_ver_2.groups()) != 2:
+    cur_ver_2 = None
+    if curr_content_2 is not None:
+        cur_ver_2 = re.search(r'''(<meta name=\"generator\" content=\"WordPress[\s]+)([0-9\.]+)''', curr_content_2)
+        if cur_ver_2 is None:
             cur_ver_2 = None
         else:
-            cur_ver_2 = cur_ver_2.group(2)
+            if len(cur_ver_2.groups()) != 2:
+                cur_ver_2 = None
+            else:
+                cur_ver_2 = cur_ver_2.group(2)
 
     # --------------------------------------------------------------------------
     # Match versions of the different methods
@@ -162,28 +167,24 @@ def get_wordpress_version(url, downloader):
         for url_pre, regex in url_version.items():
             # URL to find wordpress version
             url_current_version = urljoin(url, url_pre)
-            _, _, current_version_content = yield from download(url_current_version)[2]
+            _, _, current_version_content = yield from download(url_current_version, auto_redirect=False)
 
             # Find the version
-            tmp_version = re.search(regex, current_version_content)
+            if current_version_content is not None:
+                tmp_version = re.search(regex, current_version_content)
 
-            if tmp_version is not None:
-                return_current_version = tmp_version.group(2)
-                break  # Found -> stop search
+                if tmp_version is not None:
+                    return_current_version = tmp_version.group(2)
+                    break  # Found -> stop search
 
     # --------------------------------------------------------------------------
     # Get last version
     # --------------------------------------------------------------------------
-    # wordpress_connection = http.client.HTTPConnection("wordpress.org")
 
     # URL to get last version of WordPress available
-
-    # _, _, last_version_content = yield from download("http://wordpress.org/download/")
     _, _, last_version_content = yield from downloader("https://wordpress.org/download/")
-    # _tmp_wordpress = yield from aiohttp.request("get", "http://wordpress.org/download/")
-    # last_version_content = yield from _tmp_wordpress.read()
 
-    last_version = re.search("(WordPress&nbsp;)([0-9\.]*)", str(last_version_content))
+    last_version = re.search("(WordPress\&nbsp\;)([0-9\.]*)", str(last_version_content))
     if last_version is None:
         last_version = "unknown"
     else:
