@@ -28,6 +28,7 @@ from ..data import PlecostPluginInfo
 from ..utils import colorize, get_diff_ratio, ConcurrentDownloader, get_data_folder
 
 exp = re.compile(r"([Ss]table tag:[\s]*)([\svV]*[0-9\.]+|trunk)")
+exp_change_log = re.compile(r"([\=\-]\s*)([\d]+\.[\d]+\.*[\d]*\.*[\d]*\.*[\d]*\.*[\d]*)(\s*[\=\-])")
 
 
 # ----------------------------------------------------------------------
@@ -127,6 +128,14 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
 
             if tmp_version is not None:
                 plugin_installed_version = tmp_version.group(2)
+
+            # Try to improve version, looking for into changelog
+            if plugin_installed_version is None or plugin_installed_version == "trunk":
+
+                tmp_version_change_log = exp_change_log.search(content)
+
+                if tmp_version_change_log is not None:
+                    plugin_installed_version = tmp_version_change_log.group(2)
 
     # Store info
     if plugin_installed_version is not None:
