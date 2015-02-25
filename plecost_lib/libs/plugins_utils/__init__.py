@@ -107,6 +107,9 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
     :return: PlecostPluginInfo instance
     :rtype: PlecostPluginInfo|None
     """
+    if content is None:
+        return None
+
     data = data_map[url]
 
     # Plugin properties
@@ -214,7 +217,7 @@ def plugins_testing(url, error_page, log, data_list, db, concurrency=4, loop=Non
     fn = partial(_plugin_analyze, urls, error_page, db, log)
 
     # Prepare concurrent connections
-    cr = ConcurrentDownloader(fn, max_tasks=concurrency, loop=loop, connector=con)
+    cr = ConcurrentDownloader(fn, max_tasks=concurrency, loop=loop, connector=con, max_redirects=0)
     cr.add_url_list(urls)
 
     # Run and wait!
