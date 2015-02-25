@@ -66,7 +66,7 @@ def find_versions(args):
 
     # Non-blocking config
     loop = asyncio.get_event_loop()
-    con = aiohttp.TCPConnector(conn_timeout=10, share_cookies=True, loop=loop)
+    con = aiohttp.TCPConnector(conn_timeout=10, share_cookies=True, loop=loop, verify_ssl=False)
     _download = partial(download, max_redirect=0, connector=con, loop=loop)
 
     # Get CVE database
