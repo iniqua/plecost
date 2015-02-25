@@ -232,7 +232,7 @@ Examples:
         # Run Plecost
         run(config)
     except Exception as e:
-        if args.verbose:
+        if args.verbose > 2:
             print(format_exc())
         print("\n[!] %s\n" % e)
 
