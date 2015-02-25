@@ -105,6 +105,8 @@ Examples:
                              default=False, help="do not check Wordpress connectivity")
     gr_wordlist.add_argument('-nv', '--no-wordpress-version', dest="NO_CHECK_WORDPRESS_VERSION", action="store_true",
                              default=False, help="do not check Wordpress version")
+    gr_wordlist.add_argument('-f', '--force-scan', dest="FORCE_SCAN", action="store_true",
+                             default=False, help="force to scan even although not wordpress installation detected")
 
     # Wordlist
     gr_wordlist = parser.add_argument_group("wordlist options")
@@ -227,7 +229,8 @@ Examples:
                                 wordlist=args.WORDLIST,
                                 no_check_wordpress=args.NO_CHECK_WORDPRESS,
                                 no_check_plugins=args.NO_PLUGINS_VERSIONS,
-                                no_check_wordpress_version=args.NO_CHECK_WORDPRESS_VERSION)
+                                no_check_wordpress_version=args.NO_CHECK_WORDPRESS_VERSION,
+                                force_scan=args.FORCE_SCAN)
 
         # Run Plecost
         run(config)

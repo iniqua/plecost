@@ -74,6 +74,7 @@ class PlecostOptions(object):
         self.__no_check_wordpress = kwargs.get("no_check_wordpress", False)
         self.__no_check_plugins = kwargs.get("no_check_plugins", False)
         self.__no_check_wordpress_version = kwargs.get("__no_check_wordpress_version", False)
+        self.__force_scan = kwargs.get("force_scan", False)
 
         # Check types and default values
         if not isinstance(self.__target, str):
@@ -100,6 +101,15 @@ class PlecostOptions(object):
             self.__wordlist = join(get_data_folder(), matches[self.__wordlist])
         elif not exists(self.__wordlist):
             raise PlecostWordListNotFound("Word list not found")
+
+    # ----------------------------------------------------------------------
+    @property
+    def force_scan(self):
+        """
+        :return: force scan even if not wordpress detected
+        :rtype: bool
+        """
+        return self.__force_scan
 
     # ----------------------------------------------------------------------
     @property

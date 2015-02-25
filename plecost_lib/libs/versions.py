@@ -63,6 +63,7 @@ def find_versions(args):
     no_check_wordpress = args.no_check_wordpress
     no_check_plugins = args.no_check_plugins
     no_check_wordpress_version = args.no_check_wordpress_version
+    force_scan = args.force_scan
 
     # Non-blocking config
     loop = asyncio.get_event_loop()
@@ -100,9 +101,12 @@ def find_versions(args):
             _is_wp = loop.run_until_complete(is_remote_a_wordpress(url, error_page, _download))
 
             if not _is_wp:
-                raise PlecostNotWordPressFound("No WordPress installations found in '%s'." % host)
-
-            log("\n   %s" % colorize(" ok!\n"))
+                if force_scan is False:
+                    raise PlecostNotWordPressFound("No WordPress installations found in '%s'." % host)
+                else:
+                    log(colorize("\n   No Wordpress installation found!\n", "yellow"))
+            else:
+                log("\n   %s" % colorize(" ok!\n"))
 
     # --------------------------------------------------------------------------
     # Check WordPress version
