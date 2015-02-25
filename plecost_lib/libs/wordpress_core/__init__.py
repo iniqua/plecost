@@ -218,7 +218,7 @@ def get_wordpress_vulnerabilities(wordpress_info, db):
 
     if _current_version is "unknown" or \
             not _current_version:
-        return []
+        return "\n".join([])
 
     cves = db.query_wordpress(_current_version)
 
