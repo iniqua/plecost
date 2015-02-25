@@ -195,7 +195,8 @@ def update_progress(values, print_function=None, prefix_text="", bar_len=40):
 
 # ------------------------------------------------------------------------------
 @asyncio.coroutine
-def download(url, max_tries=3, max_redirect=2, connector=None, loop=None, method="get", get_content=True):
+def download(url, max_tries=3, max_redirect=2, connector=None, loop=None, method="get", get_content=True,
+             auto_redirect=True):
     """
     Download a web page content.
 
@@ -221,6 +222,9 @@ def download(url, max_tries=3, max_redirect=2, connector=None, loop=None, method
     :rtype: (dict, int, str)
     """
     _loop = loop or asyncio.get_event_loop()
+
+    if max_redirect < 0:
+        return None, None, None
 
     tries = 0
 
@@ -250,11 +254,13 @@ def download(url, max_tries=3, max_redirect=2, connector=None, loop=None, method
     if response.status in (300, 301, 302, 303, 307):
         location = response.headers.get('location')
         next_url = urllib.parse.urljoin(url, location)
-
         if max_redirect > 0:
             log('\n[!] redirect to %r from %r\n' % (next_url, url), log_level=1)
-            return _loop.run_until_complete(download(location,
-                                                     max_redirect=(max_redirect-1)))
+            if auto_redirect is True:
+                return _loop.run_until_complete(download(next_url,
+                                                         max_redirect=(max_redirect-1)))
+            else:
+                return response.headers, response.status, None
         else:
             log('\n[!] redirect limit reached for %r from %r\n' % (next_url, url), log_level=2)
             return response.headers, response.status, None
