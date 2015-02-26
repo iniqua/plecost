@@ -57,7 +57,7 @@ setup(
         'Environment :: Console',
         'Intended Audience :: System Administrators',
         'Intended Audience :: Other Audience',
-        'License :: OSI Approved :: GNU',
+        'License :: OSI Approved :: BSD License',
         'Operating System :: MacOS',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX',
