@@ -1,10 +1,15 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
+# Plecost: Wordpress finger printer tool.
 #
-# Project name: Open Methodology for Security Tool Developers
-# Project URL: https://github.com/cr0hn/OMSTD
+# @url: http://iniqua.com/labs/
+# @url: https://github.com/iniqua/plecost
 #
-# Copyright (c) 2015, cr0hn<-AT->cr0hn.com
+# @author:Francisco J. Gomez aka ffranz (http://iniqua.com/)
+# @author:Daniel Garcia aka cr0hn (http://www.cr0hn.com/me/)
+#
+# Copyright (c) 2015, Iniqua Team
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -27,7 +32,6 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-
 
 
 import re

@@ -1,4 +1,5 @@
 chardet
+aiohttp
 termcolor
 BeautifulSoup4
-aiohttp
+sphinx_rtd_theme
