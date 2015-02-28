@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Plecost: Wordpress finger printer tool.
+# Plecost: Wordpress vulnerabilities finder
 #
 # @url: http://iniqua.com/labs/
 # @url: https://github.com/iniqua/plecost
@@ -94,8 +94,9 @@ class PlecostOptions(object):
         self.__wordlist = kwargs.get("wordlist", None)
         self.__no_check_wordpress = kwargs.get("no_check_wordpress", False)
         self.__no_check_plugins = kwargs.get("no_check_plugins", False)
-        self.__no_check_wordpress_version = kwargs.get("__no_check_wordpress_version", False)
+        self.__no_check_wordpress_version = kwargs.get("no_check_wordpress_version", False)
         self.__force_scan = kwargs.get("force_scan", False)
+        self.__jackass = kwargs.get("jackass", False)
 
         # Check types and default values
         if not isinstance(self.__target, str):
@@ -122,6 +123,15 @@ class PlecostOptions(object):
             self.__wordlist = join(get_data_folder(), matches[self.__wordlist])
         elif not exists(self.__wordlist):
             raise PlecostWordListNotFound("Word list not found")
+
+    # ----------------------------------------------------------------------
+    @property
+    def jackass(self):
+        """
+        :return: Jackass mode enabled?
+        :rtype: bool
+        """
+        return self.__jackass
 
     # ----------------------------------------------------------------------
     @property
@@ -322,6 +332,7 @@ class PlecostWordPressInfo(_PlecostBase):
         """
         self.__current_version = kwargs.get("current_version", None)
         self.__last_version_available = kwargs.get("last_version", None)
+        self.__vulnerabilities = kwargs.get("vulnerabilities", None)
 
         if not isinstance(self.__current_version, str):
             raise TypeError("Expected basestring, got '%s' instead" % type(self.__current_version))
@@ -329,6 +340,15 @@ class PlecostWordPressInfo(_PlecostBase):
             raise TypeError("Expected basestring, got '%s' instead" % type(self.__last_version_available))
 
         super(PlecostWordPressInfo, self).__init__(self.__current_version, self.__last_version_available)
+
+    # ----------------------------------------------------------------------
+    @property
+    def vulnerabilities(self):
+        """
+        :return: list of string with cves
+        :rtype: list(str)
+        """
+        return self.__vulnerabilities
 
     # ----------------------------------------------------------------------
     @property
