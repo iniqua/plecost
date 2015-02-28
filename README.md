@@ -60,8 +60,16 @@ $ plecost http://SITE.com
 
 A bit complex scan: increasing verbosity exporting results in JSON format and XML:
 
+*JSON*
+
 ```
-$ plecost -v http://SITE.com -o results.json -o results.xml
+$ plecost -v http://SITE.com -o results.json
+```
+
+*XML*
+
+```
+$ plecost -v http://SITE.com -o results.xml
 ```
 
 Advanced scan options
