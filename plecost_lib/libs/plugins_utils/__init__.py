@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Plecost: Wordpress finger printer tool.
+# Plecost: Wordpress vulnerabilities finder
 #
 # @url: http://iniqua.com/labs/
 # @url: https://github.com/iniqua/plecost
