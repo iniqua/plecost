@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Plecost: Wordpress finger printer tool.
+# Plecost: Wordpress vulnerabilities finder
 #
 # @url: http://iniqua.com/labs/
 # @url: https://github.com/iniqua/plecost
@@ -113,7 +113,8 @@ class ReporterJSON(Reporter):
         # WordPress info
         js_info["wordpress"] = {
             "current_version": info.wordpress_info.current_version,
-            "last_version": info.wordpress_info.latest_version
+            "last_version": info.wordpress_info.latest_version,
+            "cves": [x for x in info.wordpress_info.vulnerabilities]
         }
 
         # Plugins info
@@ -126,7 +127,7 @@ class ReporterJSON(Reporter):
             json_plugin["current_version"] = plugin.current_version
             json_plugin["last_version"] = plugin.latest_version
             json_plugin["url"] = plugin.plugin_uri
-            json_plugin["outdated"] = "Yes" if plugin.is_outdated else "No"
+            json_plugin["outdated"] = True if plugin.is_outdated else False
 
             # Set CVE
             json_plugin["cves"] = [cve for cve in plugin.cves]
@@ -169,6 +170,13 @@ class ReporterXML(Reporter):
         wordpress = ET.SubElement(root, "wordpress")
         wordpress.set("current_version", info.wordpress_info.current_version)
         wordpress.set("last_version", info.wordpress_info.latest_version)
+
+        # Set CVE
+        if info.wordpress_info.vulnerabilities:
+            cves = ET.SubElement(wordpress, "cves")
+            for cve in info.wordpress_info.vulnerabilities:
+                xml_cve = ET.SubElement(cves, "cve")
+                xml_cve.text = cve
 
         # Plugins info
         plugins = ET.SubElement(root, "plugins")
