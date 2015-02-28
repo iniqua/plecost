@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Plecost: Wordpress finger printer tool.
+# Plecost: Wordpress vulnerabilities finder
 #
 # @url: http://iniqua.com/labs/
 # @url: https://github.com/iniqua/plecost
@@ -101,7 +101,7 @@ def is_remote_a_wordpress(base_url, error_page, downloader):
 
 # ----------------------------------------------------------------------
 @asyncio.coroutine
-def get_wordpress_version(url, downloader):
+def get_wordpress_version(url, downloader, db):
     """
     This functions checks remote WordPress version.
 
@@ -110,6 +110,9 @@ def get_wordpress_version(url, downloader):
 
     :param downloader: download function. This function must accept only one parameter: the URL
     :type downloader: function
+
+    :param db: cve database instance
+    :type db: DB
 
     :return: PlecostWordPressInfo instance.
     :rtype: `PlecostWordPressInfo`
@@ -212,44 +215,30 @@ def get_wordpress_version(url, downloader):
         else:
             last_version = last_version.group(2)
 
+    # Get wordpress vulnerabilities
     return PlecostWordPressInfo(current_version=return_current_version,
-                                last_version=last_version)
+                                last_version=last_version,
+                                vulnerabilities=get_wordpress_vulnerabilities(return_current_version, db))
 
 
 # ----------------------------------------------------------------------
-def get_wordpress_vulnerabilities(wordpress_info, db):
+def get_wordpress_vulnerabilities(current_version, db):
     """
     Get CVEs associated to the installed Wordpress version
 
-    :param wordpress_info: PlecostWordPressInfo instance
-    :type wordpress_info: PlecostWordPressInfo
+    :param current_version: PlecostWordPressInfo instance
+    :type current_version: PlecostWordPressInfo
 
     :param db: cve database instance
     :type db: DB
 
     """
-    if not isinstance(wordpress_info, PlecostWordPressInfo):
-        raise TypeError("Expected PlecostWordPressInfo, got '%s' instead" % type(wordpress_info))
     if not isinstance(db, DB):
         raise TypeError("Expected DB, got '%s' instead" % type(db))
 
-    _current_version = wordpress_info.current_version
+    if current_version is "unknown" or \
+            not current_version:
+        return []
 
-    if _current_version is "unknown" or \
-            not _current_version:
-        return "\n".join([])
-
-    cves = db.query_wordpress(_current_version)
-
-    # Print CVE list
-    res = []
-    res_append = res.append
-    if cves:
-        res_append("\n    |_CVE list:")
-        for cve in cves:
-            text = "    |__%(cve)s: (http://cve.mitre.org/cgi-bin/cvename.cgi?name=%(cve)s)" % \
-                   {"cve": colorize(cve, "red")}
-
-            res_append(text)
-
-    return "\n".join(res)
+    # Get CVE list
+    return [x for x in db.query_wordpress(current_version)]
