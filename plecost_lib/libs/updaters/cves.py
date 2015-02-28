@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Plecost: Wordpress finger printer tool.
+# Plecost: Wordpress vulnerabilities finder
 #
 # @url: http://iniqua.com/labs/
 # @url: https://github.com/iniqua/plecost
@@ -109,6 +109,49 @@ def _store_wordpress_vulnerabilities_in_db(data, connection, log):
 
 
 # ----------------------------------------------------------------------
+def _generate_previous_versions(version):
+    """
+    Generates all versions from current to back.
+
+    :param version: version in format: x.y.z
+    :type version: str
+
+    :return: a list with versions
+    :rtype: list(str)
+
+    """
+    if not isinstance(version, str):
+        return []
+
+    res = []
+    res_append = res.append
+
+    _splited_version = version.split(".")
+
+    if len(_splited_version) > 2:
+        # Get version part: 3.0.1 -> 3.0
+        _version = "%s.%s." % (_splited_version[0], _splited_version[1])
+
+        # Get release part: 3.0.1 -> 1, and checks that is integer
+        try:
+            _release = int(_splited_version[2])
+        except ValueError:
+            return []
+
+        if _release == 0:
+            return []
+
+        # Generate verstion 0 -> current
+        for x in range(0, _release + 1):
+            res_append("%s%s" % (_version, x))
+
+        return res
+
+    else:
+        return []
+
+
+# ----------------------------------------------------------------------
 def _parse_vulnerabilities_from_nvd(stream, log=None, cpe=None):
     """
     Get NVD xml path, and return plugins name and return dict with info:
@@ -163,6 +206,14 @@ def _parse_vulnerabilities_from_nvd(stream, log=None, cpe=None):
                         # Wordpress vuln
                         if _product == "wordpress":
                             wordpress[_version].append((cve_id, cve_description))
+
+                            # generate previous versions
+                            for v in _generate_previous_versions(_version):
+                                wordpress[v].append((cve_id, cve_description))
+
+                            if _version == "3.9.3":
+                                print(_version)
+
                         else:
                             # Plugin vulns
                             try:
@@ -170,6 +221,10 @@ def _parse_vulnerabilities_from_nvd(stream, log=None, cpe=None):
                             except KeyError:
                                 plugins[_product] = defaultdict(list)
                                 plugins[_product][_version].append((cve_id, cve_description))
+
+                            # generate previous versions
+                            for v in _generate_previous_versions(_version):
+                                plugins[_product][v].append((cve_id, cve_description))
 
     return plugins, wordpress
 
