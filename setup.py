@@ -39,7 +39,7 @@ files = ["resources/*"]
 
 setup(
     name='plecost',
-    version='1.0.0',
+    version='1.0.0-1',
     packages=find_packages(),
     install_requires=["chardet", "termcolor", "BeautifulSoup4", "aiohttp"],
     url='https://github.com/iniqua/plecost',
