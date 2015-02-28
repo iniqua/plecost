@@ -7,9 +7,9 @@ Plecost
 
 *Plecost: Wordpress vulnerabilities finder*
 
-:Code:          https://github.com/iniqua/plecost/tree/python3
-:Issues:        https://github.com/iniqua/plecost/tree/python3/issues
-:Python version:   Python 3
+:Code:          https://github.com/iniqua/plecost/tree/python3:
+:Issues:        https://github.com/iniqua/plecost/tree/python3/issues:
+:Python version:   Python 3:
 
 What's Plecost?
 ---------------
@@ -129,9 +129,10 @@ $ plecost -c 10 http://SITE.com
 
 *For more options, consult the --help command*:
 
+
 ```
 $ plecost -h
-``
+```
 
 Updating
 --------
@@ -227,17 +228,17 @@ Examples
 
 Getting the [100k top WordPress sites(http://hackertarget.com/100k-top-wordpress-powered-sites/) and getting aleatory one of them...
   
-![Logo](https://raw.githubusercontent.com/iniqua/plecost/develop/plecost/doc/screenshots/running.gif "Plecost runing")
-
+![running](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/running.gif)
+           
 And... here more results of Plecost for real sites... :)
  
-* https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example1.png)
-* https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example2.png)
-* https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example3.png)
-* https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example4.png)
-* https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example5.png)
-* https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example6.png)
-* https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example7.png)
+![Example1](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example1.png)
+![Example2](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example2.png)
+![Example3](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example3.png)
+![Example4](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example4.png)
+![Example5](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example5.png)
+![Example6](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example6.png)
+![Example7](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example7.png)
 
 Where to fish?
 --------------
