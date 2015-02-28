@@ -7,8 +7,8 @@ Plecost
 
 *Plecost: Wordpress vulnerabilities finder*
 
-Code: | https://github.com/iniqua/plecost/tree/python3
------ | ----------------------------------------------
+Code | https://github.com/iniqua/plecost/tree/python3
+---- | ----------------------------------------------
 Issues | https://github.com/iniqua/plecost/tree/python3/issues
 Python version | Python 3
 
