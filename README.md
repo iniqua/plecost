@@ -7,9 +7,9 @@ Plecost
 
 *Plecost: Wordpress vulnerabilities finder*
 
-:Code:          https://github.com/iniqua/plecost/tree/python3:
-:Issues:        https://github.com/iniqua/plecost/tree/python3/issues:
-:Python version:   Python 3:
+Code: | https://github.com/iniqua/plecost/tree/python3
+Issues | https://github.com/iniqua/plecost/tree/python3/issues
+Python version | Python 3
 
 What's Plecost?
 ---------------
@@ -226,7 +226,7 @@ $ plecost -nb --cve CVE-2014-9174
 Examples
 --------
 
-Getting the [100k top WordPress sites(http://hackertarget.com/100k-top-wordpress-powered-sites/) and getting aleatory one of them...
+Getting the [100k top WordPress sites (http://hackertarget.com/100k-top-wordpress-powered-sites/) and getting aleatory one of them...
   
 ![running](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/running.gif)
            
