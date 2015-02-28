@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Plecost: Wordpress finger printer tool.
+# Plecost: Wordpress vulnerabilities finder
 #
 # @url: http://iniqua.com/labs/
 # @url: https://github.com/iniqua/plecost
@@ -86,6 +86,10 @@ def find_versions(args):
     no_check_wordpress_version = args.no_check_wordpress_version
     force_scan = args.force_scan
 
+    # Jackass mode is set?
+    if args.jackass is True:
+        concurrency = 9999
+
     # Non-blocking config
     loop = asyncio.get_event_loop()
     con = aiohttp.TCPConnector(conn_timeout=10, share_cookies=True, loop=loop, verify_ssl=False)
@@ -135,23 +139,34 @@ def find_versions(args):
     if no_check_wordpress_version is False:
             log("[*] Getting WordPress version... ")
 
-            wordpress_version = loop.run_until_complete(get_wordpress_version(url, _download))
+            wordpress_version = loop.run_until_complete(get_wordpress_version(url, _download, db))
             # wordpress_version.
             if wordpress_version:
                 log("%s (latest: %s)" %
                     (
-                        colorize("%s" % wordpress_version.current_version, "red"),
+                        colorize("%s" % wordpress_version.current_version,
+                                 "red" if wordpress_version.is_outdated is True else "blue"),
                         colorize("%s" % wordpress_version.latest_version)
                     ), 0)
+
+                # --------------------------------------------------------------------------
+                # Looking for CVEs for installed Wordpress version
+                # --------------------------------------------------------------------------
+                if wordpress_version.vulnerabilities:
+                    log("\n    |_CVE list:\n")
+                    for cve in wordpress_version.vulnerabilities:
+                        log("    |__%(cve)s: (http://cve.mitre.org/cgi-bin/cvename.cgi?name=%(cve)s)\n" %
+                            {"cve": colorize(cve, "red")})
+                    log("\n")
             else:
                     log(colorize("Unknown!\n", "red"))
 
-            # --------------------------------------------------------------------------
-            # Looking for CVEs for installed Wordpress version
-            # --------------------------------------------------------------------------
-            log(get_wordpress_vulnerabilities(wordpress_version, db))
-
             log("\n")
+    else:
+        wordpress_version = PlecostWordPressInfo(last_version="",
+                                                 current_version="",
+                                                 vulnerabilities=[])
+
     # --------------------------------------------------------------------------
     # Check the plugins
     # --------------------------------------------------------------------------
@@ -193,14 +208,10 @@ def find_versions(args):
     # --------------------------------------------------------------------------
     # Make results
     # --------------------------------------------------------------------------
-    _d = PlecostWordPressInfo(current_version="4.1.1",
-                              last_version="4.1.1")
-
     return PlecostResults(target=args.target,
                           start_time=start_time,
                           end_time=end_time,
-                          # wordpress_info=wordpress_version,
-                          wordpress_info=_d,
+                          wordpress_info=wordpress_version,
                           plugins=plugins_info)
 
 
