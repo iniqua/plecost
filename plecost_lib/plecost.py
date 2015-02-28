@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Plecost: Wordpress finger printer tool.
+# Plecost: Wordpress vulnerabilities finder
 #
 # @url: http://iniqua.com/labs/
 # @url: https://github.com/iniqua/plecost
@@ -128,6 +128,8 @@ Examples:
                              default=False, help="do not check Wordpress version")
     gr_wordlist.add_argument('-f', '--force-scan', dest="FORCE_SCAN", action="store_true",
                              default=False, help="force to scan even although not wordpress installation detected")
+    gr_wordlist.add_argument('-j', '--jackass-modes', dest="JACKASS", action="store_true",
+                             default=False, help="jackass mode: unlimited connections to remote host")
 
     # Wordlist
     gr_wordlist = parser.add_argument_group("wordlist options")
@@ -138,9 +140,9 @@ Examples:
 
     # Performance options
     gr_performance = parser.add_argument_group("advanced options")
-    gr_performance.add_argument('--concurrency', dest="CONCURRENCY", type=int, help="number of parallel processes.",
+    gr_performance.add_argument('-c', '--concurrency', dest="CONCURRENCY", type=int, help="number of parallel processes.",
                                 default=4)
-    gr_performance.add_argument('--proxy', dest="PROXY", help="proxy as format proxy:port.", default=None)
+    # gr_performance.add_argument('--proxy', dest="PROXY", help="proxy as format proxy:port.", default=None)
     gr_performance.add_argument('-nb', dest="NO_BANNER", action="store_true", help="don't display banner",
                                 default=False)
 
@@ -241,8 +243,8 @@ Examples:
 
     try:
         # Set config
-        config = PlecostOptions(proxy=args.PROXY,
-                                target=args.target[0],
+        config = PlecostOptions(target=args.target[0],
+                                # proxy=args.PROXY,
                                 concurrency=args.CONCURRENCY,
                                 verbosity=args.verbose,
                                 log_function=log,
