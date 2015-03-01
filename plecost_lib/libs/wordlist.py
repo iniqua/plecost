@@ -33,33 +33,49 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from setuptools import setup, find_packages
+"""
+This file manage word list
+"""
 
-files = ["resources/*"]
+__all__ = ["list_wordlists", "get_wordlist"]
 
-setup(
-    name='plecost',
-    version='1.0.1',
-    packages=find_packages(),
-    install_requires=["chardet", "termcolor", "BeautifulSoup4", "aiohttp"],
-    url='https://github.com/iniqua/plecost/tree/python3',
-    license='GPL2',
-    author='Plecost team',
-    author_email='libs@iniqua.com',
-    package_data={'plecost_lib': files},
-    entry_points={'console_scripts': [
-        'plecost = plecost_lib.plecost:main',
-        ]},
-    description='Wordpress finger printer tool and vulnerabilities searcher',
-    classifiers=[
-        'Environment :: Console',
-        'Intended Audience :: System Administrators',
-        'Intended Audience :: Other Audience',
-        'License :: OSI Approved :: BSD License',
-        'Operating System :: MacOS',
-        'Operating System :: Microsoft :: Windows',
-        'Operating System :: POSIX',
-        'Programming Language :: Python :: 3',
-        'Topic :: Security',
-        ]
-)
+from os import listdir
+from os.path import join
+
+from .exceptions import PlecostWordListNotFound
+from .utils import get_data_folder
+
+
+# ----------------------------------------------------------------------
+def list_wordlists():
+    """
+    List internal word list.
+
+    :return: list with file names
+    :rtype: list(str)
+    """
+    return [x for x in listdir(get_data_folder()) if x.endswith("txt")]
+
+
+# ----------------------------------------------------------------------
+def get_wordlist(wordlist_name):
+    """
+    Get and iterator of specified word list.
+
+    :param wordlist_name: Word list name
+    :type wordlist_name: basestring
+
+    :return: iterator with each line of file.
+    :rtype: str
+    """
+    if not isinstance(wordlist_name, str):
+        raise TypeError("Expected basestring, got '%s' instead" % type(wordlist_name))
+
+    word_list_name = join(get_data_folder(), wordlist_name)
+
+    try:
+        with open(word_list_name, "rU") as f:
+            for word in f:
+                yield word.replace("\n", "").replace("\r", "")
+    except IOError as e:
+        raise PlecostWordListNotFound("Wordlist '%s' not found. Error: %s" % (wordlist_name, e))

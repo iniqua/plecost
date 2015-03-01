@@ -33,33 +33,54 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from setuptools import setup, find_packages
+"""
+This file contains API calls for all Plecost functions
+"""
 
-files = ["resources/*"]
+__version__ = "1.0.0"
+__all__ = ["run", "find_versions", "PlecostOptions", "PlecostInvalidReportFormat"]
 
-setup(
-    name='plecost',
-    version='1.0.1',
-    packages=find_packages(),
-    install_requires=["chardet", "termcolor", "BeautifulSoup4", "aiohttp"],
-    url='https://github.com/iniqua/plecost/tree/python3',
-    license='GPL2',
-    author='Plecost team',
-    author_email='libs@iniqua.com',
-    package_data={'plecost_lib': files},
-    entry_points={'console_scripts': [
-        'plecost = plecost_lib.plecost:main',
-        ]},
-    description='Wordpress finger printer tool and vulnerabilities searcher',
-    classifiers=[
-        'Environment :: Console',
-        'Intended Audience :: System Administrators',
-        'Intended Audience :: Other Audience',
-        'License :: OSI Approved :: BSD License',
-        'Operating System :: MacOS',
-        'Operating System :: Microsoft :: Windows',
-        'Operating System :: POSIX',
-        'Programming Language :: Python :: 3',
-        'Topic :: Security',
-        ]
-)
+from sys import version_info
+
+from .libs.reporters import *  # noqa
+from .libs.data import PlecostOptions
+from .libs.versions import find_versions  # noqa
+
+
+# --------------------------------------------------------------------------
+#
+# Command line options
+#
+# --------------------------------------------------------------------------
+def run(config):
+    """
+    Main function of libs:
+    - Find WordPress versions
+    - Find outdated plugins
+
+    :param config: PlecostOptions option instance
+    :type config: `PlecostOptions`
+
+    :raises: PlecostTargetNotAvailable, PlecostNotWordPressFound, PlecostWordListNotFound
+    """
+
+    # --------------------------------------------------------------------------
+    # Checks Python version
+    # --------------------------------------------------------------------------
+    if version_info < (3, 3):
+        raise RuntimeError("You need Python 3.3.x or higher to run Plecost")
+
+    # Check reporter
+    if config.report_filename is not None:
+        # Select appropriate report.
+        reporter_function = get_reporter(config.report_filename)
+
+    # Find wordpress and plugins versions
+    data = find_versions(config)
+
+    # Generate reports
+    if config.report_filename is not None:
+        # Generate report
+        report = reporter_function(config.report_filename)
+        report.generate(data)
+

@@ -13,7 +13,6 @@
 .hg
 
 # Database file extensions
-*.db
 *.dbm
 *.sql
 *.sqlite
@@ -46,6 +45,9 @@
 */*/build/
 */*/_build/
 
+build/
+dist/
+plecost.egg-info/
 # Log files
 *.log
 

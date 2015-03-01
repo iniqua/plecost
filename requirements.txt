@@ -1,3 +1,5 @@
-colorizer
 chardet
-BeautifulSoup<4.0
+aiohttp
+termcolor
+BeautifulSoup4
+sphinx_rtd_theme

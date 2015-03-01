@@ -4,100 +4,242 @@ Plecost
 
 ![Logo](https://raw.githubusercontent.com/iniqua/plecost/develop/plecost/doc/screenshots/logo_plecost.jpg "Plecost Logo")
 
-Wordpress finger printer tool, plecost search and retrieve information about the plugins versions installed in Wordpress systems. Additionally displays CVE code associated with each plugin, if there.
 
-Plecost retrieves the information contained on Web sites supported by Wordpress.
+*Plecost: Wordpress vulnerabilities finder*
 
-Quick help
-----------
+Code | https://github.com/iniqua/plecost/tree/python3
+---- | ----------------------------------------------
+Issues | https://github.com/iniqua/plecost/tree/python3/issues
+Python version | Python 3
 
-```
-$ python plecost/plecost.py -h
+What's Plecost?
+---------------
 
-```
-```
+Plecost is a vulnerability fingerprinting and vulnerability finder for Wordpress blog engine. 
 
-$ python plecost.py -h
+Why?
+----
 
-///////////////////////////////////////////////////////
-// ..................................DMI...
-// .............................:MMMM......
-// .........................$MMMMM:........
-// .........M.....,M,=NMMMMMMMMD...........
-// ........MMN...MMMMMMMMMMMM,.............
-// .......MMMMMMMMMMMMMMMMM~...............
-// .......MMMMMMMMMMMMMMM..................
-// ....?MMMMMMMMMMMMMMMN$I.................
-// .?.MMMMMMMMMMMMMMMMMMMMMM...............
-// .MMMMMMMMMMMMMMN........................
-// 7MMMMMMMMMMMMMON$.......................
-// ZMMMMMMMMMMMMMMMMMM.......plecost.......
-// .:MMMMMMMZ~7MMMMMMMMMO..................
-// ....~+:.................................
-//
-// Plecost - Wordpress finger printer Tool - v0.3.0
-//
-// Developed by:
-//        Francisco Jesus Gomez aka ffranz | @ffranz - ffranz-[at]-iniqua.com
-//        Daniel Garcia aka cr0hn | @ggdaniel - cr0hn-[at]-cr0hn.com
-//
-// Info: http://iniqua.com/labs/
-// Bug report: plecost@iniqua.com
+There are a huge number of Wordpress around the world. Most of them are exposed to be attacked and be converted into a virus, malware or illegal porn provider, without the knowledge of the blog owner.
+   
+This project try to help sysadmins and blog's owners to make a bit secure their Wordpress.
 
-usage: plecost.py [-h] [-v] [-o OUTPUT_FILE] [-w WORDLIST] [--list-wordlist]
-                  [--concurrency CONCURRENCY] [--proxy PROXY]
-                  [--update-cve UPDATE_CVE] [--update-plugins]
-                  [--update-all UPDATE_ALL]
-                  [TARGET [TARGET ...]]
+What's new?
+-----------
 
-Plecost: Wordpress finger printer tool
+This Plecost 3 version, add a lot of new features and fixes, like:
 
-positional arguments:
-  TARGET
+- Fixed a lot of bugs.
+- New engine: without threads or any dependencies, but run more faster. We'll used python 3 asyncio and non-blocking connections. Also consume less memory. Incredible, right? :) 
+- Changed CVE update system and storage: Now Plecost get vulnerabilities directly from NIST and create a local SQLite data base with filtered information for Wordpress and theirs plugins.
+- Wordpress vulnerabilities: Now Plecost also manage Wordpress Vulnerabilities (not only for the Plugins).
+- Add local vulnerability database are queryable. You can consult the vulnerabilities for a concrete wordpress or plugins without, using the local database.
 
-optional arguments:
-  -h, --help            show this help message and exit
-  -v, --verbose         increase output verbosity
-  -o OUTPUT_FILE        report file with extension: xml|json
 
-wordlist options:
-  -w WORDLIST, --wordlist WORDLIST
-                        set custom word list. Default 200 most common
-  --list-wordlist       list embedded available word list
+You can read entire list in CHANGELOG file.
 
-advanced options:
-  --concurrency CONCURRENCY
-                        number of parallel processes.
-  --proxy PROXY         proxy as format proxy:port.
 
-update options:
-  --update-cve UPDATE_CVE
-                        Update CVE database.
-  --update-plugins      Update plugins.
-  --update-all UPDATE_ALL
-                        Update CVE, plugins, and core.
+Installation
+------------
 
-Examples:
-
-    * Scan target using default 200 most common plugins:
-        plecost TARGET
-    * List available word lists:
-        plecost --list-wordlist
-    * Use embedded 2000 most commont word list:
-        plecost -w plugin_list_2000.txt TARGET
-    * Scan, using 10 concurrent network connections:
-        plecost -w plugin_list_2000.txt --concurrency 10 TARGET
-    * Scan using verbose mode and generate xml report:
-        plecost -w plugin_list_2000.txt --concurrency 10 -o report.xml TARGET
-    * Scan using verbose mode and generate json report:
-        plecost -vvv --concurrency 10 -o report.json TARGET
+Install Plecost is so easy:
 
 ```
+$ python3 -m pip install plecost
+```
 
-How its works?
---------------
+**Remember that Plecost3 only runs in Python 3**. 
 
-![Run example](https://raw.githubusercontent.com/iniqua/plecost/develop/plecost/doc/screenshots/runexample.png "Run example")
+Quick start
+-----------
+
+Scan a web site si so simple:
+
+```
+$ plecost http://SITE.com
+```
+
+A bit complex scan: increasing verbosity exporting results in JSON format and XML:
+
+*JSON*
+
+```
+$ plecost -v http://SITE.com -o results.json
+```
+
+*XML*
+
+```
+$ plecost -v http://SITE.com -o results.xml
+```
+
+Advanced scan options
+---------------------
+
+No check WordPress version, only for plugins:
+
+```
+$ plecost -nc http://SITE.com 
+```
+
+**Force scan**, even if not Wordpress was detected:
+
+```
+$ plecost -f http://SITE.com
+```
+
+Display only the short banner:
+
+```
+$ plecost -nb http://SITE.com
+```
+
+List available wordlists:
+
+```
+$ plecost -nb -l 
+
+// Plecost - Wordpress finger printer Tool - v1.0.0
+
+Available word lists:
+   1 - plugin_list_10.txt
+   2 - plugin_list_100.txt
+   3 - plugin_list_1000.txt
+   4 - plugin_list_250.txt
+   5 - plugin_list_50.txt
+   6 - plugin_list_huge.txt
+```
+
+Select a wordlist in the list:
+
+```
+$ plecost -nb -w plugin_list_10.txt http://SITE.com
+```
+
+Increasing concurrency (**USE THIS OPTION WITH CAUTION. CAN SHUTDOWN TESTED SITE!**)
+
+```
+$ plecost --concurrency 10 http://SITE.com
+```
+
+Or...
+
+```
+$ plecost -c 10 http://SITE.com
+```
+
+*For more options, consult the --help command*:
+
+
+```
+$ plecost -h
+```
+
+Updating
+--------
+
+New versions and vulnerabilities are released diary, you can upload the local database writing:
+
+Updating vulnerability database:
+
+```
+$ plecost --update-cve
+```
+
+Updating plugin list:
+
+```
+$ plecost --update-plugins
+```
+
+Reading local vulnerability database
+------------------------------------
+
+Plecost has a local vulnerability database of Wordpress and wordpress plugins. You can consult it in off-line mode.
+
+Listing all known plugins with vulnerabilities:
+
+```
+$ plecost -nb --show-plugins
+  
+// Plecost - Wordpress finger printer Tool - v1.0.0
+
+[*] Plugins with vulnerabilities known:
+
+  { 0 } - acobot_live_chat_%26_contact_form
+  { 1 } - activehelper_livehelp_live_chat
+  { 2 } - ad-manager
+  { 3 } - alipay
+  { 4 } - all-video-gallery
+  { 5 } - all_in_one_wordpress_security_and_firewall
+  { 6 } - another_wordpress_classifieds_plugin
+  { 7 } - anyfont
+  { 8 } - april%27s_super_functions_pack
+  { 9 } - banner_effect_header
+  { 10 } - bannerman
+  { 11 } - bib2html
+  { 12 } - bic_media_widget
+  { 13 } - bird_feeder
+  { 14 } - blogstand-smart-banner
+  { 15 } - blue_wrench_video_widget
+  ...
+  
+[*] Done!
+```
+
+Show vulnerabilities of a concrete plugin:
+
+```
+$ plecost -nb -vp google_analytics
+          
+// Plecost - Wordpress finger printer Tool - v1.0.0
+
+[*] Associated CVEs for plugin 'google_analytics':
+
+  { 0 } - CVE-2014-9174:
+
+           Affected versions:
+
+           <0> - 5.1.2
+           <1> - 5.1.1
+           <2> - 5.1
+           <3> - 5.1.0
+
+[*] Done!
+```
+          
+Show details of a concrete CVE:
+          
+```
+$ plecost -nb --cve CVE-2014-9174
+          
+// Plecost - Wordpress finger printer Tool - v1.0.0
+
+[*] Detail for CVE 'CVE-2014-9174':
+
+  Cross-site scripting (XSS) vulnerability in the Google Analytics by Yoast (google-analytics-for-wordpress) plugin before 5.1.3 for WordPress allows remote attackers to inject arbitrary web script or HTML via the "Manually enter your UA code" (manual_ua_code_field) field in the General Settings.
+
+
+[*] Done!
+
+```
+
+Examples
+--------
+
+Getting the [100k top WordPress sites (http://hackertarget.com/100k-top-wordpress-powered-sites/) and getting aleatory one of them...
+  
+![running](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/running.gif)
+           
+And... here more results of Plecost for real sites... :)
+ 
+![Example1](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example1.png)
+![Example2](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example2.png)
+![Example3](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example3.png)
+![Example4](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example4.png)
+![Example5](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example5.png)
+![Example6](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example6.png)
+![Example7](https://raw.githubusercontent.com/iniqua/plecost/python3/plecost_lib/doc/images/scan_example7.png)
 
 Where to fish?
 --------------
@@ -106,7 +248,6 @@ Plecost is available on:
 
 * BackTrack 5 http://www.backtrack-linux.org/
 * BackBox http://www.backbox.org/
-
 
 References
 ----------

@@ -33,33 +33,26 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from setuptools import setup, find_packages
+"""
+This file contains Plecost exceptions
+"""
 
-files = ["resources/*"]
 
-setup(
-    name='plecost',
-    version='1.0.1',
-    packages=find_packages(),
-    install_requires=["chardet", "termcolor", "BeautifulSoup4", "aiohttp"],
-    url='https://github.com/iniqua/plecost/tree/python3',
-    license='GPL2',
-    author='Plecost team',
-    author_email='libs@iniqua.com',
-    package_data={'plecost_lib': files},
-    entry_points={'console_scripts': [
-        'plecost = plecost_lib.plecost:main',
-        ]},
-    description='Wordpress finger printer tool and vulnerabilities searcher',
-    classifiers=[
-        'Environment :: Console',
-        'Intended Audience :: System Administrators',
-        'Intended Audience :: Other Audience',
-        'License :: OSI Approved :: BSD License',
-        'Operating System :: MacOS',
-        'Operating System :: Microsoft :: Windows',
-        'Operating System :: POSIX',
-        'Programming Language :: Python :: 3',
-        'Topic :: Security',
-        ]
-)
+# --------------------------------------------------------------------------
+class PlecostWordListNotFound(Exception):
+    """Word list not found"""
+
+
+# --------------------------------------------------------------------------
+class PlecostTargetNotAvailable(Exception):
+    """Impossible to connect to the target"""
+
+
+# --------------------------------------------------------------------------
+class PlecostNotWordPressFound(Exception):
+    """Exception when not a valid WordPress installation found"""
+
+
+# --------------------------------------------------------------------------
+class PlecostInvalidReportFormat(Exception):
+    """Requested report file formant is not available."""
