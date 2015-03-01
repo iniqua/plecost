@@ -91,7 +91,8 @@ def find_versions(args):
         concurrency = 9999
 
     # Non-blocking config
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     con = aiohttp.TCPConnector(conn_timeout=10, share_cookies=True, loop=loop, verify_ssl=False)
     _download = partial(download, max_redirect=0, connector=con, loop=loop)
 
