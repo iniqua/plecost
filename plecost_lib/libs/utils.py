@@ -76,7 +76,10 @@ def log(message, log_level=0, current_log_level=None):
     from os import environ
 
     if current_log_level is None:
-        _current_log_level = int(environ["PLECOST_LOG_LEVEL"])
+        try:
+            _current_log_level = int(environ["PLECOST_LOG_LEVEL"])
+        except KeyError:
+            _current_log_level = 0
     else:
         _current_log_level = current_log_level
 
