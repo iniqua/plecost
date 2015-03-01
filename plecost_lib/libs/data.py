@@ -89,7 +89,8 @@ class PlecostOptions(object):
         self.__verbosity = kwargs.get("verbosity", 0)
         self.__concurrency = kwargs.get("concurrency", 4)
         self.__report_filename = kwargs.get("report", None)
-        self.__log_function = kwargs.get("log_function", stdout.write)
+        self.__log_function = kwargs.get("log_function",
+                                         lambda message, log_level=0, current_log_level=None: stdout.write(message))
         self.__colorize = kwargs.get("colorize", True)
         self.__wordlist = kwargs.get("wordlist", None)
         self.__no_check_wordpress = kwargs.get("no_check_wordpress", False)
