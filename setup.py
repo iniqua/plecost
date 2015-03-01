@@ -39,7 +39,7 @@ files = ["resources/*"]
 
 setup(
     name='plecost',
-    version='1.0.0-2',
+    version='1.0.1',
     packages=find_packages(),
     install_requires=["chardet", "termcolor", "BeautifulSoup4", "aiohttp"],
     url='https://github.com/iniqua/plecost/tree/python3',
@@ -50,9 +50,7 @@ setup(
     entry_points={'console_scripts': [
         'plecost = plecost_lib.plecost:main',
         ]},
-    description='Wordpress finger printer tool, libs search and retrieve information about the plugins versions '
-                'installed in Wordpress systems. It can analyze a single URL or perform an analysis based on the '
-                'results indexed by Google. Additionally displays CVE code associated with each plugin, if there.',
+    description='Wordpress finger printer tool and vulnerabilities searcher',
     classifiers=[
         'Environment :: Console',
         'Intended Audience :: System Administrators',
