@@ -2,7 +2,7 @@ Plecost
 =======
 
 
-![Logo](https://raw.githubusercontent.com/iniqua/plecost/develop/plecost/doc/images/logo_plecost.jpg "Plecost Logo")
+![Logo](https://raw.githubusercontent.com/iniqua/plecost/develop/plecost_lib/doc/images/logo_plecost.jpg)
 
 
 *Plecost: Wordpress vulnerabilities finder*
