@@ -40,7 +40,7 @@ This file contains reporting functions.
 
 import json
 
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from os.path import splitext
 from xml.etree import ElementTree as ET
 
@@ -77,12 +77,28 @@ class Reporter(object, metaclass=ABCMeta):
     # ----------------------------------------------------------------------
     # Abstract methods
     # ----------------------------------------------------------------------
+    @abstractmethod
     def generate(self, info):
         """
-        Generates report.
+        Generates content of report
 
         :param info: PlecostResults instance
         :type info: `PlecostResults`
+
+        :return: content of report
+        :rtype: object
+
+        """
+        raise NotImplemented()
+
+    # ----------------------------------------------------------------------
+    @abstractmethod
+    def save(self, content):
+        """
+        Save the the content of report into output_file
+
+        :param content: object with content
+        :type content: object
         """
         raise NotImplemented()
 
@@ -96,7 +112,7 @@ class ReporterJSON(Reporter):
     # ----------------------------------------------------------------------
     def generate(self, info):
         """
-        Generates report.
+        Generates content of report
 
         :param info: PlecostResults instance
         :type info: `PlecostResults`
@@ -137,8 +153,12 @@ class ReporterJSON(Reporter):
 
             js_info["plugins"].append(json_plugin)
 
+        return js_info
+
+    # ----------------------------------------------------------------------
+    def save(self, content):
         # Save to file
-        json.dump(js_info, open(self.output_filename, "w"))
+        json.dump(content, open(self.output_filename, "w"))
 
 
 # --------------------------------------------------------------------------
@@ -148,7 +168,7 @@ class ReporterXML(Reporter):
     # ----------------------------------------------------------------------
     def generate(self, info):
         """
-        Generates report.
+        Generates content of report
 
         :param info: PlecostResults instance
         :type info: `PlecostResults`
@@ -203,8 +223,12 @@ class ReporterXML(Reporter):
                     xml_exploit = ET.SubElement(exploits, "exploits")
                     xml_exploit.text = exploit
 
+        return root
+
+    # ----------------------------------------------------------------------
+    def save(self, content):
         # Save to file
-        tree = ET.ElementTree(root)
+        tree = ET.ElementTree(content)
         tree.write(self.output_filename, encoding="UTF-8")
 
 

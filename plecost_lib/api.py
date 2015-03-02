@@ -80,7 +80,11 @@ def run(config):
 
     # Generate reports
     if config.report_filename is not None:
-        # Generate report
-        report = reporter_function(config.report_filename)
-        report.generate(data)
 
+        report = reporter_function(config.report_filename)
+
+        # Get report content
+        content = report.generate(data)
+
+        # Save report content
+        report.save(content)
