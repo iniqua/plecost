@@ -241,4 +241,6 @@ def get_wordpress_vulnerabilities(current_version, db):
         return []
 
     # Get CVE list
-    return [x for x in db.query_wordpress(current_version)]
+    vuln_list = []
+    [vuln_list.append(x) for x in db.query_wordpress(current_version) if x not in vuln_list]
+    return vuln_list
