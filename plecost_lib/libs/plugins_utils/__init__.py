@@ -187,7 +187,7 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
         # Print CVE list
         if plugin.cves:
             log("\n        |_CVE list:\n")
-            for cve in plugin.cves:
+            for cve in list(set(plugin.cves)):
                 text = (
                            "        |__%(cve)s: (http://cve.mitre.org/cgi-bin/cvename.cgi?name=%(cve)s)\n"
                        ) % {"cve": colorize(cve, "red")}

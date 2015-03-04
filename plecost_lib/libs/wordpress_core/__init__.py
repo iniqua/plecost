@@ -232,6 +232,9 @@ def get_wordpress_vulnerabilities(current_version, db):
     :param db: cve database instance
     :type db: DB
 
+    :return: list with CVEs
+    :rtype: list(str)
+
     """
     if not isinstance(db, DB):
         raise TypeError("Expected DB, got '%s' instead" % type(db))
@@ -241,4 +244,4 @@ def get_wordpress_vulnerabilities(current_version, db):
         return []
 
     # Get CVE list
-    return [x for x in db.query_wordpress(current_version)]
+    return list(set(x for x in db.query_wordpress(current_version)))
