@@ -130,6 +130,7 @@ class ReporterJSON(Reporter):
         js_info["wordpress"] = {
             "current_version": info.wordpress_info.current_version,
             "last_version": info.wordpress_info.latest_version,
+            "outdated": info.wordpress_info.is_outdated,
             "cves": [x for x in info.wordpress_info.vulnerabilities]
         }
 
@@ -143,7 +144,7 @@ class ReporterJSON(Reporter):
             json_plugin["current_version"] = plugin.current_version
             json_plugin["last_version"] = plugin.latest_version
             json_plugin["url"] = plugin.plugin_uri
-            json_plugin["outdated"] = True if plugin.is_outdated else False
+            json_plugin["outdated"] = plugin.is_outdated
 
             # Set CVE
             json_plugin["cves"] = [cve for cve in plugin.cves]
