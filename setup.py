@@ -45,7 +45,7 @@ setup(
     url='https://github.com/iniqua/plecost/tree/python3',
     license='GPL2',
     author='Plecost team',
-    author_email='libs@iniqua.com',
+    author_email='plecost@iniqua.com',
     package_data={'plecost_lib': files},
     entry_points={'console_scripts': [
         'plecost = plecost_lib.plecost:main',
