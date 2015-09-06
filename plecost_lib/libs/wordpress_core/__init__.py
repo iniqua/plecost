@@ -204,16 +204,19 @@ def get_wordpress_version(url, downloader, db):
     # --------------------------------------------------------------------------
 
     # URL to get last version of WordPress available
-    _, _, last_version_content = yield from downloader("https://wordpress.org/download/")
+    try:
+        _, _, last_version_content = yield from downloader("https://wordpress.org/download/")
 
-    last_version = re.search("(WordPress\&nbsp\;)([0-9\.]*)", str(last_version_content))
-    if last_version is None:
-        last_version = "unknown"
-    else:
-        if len(last_version.groups()) != 2:
+        last_version = re.search("(WordPress\&nbsp\;)([0-9\.]*)", str(last_version_content))
+        if last_version is None:
             last_version = "unknown"
         else:
-            last_version = last_version.group(2)
+            if len(last_version.groups()) != 2:
+                last_version = "unknown"
+            else:
+                last_version = last_version.group(2)
+    except Exception:
+        last_version = "unknown"
 
     # Get wordpress vulnerabilities
     return PlecostWordPressInfo(current_version=return_current_version,
