@@ -246,6 +246,7 @@ Where to fish?
 
 Plecost is available on:
 
+* Kali Linux http://www.kali.org/
 * BackTrack 5 http://www.backtrack-linux.org/
 * BackBox http://www.backbox.org/
 
