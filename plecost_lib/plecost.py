@@ -279,7 +279,7 @@ if __name__ == "__main__" and __package__ is None:
     __package__ = str("plecost_lib")
 
     # Check Python version
-    if sys.version_info < (3, 5):
+    if sys.version_info < (3, 3):
         print("\n[!] You need a Python version greater than 3.3\n")
         exit(1)
 
