@@ -109,7 +109,7 @@ def update_plugins(log):
             # Fix err
             try:
                 wpage = decode(wpage, detect(wpage)["encoding"])
-            except UnicodeEncodeError as e:
+            except (UnicodeEncodeError, LookupError) as e:
                 log("[%s] Unicode error while processing url '%s'\n" % (
                     colorize("!", "red"),
                     colorize(url)
