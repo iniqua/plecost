@@ -262,7 +262,8 @@ Examples:
     except Exception as e:
         if args.verbose > 2:
             print(format_exc())
-        print("\n[!] %s\n" % e)
+        if args.verbose > 3:
+            print("\n[!] %s\n" % e)
 
 
 if __name__ == "__main__" and __package__ is None:
