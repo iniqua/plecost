@@ -2,6 +2,7 @@ wordpress-seo,WordPress SEO by Yoast,1.7.3.3
 jetpack,Jetpack by WordPress.com,3.3.2
 contact-form-7,Contact Form 7,4.1
 woocommerce,WooCommerce - excelling eCommerce,2.3.5
+another-wordpress-classifieds-plugin,Another WordPress Classifieds Plugin,3.3.4
 google-analytics-for-wordpress,Google Analytics by Yoast,5.3.2
 akismet,Akismet,3.0.4
 nextgen-gallery,NextGEN Gallery,2.0.74
