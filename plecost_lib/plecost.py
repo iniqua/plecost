@@ -161,7 +161,6 @@ Examples:
     gr_query.add_argument("-vp", "--plugin-cves", dest="show_plugin_cves", help="display CVEs for plugin")
     gr_query.add_argument("--cve", dest="cve_details", help="display details of CVE")
 
-
     args = parser.parse_args()
 
     # Diplay banner
@@ -278,6 +277,12 @@ if __name__ == "__main__" and __package__ is None:
     sys.path.insert(1, parent_dir)
     import plecost_lib
     __package__ = str("plecost_lib")
+
+    # Check Python version
+    if sys.version_info < (3, 5):
+        print("\n[!] You need a Python version greater than 3.3\n")
+        exit(1)
+
     del sys, os
 
     main()
