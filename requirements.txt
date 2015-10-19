@@ -1,5 +1,5 @@
-chardet
-aiohttp
-termcolor
-BeautifulSoup4
-sphinx_rtd_theme
+chardet==2.3.0
+aiohttp==0.14.4
+BeautifulSoup4==4.3.2
+termcolor==1.1.0
+sphinx_rtd_theme==0.1.6
