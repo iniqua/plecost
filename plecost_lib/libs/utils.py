@@ -38,10 +38,6 @@
 This file contains some orphan functions
 """
 import urllib
-
-
-__all__ = ["colorize", "generate_error_page", "get_diff_ratio", "get_data_folder", "check_redirects"]
-
 import aiohttp
 import asyncio
 
@@ -56,6 +52,8 @@ try:
 except ImportError:
     def colored(text, color):
         return text
+
+__all__ = ["colorize", "generate_error_page", "get_diff_ratio", "get_data_folder", "check_redirects"]
 
 
 # ----------------------------------------------------------------------
