@@ -39,9 +39,9 @@ files = ["resources/*"]
 
 setup(
     name='plecost',
-    version='1.0.4',
+    version='1.0.5',
     packages=find_packages(),
-    install_requires=["chardet", "termcolor", "BeautifulSoup4", "aiohttp"],
+    install_requires=["chardet==2.3.0", "termcolor==1.1.0", "BeautifulSoup4==4.3.2", "aiohttp==0.14.4"],
     url='https://github.com/iniqua/plecost/tree/python3',
     license='GPL2',
     author='Plecost team',
