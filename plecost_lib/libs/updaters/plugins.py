@@ -42,7 +42,7 @@ import pickle
 from time import sleep
 from os.path import join
 from codecs import decode
-from random import randint
+from random import random
 from chardet import detect
 from bs4 import BeautifulSoup
 from urllib.error import URLError
@@ -94,7 +94,7 @@ def update_plugins(log):
                         colorize("!", "red"),
                         colorize("Error while getting URL: %s. Attempt %s.\n" % (url, x))
                     ))
-                    sleep(randint(1, 4))
+                    # sleep(random())
 
                     # Maximum attempt reached
                     if x == 6:
@@ -122,30 +122,14 @@ def update_plugins(log):
             bs = BeautifulSoup(wpage)
 
             # For each plugin
-            for j, plugin_info in enumerate(bs.findAll("div", attrs={"class": "plugin-block"})):
+            for j, plugin_info in enumerate(bs.find_all("div", "plugin-card-top")):
 
-                plugin_info = str(plugin_info)
-
-                # --------------------------------------------------------------------------
-                # Plugin name and URL
-                # --------------------------------------------------------------------------
-                plugin_n_t = regex_plugin_name.search(plugin_info)
-                plugin_url = None
-                plugin_name = None
-                if plugin_n_t is None:
-                    log("[%s] REGEX_PLUGIN_NAME can't found info for string: \n-------\n%s\n" %
-                        (
-                            colorize("!!!", "red"),
-                            plugin_info
-                        ), 2)
-                else:
-                    plugin_url = plugin_n_t.group(2) if len(plugin_n_t.groups()) >= 2 else None
-                    plugin_name = plugin_n_t.group(4) if len(plugin_n_t.groups()) >= 4 else None
+                plugin_url = plugin_info.find("a")["href"]
+                plugin_name = plugin_info.find_all("h4")[0].text
 
                 # Coding fixes
                 if plugin_name:
                     try:
-                        # plugin_name = decode(plugin_name, detect(plugin_name.encode())["encoding"])
                         plugin_name = plugin_name
                     except UnicodeError:
                         try:
@@ -158,15 +142,14 @@ def update_plugins(log):
                 # --------------------------------------------------------------------------
                 # Plugin version
                 # --------------------------------------------------------------------------
-                plugin_version = regex_plugin_version.search(plugin_info)
-                if plugin_version is None:
-                    log("[%s] REGEX_PLUGIN_VERSION can't found info for string: \n-------\n%s\n" %
-                        (
-                            colorize("!!!", "red"),
-                            plugin_info
-                        ), 2)
-                else:
-                    plugin_version = plugin_version.group(2)
+                # Get plugin page context
+                plugin_page = urlopen(plugin_url).read()
+
+                bs_plugin = BeautifulSoup(plugin_page)
+
+                _tmp_desc = bs_plugin.find("div", "description-right")
+                if _tmp_desc:
+                    plugin_version = _tmp_desc.find("a").text.replace("Download Version ", "")
 
                 # Plugin is repeated and already processed?
                 if plugin_url in already_processed:
