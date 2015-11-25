@@ -1,10 +1,10 @@
-wordpress-seo,WordPress SEO by Yoast,1.7.3.3
-jetpack,Jetpack by WordPress.com,3.3.2
-contact-form-7,Contact Form 7,4.1
-woocommerce,WooCommerce - excelling eCommerce,2.3.5
-google-analytics-for-wordpress,Google Analytics by Yoast,5.3.2
-akismet,Akismet,3.0.4
-nextgen-gallery,NextGEN Gallery,2.0.74
-all-in-one-seo-pack,All in One SEO Pack,2.2.5.1
-wordpress-importer,WordPress Importer,0.6.1
-better-wp-security,iThemes Security (formerly Better WP Security),4.6.8
+https://wordpress.org/plugins/wp-pagenavi/,WP-PageNavi,2.89.1
+https://wordpress.org/plugins/woocommerce/,WooCommerce - excelling eCommerce,2.4.10
+https://wordpress.org/plugins/nextgen-gallery/,NextGEN Gallery,2.1.15
+https://wordpress.org/plugins/wordpress-seo/,Yoast SEO,3.0.3
+https://wordpress.org/plugins/wordfence/,Wordfence Security,6.0.20
+https://wordpress.org/plugins/hello-dolly/,Hello Dolly,1.6
+https://wordpress.org/plugins/tinymce-advanced/,TinyMCE Advanced,4.2.5
+https://wordpress.org/plugins/advanced-custom-fields/,Advanced Custom Fields,4.4.3
+https://wordpress.org/plugins/regenerate-thumbnails/,Regenerate Thumbnails,2.2.4
+https://wordpress.org/plugins/contact-form-7/,Contact Form 7,4.3.1
