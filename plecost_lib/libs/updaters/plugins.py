@@ -179,10 +179,11 @@ def update_plugins(log):
                     ), log_level=1)
 
                 # Write to file
+                plugin_url_store = plugin_url.replace("https://wordpress.org/plugins/", "")[0:-1]
                 try:
-                    csv_file.writerow([plugin_url, plugin_name, plugin_version])
+                    csv_file.writerow([plugin_url_store, plugin_name, plugin_version])
                 except UnicodeEncodeError:
-                    csv_file.writerow([plugin_url, plugin_url, plugin_version])
+                    csv_file.writerow([plugin_url_store, plugin_url_store, plugin_version])
 
                 # Save plugin
                 already_processed_append(plugin_url)
