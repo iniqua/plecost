@@ -10,7 +10,7 @@ Plecost
 Code | https://github.com/iniqua/plecost/tree/python3
 ---- | ----------------------------------------------
 Issues | https://github.com/iniqua/plecost/tree/python3/issues
-Python version | Python 3.4 or greater.
+Python version | Python 3.3 and 3.4.
 
 What's Plecost?
 ---------------
