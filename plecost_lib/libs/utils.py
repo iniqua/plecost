@@ -333,7 +333,7 @@ class ConcurrentDownloader:
         self.max_tries = max_tries
         self.max_tasks = max_tasks
         self.loop = loop or asyncio.get_event_loop()
-        self.q = asyncio.JoinableQueue(loop=self.loop)
+        self.q = asyncio.Queue(loop=self.loop)
         self.connector = connector or aiohttp.TCPConnector(loop=self.loop)
         self.__results = []
         self.__results_append = self.results.append
@@ -408,10 +408,10 @@ class ConcurrentDownloader:
     def add_url_list(self, urls):
         """
         Add an URL list to processing
-        
-        :param urls: list with URLs 
+
+        :param urls: list with URLs
         :type urls: str
-        
+
         """
         for x in urls:
             self.q.put_nowait(x)
