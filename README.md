@@ -54,35 +54,51 @@ You can read entire list in [CHANGELOG](https://github.com/iniqua/plecost/blob/d
 Installation
 ------------
 
+### Using Pypi
+
 Install Plecost is so easy:
 
-```
-$ python3 -m pip install plecost
+```bash
+> python3 -m pip install plecost
 ```
 
-**Remember that Plecost3 only runs in Python 3**. 
+**Remember that Plecost3 only runs in Python 3**.
+ 
+### Using Docker
+
+If you don't want to install Plecost, you can run it using Docker:
+
+```bash
+> docker run --rm cr0hn/plecost {ARGS}
+```
+
+Where *{ARGS}* is any valid argument of Plecost. A real example could be:
+
+```bash
+> docker run --rm cr0hn/plecost -nb -w plugin_list_10.txt http://SITE.com
+```
 
 Quick start
 -----------
 
 Scan a web site si so simple:
 
-```
-$ plecost http://SITE.com
+```bash
+> plecost http://SITE.com
 ```
 
 A bit complex scan: increasing verbosity exporting results in JSON format and XML:
 
 *JSON*
 
-```
-$ plecost -v http://SITE.com -o results.json
+```bash
+> plecost -v http://SITE.com -o results.json
 ```
 
 *XML*
 
-```
-$ plecost -v http://SITE.com -o results.xml
+```bash
+> plecost -v http://SITE.com -o results.xml
 ```
 
 Advanced scan options
@@ -90,26 +106,26 @@ Advanced scan options
 
 No check WordPress version, only for plugins:
 
-```
-$ plecost -nc http://SITE.com 
+```bash
+> plecost -nc http://SITE.com 
 ```
 
 **Force scan**, even if not Wordpress was detected:
 
-```
-$ plecost -f http://SITE.com
+```bash
+> plecost -f http://SITE.com
 ```
 
 Display only the short banner:
 
-```
-$ plecost -nb http://SITE.com
+```bash
+> plecost -nb http://SITE.com
 ```
 
 List available wordlists:
 
-```
-$ plecost -nb -l 
+```bash
+> plecost -nb -l 
 
 // Plecost - Wordpress finger printer Tool - v1.0.0
 
@@ -124,27 +140,27 @@ Available word lists:
 
 Select a wordlist in the list:
 
-```
-$ plecost -nb -w plugin_list_10.txt http://SITE.com
+```bash
+> plecost -nb -w plugin_list_10.txt http://SITE.com
 ```
 
 Increasing concurrency (**USE THIS OPTION WITH CAUTION. CAN SHUTDOWN TESTED SITE!**)
 
-```
-$ plecost --concurrency 10 http://SITE.com
+```bash
+> plecost --concurrency 10 http://SITE.com
 ```
 
 Or...
 
-```
-$ plecost -c 10 http://SITE.com
+```bash
+> plecost -c 10 http://SITE.com
 ```
 
 *For more options, consult the --help command*:
 
 
-```
-$ plecost -h
+```bash
+> plecost -h
 ```
 
 Updating
@@ -154,14 +170,14 @@ New versions and vulnerabilities are released diary, you can upload the local da
 
 Updating vulnerability database:
 
-```
-$ plecost --update-cve
+```bash
+> plecost --update-cve
 ```
 
 Updating plugin list:
 
-```
-$ plecost --update-plugins
+```bash
+> plecost --update-plugins
 ```
 
 Reading local vulnerability database
@@ -171,8 +187,8 @@ Plecost has a local vulnerability database of Wordpress and wordpress plugins. Y
 
 Listing all known plugins with vulnerabilities:
 
-```
-$ plecost -nb --show-plugins
+```bash
+> plecost -nb --show-plugins
   
 // Plecost - Wordpress finger printer Tool - v1.0.0
 
@@ -201,8 +217,8 @@ $ plecost -nb --show-plugins
 
 Show vulnerabilities of a concrete plugin:
 
-```
-$ plecost -nb -vp google_analytics
+```bash
+> plecost -nb -vp google_analytics
           
 // Plecost - Wordpress finger printer Tool - v1.0.0
 
@@ -222,8 +238,8 @@ $ plecost -nb -vp google_analytics
           
 Show details of a concrete CVE:
           
-```
-$ plecost -nb --cve CVE-2014-9174
+```bash
+> plecost -nb --cve CVE-2014-9174
           
 // Plecost - Wordpress finger printer Tool - v1.0.0
 
