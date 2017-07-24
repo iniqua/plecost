@@ -1,10 +1,10 @@
-wp-pagenavi,WP-PageNavi,2.89.1
-woocommerce,WooCommerce - excelling eCommerce,2.4.10
-nextgen-gallery,NextGEN Gallery,2.1.15
-wordpress-seo,Yoast SEO,3.0.3
-wordfence,Wordfence Security,6.0.20
-hello-dolly,Hello Dolly,1.6
-tinymce-advanced,TinyMCE Advanced,4.2.5
-advanced-custom-fields,Advanced Custom Fields,4.4.3
-regenerate-thumbnails,Regenerate Thumbnails,2.2.4
-contact-form-7,Contact Form 7,4.3.1
+contact-form-7,Contact Form 7,4.8
+akismet,Akismet,3.3.3
+wordpress-seo,Yoast SEO,5.0.2
+jetpack,Jetpack by WordPress.com,5.1
+wordpress-importer,WordPress Importer,0.6.3
+woocommerce,WooCommerce,3.1.1
+all-in-one-seo-pack,All in One SEO Pack,2.3.14.1
+google-sitemap-generator,Google XML Sitemaps,4.0.8
+limit-login-attempts,Limit Login Attempts,1.7.1
+tinymce-advanced,TinyMCE Advanced,4.6.3

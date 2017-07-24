@@ -12,41 +12,40 @@
 # Copyright (c) 2015, Iniqua Team
 # All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-# following conditions are met:
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the
-# following disclaimer.
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
 #
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-# following disclaimer in the documentation and/or other materials provided with the distribution.
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
 #
-# 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
-# products derived from this software without specific prior written permission.
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+# OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-
-
-import re
 import csv
-import pickle
+import lxml.html
 
-from time import sleep
-from os.path import join
-from codecs import decode
-from random import random
-from chardet import detect
-from bs4 import BeautifulSoup
 from urllib.error import URLError
 from urllib.request import urlopen
+
+from os.path import join
 
 from ..utils import colorize, get_data_folder, update_progress
 
@@ -62,9 +61,6 @@ def update_plugins(log):
     # --------------------------------------------------------------------------
     # Config and vars
     # --------------------------------------------------------------------------
-    regex_plugin_name = re.compile(r"(http[s]*://wordpress.org/plugins/)([a-zA-Z0-9\\\s_\-`!()\[\]{};:'.,<>?«»‘’]+)([/]*\">)([a-zA-Z0-9\\\s_\-`!()\[\]{};:'.,?«»‘’]*)",
-                                   re.I)  # -> Group 2 and 3
-    regex_plugin_version = re.compile(r"(Version</span>[\sa-zA-Z]*)([0-9\.]+)", re.I)  # -> Group 2
     wp_plugins_url = "http://wordpress.org/plugins/browse/popular/page/%s/"
     max_plugins = 1400
 
@@ -80,9 +76,14 @@ def update_plugins(log):
         csv_file = csv.writer(out)
 
         total_plugins = 1
+        searching = True
 
-        # Looking for 85 * 12 (per page) = 1020  plugins
-        for i in update_progress(range(1, 85), prefix_text="[*] Downloading plugins (slow): "):
+        # Looking for 85 * 14 (per page) = 1190  plugins
+        for i in update_progress(range(1, 85),
+                                 prefix_text="[*] Downloading plugins (slow): "):
+            if searching is False:
+                break
+
             # 6 tries for each request
             for x in range(1, 6):
                 try:
@@ -106,59 +107,29 @@ def update_plugins(log):
                     else:
                         continue
 
-            # Fix err
-            try:
-                wpage = decode(wpage, detect(wpage)["encoding"])
-            except (UnicodeEncodeError, LookupError) as e:
-                log("[%s] Unicode error while processing url '%s'\n" % (
-                    colorize("!", "red"),
-                    colorize(url)
-                ))
-
-                log("    |- Error details: %s" % e, 3)
-                continue
-
             # Parse
-            bs = BeautifulSoup(wpage)
+            parsed_main = lxml.html.fromstring(wpage)
 
-            # For each plugin
-            for j, plugin_info in enumerate(bs.find_all("div", "plugin-card-top")):
+            for section in parsed_main.xpath('//main/article'):
+                plugin_info = section.xpath(".//h2/a")[0]
+                plugin_url = plugin_info.attrib.get("href")
+                plugin_name = plugin_info.text
 
-                plugin_url = plugin_info.find("a")["href"]
-                plugin_name = plugin_info.find_all("h4")[0].text
-
-                # Coding fixes
-                if plugin_name:
-                    try:
-                        plugin_name = plugin_name
-                    except UnicodeError:
-                        try:
-                            plugin_name = plugin_name.decode("UTF-8")
-                        except UnicodeError:
-                            plugin_name = plugin_url
-                else:
+                if not plugin_name:
                     plugin_name = plugin_url
 
-                # --------------------------------------------------------------------------
-                # Plugin version
-                # --------------------------------------------------------------------------
-                # Get plugin page context
+                #
+                # Get plugins details
+                #
                 plugin_page = urlopen(plugin_url).read()
 
-                bs_plugin = BeautifulSoup(plugin_page)
+                plugin_parsed = lxml.html.fromstring(plugin_page)
 
-                _tmp_desc = bs_plugin.find("div", "description-right")
-                if _tmp_desc:
-                    plugin_version = _tmp_desc.find("a").text.replace("Download Version ", "")
-
-                # Plugin is repeated and already processed?
-                if plugin_url in already_processed:
-                    log("[%s] Already processed plugin '%s'. Skipping\n" %
-                        (
-                            colorize("ii", "red"),
-                            plugin_url
-                        ), 2)
-                    continue
+                plugin_version = plugin_parsed.xpath("//div[contains(@class, 'plugin-meta')]/ul/li/strong")
+                if plugin_version:
+                    plugin_version = plugin_version[0].text
+                else:
+                    plugin_version = None
 
                 # --------------------------------------------------------------------------
                 # We have all information to continue?
@@ -181,9 +152,13 @@ def update_plugins(log):
                 # Write to file
                 plugin_url_store = plugin_url.replace("https://wordpress.org/plugins/", "")[0:-1]
                 try:
-                    csv_file.writerow([plugin_url_store, plugin_name, plugin_version])
+                    csv_file.writerow([plugin_url_store,
+                                       plugin_name,
+                                       plugin_version])
                 except UnicodeEncodeError:
-                    csv_file.writerow([plugin_url_store, plugin_url_store, plugin_version])
+                    csv_file.writerow([plugin_url_store,
+                                       plugin_url_store,
+                                       plugin_version])
 
                 # Save plugin
                 already_processed_append(plugin_url)
@@ -192,9 +167,10 @@ def update_plugins(log):
                 total_plugins += 1
 
                 if total_plugins >= max_plugins:
-                    return
+                    searching = False
+                    break
 
-    # Creates splited files
+    # Creates split files
     with open(file_out, "r") as all_plugins, \
             open(join(get_data_folder(), "plugin_list_10.txt"), 'w') as f_10, \
             open(join(get_data_folder(), "plugin_list_50.txt"), 'w') as f_50, \

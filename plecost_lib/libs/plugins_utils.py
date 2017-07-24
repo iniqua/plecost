@@ -12,29 +12,32 @@
 # Copyright (c) 2015, Iniqua Team
 # All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-# following conditions are met:
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the
-# following disclaimer.
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
 #
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-# following disclaimer in the documentation and/or other materials provided with the distribution.
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
 #
-# 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
-# products derived from this software without specific prior written permission.
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+# OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-
-
-__all__ = ["plugins_testing"]
 
 import re
 import asyncio
@@ -43,8 +46,8 @@ from os.path import join
 from functools import partial
 from urllib.parse import urljoin
 
-from ..data import PlecostPluginInfo
-from ..utils import colorize, get_diff_ratio, ConcurrentDownloader, get_data_folder
+from .data import PlecostPluginInfo
+from .utils import colorize, get_diff_ratio, ConcurrentDownloader, get_data_folder
 
 exp = re.compile(r"([Ss]table tag:[\s]*)([\svV]*[0-9\.]+|trunk)")
 exp_change_log = re.compile(r"([\=\-]\s*)([\d]+\.[\d]+\.*[\d]*\.*[\d]*\.*[\d]*\.*[\d]*)(\s*[\=\-])")
@@ -107,7 +110,7 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
 
     :param db: cve database instance
     :type db: DB
-    
+
     :param log: logging function, as format: log(message, level)
     :type log: function
 
@@ -202,7 +205,15 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
 
 # ----------------------------------------------------------------------
 @asyncio.coroutine
-def plugins_testing(url, error_page, log, data_list, db, concurrency=4, loop=None, con=None):
+def plugins_testing(url,
+                    session,
+                    error_page,
+                    log,
+                    data_list,
+                    db,
+                    concurrency=4,
+                    loop=None,
+                    con=None):
     """
     Try to find plugins in remote url
 
@@ -236,11 +247,18 @@ def plugins_testing(url, error_page, log, data_list, db, concurrency=4, loop=Non
     fn = partial(_plugin_analyze, urls, error_page, db, log)
 
     # Prepare concurrent connections
-    cr = ConcurrentDownloader(fn, max_tasks=concurrency, loop=loop, connector=con, max_redirects=0)
+    cr = ConcurrentDownloader(fn,
+                              session=session,
+                              max_tasks=concurrency,
+                              loop=loop,
+                              max_redirects=0)
     cr.add_url_list(urls)
 
     # Run and wait!
     yield from cr.run()
 
     return cr.results
+
+
+__all__ = ("plugins_testing", )
 

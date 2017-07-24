@@ -12,27 +12,33 @@
 # Copyright (c) 2015, Iniqua Team
 # All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-# following conditions are met:
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the
-# following disclaimer.
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
 #
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-# following disclaimer in the documentation and/or other materials provided with the distribution.
 #
-# 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
-# products derived from this software without specific prior written permission.
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
 #
-
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+# OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
 
 """
 This file contains data structures of Plecost.
@@ -62,20 +68,20 @@ class PlecostOptions(object):
         """
         :param proxy: Proxy as format: {HOST:PORT}. Default None.
         :type proxy: dict()
-        
+
         :param target: URL target.
         :type target: str
 
         :param concurrency: maximum number of simultaneous connections. Default 4.
         :type concurrency: int
-        
+
         :param log_function: function to call for display log info. Function format: FUNC(Message::str, Level::int)
         :type log_function: function(str, int)
-        
+
         :param verbosity: verbosity level
         :type verbosity: int
-        
-        :param report_filename: report filename 
+
+        :param report_filename: report filename
         :type report_filename: str
 
         :param colorize: Colorize output
@@ -178,7 +184,7 @@ class PlecostOptions(object):
         :rtype: basestring
         """
         return self.__target
-    
+
     # ----------------------------------------------------------------------
     @property
     def proxy(self):
@@ -186,8 +192,8 @@ class PlecostOptions(object):
         :return: Proxy as format {HOST:PORT}
         :rtype: dict
         """
-        return self.__proxy 
-    
+        return self.__proxy
+
     # ----------------------------------------------------------------------
     @property
     def concurrency(self):
@@ -214,7 +220,7 @@ class PlecostOptions(object):
         :rtype: int
         """
         return self.__verbosity
-    
+
     # ----------------------------------------------------------------------
     @property
     def report_filename(self):
@@ -223,16 +229,16 @@ class PlecostOptions(object):
         :rtype: basestring
         """
         return self.__report_filename
-    
+
     # ----------------------------------------------------------------------
     @property
     def colorize(self):
         """
-        :return: 
-        :rtype: 
+        :return:
+        :rtype:
         """
         return self.__colorize
-    
+
     # ----------------------------------------------------------------------
     @property
     def wordlist(self):
@@ -254,7 +260,7 @@ class _PlecostBase(object, metaclass=ABCMeta):
         """
         :param ver1: current version of software to compare to.
         :type ver1: basestring
-        
+
         :param ver2: latest version of software to compare to.
         :type ver2: basestring
         """
@@ -359,7 +365,7 @@ class PlecostWordPressInfo(_PlecostBase):
         :rtype: basestring
         """
         return self.__last_version_available
-    
+
     # ----------------------------------------------------------------------
     @property
     def current_version(self):
@@ -382,16 +388,16 @@ class PlecostPluginInfo(_PlecostBase):
 
         :param last_version: Last version available as format: x.x.x
         :type last_version: str
-        
-        :param plugin_name: Plugin long name description. 
+
+        :param plugin_name: Plugin long name description.
         :type plugin_name: basestring
-        
-        :param plugin_uri: Plugin URI 
+
+        :param plugin_uri: Plugin URI
         :type plugin_uri: basestring
-        
-        :param cves: list with CVEs related 
+
+        :param cves: list with CVEs related
         :type cves: list(str)
-        
+
         :param exploits: list with url to related exploits.
         :type exploits: list(str)
         """
@@ -423,8 +429,8 @@ class PlecostPluginInfo(_PlecostBase):
         :return: Plugin URI
         :rtype: basestring
         """
-        return self.__plugin_uri   
-    
+        return self.__plugin_uri
+
     # ----------------------------------------------------------------------
     @property
     def current_version(self):
@@ -442,7 +448,7 @@ class PlecostPluginInfo(_PlecostBase):
         :rtype: basestring|None
         """
         return self.__last_version
-    
+
     # ----------------------------------------------------------------------
     @property
     def cves(self):
@@ -451,7 +457,7 @@ class PlecostPluginInfo(_PlecostBase):
         :rtype: list(str)
         """
         return self.__cves
-    
+
     # ----------------------------------------------------------------------
     @property
     def exploits(self):
@@ -478,9 +484,9 @@ class PlecostResults(object):
         :param end_time: end time of testing
         :type end_time: datetime
 
-        :param wordpress_info: remote wordpress information. 
+        :param wordpress_info: remote wordpress information.
         :type wordpress_info: `PlecostWordPressInfo`
-        
+
         :param plugins: plugins available in remote target.
         :type plugins: `list(PlecostPluginInfo)
         """
@@ -526,7 +532,7 @@ class PlecostResults(object):
         :rtype: `PlecostWordPressInfo`
         """
         return self.__wordpress_info
-        
+
     # ----------------------------------------------------------------------
     @property
     def plugins(self):

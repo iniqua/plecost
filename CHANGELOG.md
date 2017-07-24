@@ -1,3 +1,28 @@
+Version 1.1.1
+=============
+
+Internal modifications
+----------------------
+
+- Improved internal system that does the scan -> increased the performance
+- Minor PEP8 improvements.
+- Changed BeatufilSoup 4 HTML parser in favor of Lxml -> more fault tolerant & performance
+
+Improvements and fixes
+----------------------
+
+- Fixed the plugin update system to the new Wordpress scaffolding.
+- Fixed CVE update system. Now It tracks all CVEs until me updating moment.
+- Performance improvements.
+- Now Plecost runs on Python: 3.3, 3.4, 3.5 and 3.6
+- Updated Wordpress plugin list
+- Updated CVE database
+
+New features
+------------
+
+- Added new system to detect remote wordpress version, based in version links of statics
+
 Version 1.0.0
 =============
 

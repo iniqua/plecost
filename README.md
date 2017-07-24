@@ -10,7 +10,8 @@ Plecost
 Code | https://github.com/iniqua/plecost/tree/python3
 ---- | ----------------------------------------------
 Issues | https://github.com/iniqua/plecost/tree/python3/issues
-Python version | Python 3.3 and 3.4.
+Python version | Python 3.3 and above
+Last version | 1.1.1
 
 What's Plecost?
 ---------------
@@ -27,7 +28,18 @@ This project try to help sysadmins and blog's owners to make a bit secure their 
 What's new?
 -----------
 
-This Plecost 3 version, add a lot of new features and fixes, like:
+### Plecost 3.1.1
+
+- Updated CVE database & Wordpress plugin list.
+- Fixed CVE & Wordpress plugins updater.
+- Performance tips
+- Open Issues
+
+You can read entire list in `<CHANGELOG> https://github.com/iniqua/plecost/blob/develop/CHANGELOG.md`_ file.
+
+### Plecost 3.0.0
+
+This Plecost 3.0.0 version, add a lot of new features and fixes, like:
 
 - Fixed a lot of bugs.
 - New engine: without threads or any dependencies, but run more faster. We'll used python 3 asyncio and non-blocking connections. Also consume less memory. Incredible, right? :) 
@@ -36,7 +48,7 @@ This Plecost 3 version, add a lot of new features and fixes, like:
 - Add local vulnerability database are queryable. You can consult the vulnerabilities for a concrete wordpress or plugins without, using the local database.
 
 
-You can read entire list in CHANGELOG file.
+You can read entire list in `<CHANGELOG> https://github.com/iniqua/plecost/blob/develop/CHANGELOG.md`_ file.
 
 
 Installation

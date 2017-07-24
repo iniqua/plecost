@@ -12,25 +12,32 @@
 # Copyright (c) 2015, Iniqua Team
 # All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-# following conditions are met:
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the
-# following disclaimer.
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
 #
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-# following disclaimer in the documentation and/or other materials provided with the distribution.
 #
-# 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
-# products derived from this software without specific prior written permission.
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+# OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
 
@@ -41,18 +48,18 @@ This file contains function to looking for WordPress plugins and versions
 import csv
 import aiohttp
 import asyncio
+import datetime
+import os.path as op
 
-from datetime import datetime
 from functools import partial
 from urllib.parse import urlparse
-from os.path import join
 
-from .db import DB
 from .data import *  # noqa
+from .db import DB
 from .exceptions import *  # noqa
 from .plugins_utils import plugins_testing
+from .helpers import is_remote_a_wordpress, get_wordpress_version
 from .utils import colorize, generate_error_page, download, get_data_folder
-from .wordpress_core import is_remote_a_wordpress, get_wordpress_version, get_wordpress_vulnerabilities
 
 
 # ----------------------------------------------------------------------
@@ -80,7 +87,7 @@ def find_versions(args):
     log = args.log_function
     proxy = args.proxy
     is_color = args.colorize
-    start_time = datetime.now()
+    start_time = datetime.datetime.now()
     no_check_wordpress = args.no_check_wordpress
     no_check_plugins = args.no_check_plugins
     no_check_wordpress_version = args.no_check_wordpress_version
@@ -93,11 +100,12 @@ def find_versions(args):
     # Non-blocking config
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    con = aiohttp.TCPConnector(conn_timeout=10, loop=loop, verify_ssl=False)
-    _download = partial(download, max_redirect=0, connector=con, loop=loop)
+    conn = aiohttp.TCPConnector(verify_ssl=False)
+    session = aiohttp.ClientSession(loop=loop, connector=conn)
+    _download = partial(download, session=session, max_redirect=0, loop=loop)
 
     # Get CVE database
-    db = DB(path=join(get_data_folder(), "cve.db"))
+    db = DB(path=op.join(get_data_folder(), "cve.db"))
 
     # --------------------------------------------------------------------------
     # Test availability of target
@@ -189,22 +197,22 @@ def find_versions(args):
         log("[*] Looking for plugins (wordlist: %s) ... " % args.wordlist[args.wordlist.rfind("/") + 1:], 0)
 
         plugins_info = loop.run_until_complete(plugins_testing(url,
+                                                               session,
                                                                error_page,
                                                                log,
                                                                cve_info,
                                                                db,
                                                                concurrency,
-                                                               loop,
-                                                               con=con))
+                                                               loop))
     log("\n[*] Done! \n")
 
     # Set finish time
-    end_time = datetime.now()
+    end_time = datetime.datetime.now()
 
     # --------------------------------------------------------------------------
     # Clean up
     # --------------------------------------------------------------------------
-    con.close()
+    session.close()
 
     # --------------------------------------------------------------------------
     # Make results

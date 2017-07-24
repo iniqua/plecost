@@ -12,25 +12,31 @@
 # Copyright (c) 2015, Iniqua Team
 # All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-# following conditions are met:
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the
-# following disclaimer.
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
 #
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-# following disclaimer in the documentation and/or other materials provided with the distribution.
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
 #
-# 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
-# products derived from this software without specific prior written permission.
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+# OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
 
@@ -232,7 +238,8 @@ def _parse_vulnerabilities_from_nvd(stream, log=None, cpe=None):
 # --------------------------------------------------------------------------
 def update_cve(log, since=2013):
     """
-    Generate the CVE with WordPress vulns related DB and store it into pickled database.
+    Generate the CVE with WordPress vulns related DB and store it into pickled
+    database.
 
     :param log: Log function as format: function(Message, Level)
     :type log: function(str, int)
@@ -255,22 +262,26 @@ def update_cve(log, since=2013):
     db.create_db()
 
     # return
-    for d in range(since, 2016):
+    for d in range(since, 2025):
         log("    Downloading NVD feed %s: \n" % d)
 
         _nvd_url = nvd_base_url % d
 
-        # --------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Obtain CVE database
-        # --------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         try:
             content = urlopen(_nvd_url).read()
         except URLError as e:
-            log("[%s] %s" % (
-                colorize("!"),
-                colorize("Can't obtain CVE database.")
-            ))
-            log("    |- Error details: %s" % e, 3)
+            if e.code == 404:
+                # No more CVE feeds
+                break
+            else:
+                log("[%s] %s" % (
+                    colorize("!"),
+                    colorize("Can't obtain CVE database.")
+                ))
+                log("    |- Error details: %s" % e, 3)
 
         # Load
         unziped_content = gzip.GzipFile(fileobj=io.BytesIO(content)).read()

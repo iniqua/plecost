@@ -12,25 +12,31 @@
 # Copyright (c) 2015, Iniqua Team
 # All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-# following conditions are met:
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the
-# following disclaimer.
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
 #
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-# following disclaimer in the documentation and/or other materials provided with the distribution.
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
 #
-# 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
-# products derived from this software without specific prior written permission.
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+# OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
 
@@ -41,11 +47,11 @@ import urllib
 import aiohttp
 import asyncio
 
+import os.path as op
 from urllib.parse import urljoin
 from random import choice, randint
 from difflib import SequenceMatcher
 from string import ascii_letters, digits
-from os.path import abspath, basename, dirname, join
 
 try:
     from termcolor import colored
@@ -178,7 +184,7 @@ def get_data_folder():
     :return: path of resources folder.
     :rtype: str
     """
-    return abspath(join(dirname(__file__), "..", "resources"))
+    return op.abspath(op.join(op.dirname(__file__), "..", "resources"))
 
 
 # ----------------------------------------------------------------------
@@ -217,7 +223,12 @@ def update_progress(values, print_function=None, prefix_text="", bar_len=40):
 
 # ------------------------------------------------------------------------------
 @asyncio.coroutine
-def download(url, max_tries=3, max_redirect=2, connector=None, loop=None, method="get", get_content=True,
+def download(url,
+             max_redirect=2,
+             loop=None,
+             session=None,
+             method="get",
+             get_content=True,
              auto_redirect=True):
     """
     Download a web page content.
@@ -245,63 +256,59 @@ def download(url, max_tries=3, max_redirect=2, connector=None, loop=None, method
     """
     _loop = loop or asyncio.get_event_loop()
 
+    # session = session or aiohttp.ClientSession(loop=_loop)
+
     if max_redirect < 0:
         return None, None, None
 
-    tries = 0
+    # with aiohttp.Timeout(timeout=5):
+    response = yield from session.request(
+        method,
+        url,
+        allow_redirects=False)
 
-    while tries < max_tries:
-        try:
-            response = yield from aiohttp.request(
-                # 'get',
-                method,
-                url,
-                connector=connector,
-                allow_redirects=False,
-                loop=_loop)
-            if tries > 1:
-                log('\n[!] try %r for %r success\n', tries, url)
-            break
-        except aiohttp.ClientError as client_error:
-            log("\n[!] Can't get before %r for %r tries, raised %r\n" % (
-                colorize(tries, "red"), colorize(url, "red"), client_error),
-                log_level=3)
-
-        tries += 1
-    else:
-        # We never broke out of the loop: all tries failed.
-        log('\n[!] %r failed after %r tries\n' % (url, max_tries))
-        return
+    ret_status = None
+    ret_headers = None
+    ret_content = None
 
     if response.status in (300, 301, 302, 303, 307):
         location = response.headers.get('location')
         next_url = urllib.parse.urljoin(url, location)
         if max_redirect > 0:
-            log('\n[!] redirect to %r from %r\n' % (next_url, url), log_level=1)
+            log('\n[!] redirect to %r from %r\n' % (next_url, url),
+                log_level=1)
             if auto_redirect is True:
                 return _loop.run_until_complete(download(next_url,
                                                          max_redirect=(max_redirect-1)))
             else:
-                return response.headers, response.status, None
+                ret_headers, ret_status, ret_content = response.headers, response.status, None
         else:
             log('\n[!] redirect limit reached for %r from %r\n' % (next_url, url), log_level=2)
-            return response.headers, response.status, None
+
+            ret_headers, ret_status, ret_content = response.headers, response.status, None
     else:
         content = None
 
         if get_content:
             content = (yield from response.read()).decode(errors="ignore")
 
-        return response.headers, response.status, content
+        ret_headers, ret_status, ret_content = response.headers, response.status, content
+
+    return ret_headers, ret_status, ret_content
 
 
 # --------------------------------------------------------------------------
 class ConcurrentDownloader:
-    """Get a list of URLs. Download their content and call user defined action"""
+    """Get a list of URLs. Download their content and call user defined
+    action """
 
     # ----------------------------------------------------------------------
-    def __init__(self, process_url_content, max_redirects=2, max_tries=4, max_tasks=10, loop=None,
-                 connector=None):
+    def __init__(self,
+                 process_url_content,
+                 session,
+                 max_redirects=2,
+                 max_tasks=10,
+                 loop=None):
         """
         :param process_url_content: function to process URL content, after it is downloaded
         :type process_url_content: function
@@ -328,13 +335,12 @@ class ConcurrentDownloader:
         >>> v = ConcurrentDownloader(url_base="http://myhost.com", process_url_content=display)
         >>> loop.run_until_complete(v.run())
         """
+        self.session = session
         self.max_redirects = max_redirects
         self.process_url_function = process_url_content or (lambda x: None)
-        self.max_tries = max_tries
         self.max_tasks = max_tasks
         self.loop = loop or asyncio.get_event_loop()
         self.q = asyncio.Queue(loop=self.loop)
-        self.connector = connector or aiohttp.TCPConnector(loop=self.loop)
         self.__results = []
         self.__results_append = self.results.append
 
@@ -354,10 +360,9 @@ class ConcurrentDownloader:
             log("\n    |- Trying: %s" % colorize(url, "yellow"), log_level=1)
 
             headers, status, content = yield from download(url,
-                                                           self.max_tries,
-                                                           self.max_redirects,
-                                                           self.connector,
-                                                           self.loop)
+                                                           session=self.session,
+                                                           max_redirect=self.max_redirects,
+                                                           loop=self.loop)
 
             # Processing response
             _r = self.process_url_function(url, headers, status, content)
