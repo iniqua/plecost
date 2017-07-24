@@ -35,7 +35,7 @@ What's new?
 - Performance tips
 - Open Issues
 
-You can read entire list in `<CHANGELOG> https://github.com/iniqua/plecost/blob/develop/CHANGELOG.md`_ file.
+You can read entire list in [CHANGELOG](https://github.com/iniqua/plecost/blob/develop/CHANGELOG.md) file.
 
 ### Plecost 3.0.0
 
@@ -48,7 +48,7 @@ This Plecost 3.0.0 version, add a lot of new features and fixes, like:
 - Add local vulnerability database are queryable. You can consult the vulnerabilities for a concrete wordpress or plugins without, using the local database.
 
 
-You can read entire list in `<CHANGELOG> https://github.com/iniqua/plecost/blob/develop/CHANGELOG.md`_ file.
+You can read entire list in [CHANGELOG](https://github.com/iniqua/plecost/blob/develop/CHANGELOG.md) file.
 
 
 Installation
