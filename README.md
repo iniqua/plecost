@@ -11,6 +11,7 @@ Code | https://github.com/iniqua/plecost/tree/python3
 ---- | ----------------------------------------------
 Issues | https://github.com/iniqua/plecost/tree/python3/issues
 Python version | Python 3.3 and above
+Authors | @ggdaniel (cr0hn) - @ffranz (ffr4nz)
 Last version | 1.1.1
 
 What's Plecost?
