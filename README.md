@@ -69,13 +69,13 @@ Install Plecost is so easy:
 If you don't want to install Plecost, you can run it using Docker:
 
 ```bash
-> docker run --rm cr0hn/plecost {ARGS}
+> docker run --rm iniqua/plecost {ARGS}
 ```
 
 Where *{ARGS}* is any valid argument of Plecost. A real example could be:
 
 ```bash
-> docker run --rm cr0hn/plecost -nb -w plugin_list_10.txt http://SITE.com
+> docker run --rm iniqua/plecost -nb -w plugin_list_10.txt http://SITE.com
 ```
 
 Quick start

@@ -41,6 +41,7 @@
 #
 
 
+import difflib
 import sqlite3
 
 from os.path import exists, join
@@ -71,7 +72,7 @@ class DB:
         # We need to create initial tables?
         if not exists(path):
             if auto_create:
-                self.con = self._create_db(self.path)
+                self.con = self.create_db()
             else:
                 raise IOError("Database '%r' not found." % path)
         else:
@@ -94,7 +95,10 @@ class DB:
             return None
 
     # ----------------------------------------------------------------------
-    def query_plugin(self, plugin_name, plugin_version=None):
+    def query_plugin(self,
+                     plugin_name,
+                     plugin_long_name,
+                     plugin_version=None):
         """
         Query for plugin version and return associated CVE, if exists.
 
@@ -107,17 +111,70 @@ class DB:
         :return: CVE value
         :rtype: str|None
         """
-        if plugin_version is not None:
+        if not plugin_version:
             _plugin_version = "%"
         else:
             _plugin_version = plugin_version
 
-        r = self.con.execute("SELECT PVC.cve "
-                             "FROM PLUGIN_VULNERABILITIES as PV, PLUGIN_VULNERABILITIES_CVE as PVC "
-                             "WHERE PV._id == PVC._id AND PV.plugin_name LIKE ? AND PV.plugin_version LIKE ?",
-                             (plugin_name, plugin_version,))
+        query = ["SELECT ",
+                 "PVC.cve, ",
+                 "PV.plugin_name, ",
+                 "PV.plugin_version "
 
-        return self._get_rows(r)
+                 "FROM ",
+                 "PLUGIN_VULNERABILITIES as PV, ",
+                 "PLUGIN_VULNERABILITIES_CVE as PVC ",
+
+                 "WHERE ",
+                 "PV.ROWID == PVC._id AND ",
+                 # "PV.plugin_name LIKE '%{}%' OR ",
+                 "PV.plugin_long_name MATCH '{}' "]
+
+        query_params = [plugin_name, plugin_long_name]
+
+        #
+        # Build complex full text queries
+        #
+        full_text_queries = []
+        sep = " " if " " in plugin_long_name else "-"
+        plugin_long_name_split = plugin_long_name.split(sep)
+        for i in range(1,  len(plugin_long_name_split)):
+            p = sep.join(plugin_long_name_split[i:])
+
+            if not p:
+                continue
+
+            full_text_queries.append(
+                " OR PV.plugin_long_name MATCH '{}' "
+            )
+            query_params.append(p)
+
+        query.extend(full_text_queries)
+
+        build_query = "".join(query).format(*query_params)
+
+        r = self.con.execute(build_query)
+
+        #
+        # Try to discard false positive removing string with not appears with
+        # the plugin version format.
+        #
+        # -> Only allowed versions with > 80% of similarity
+        # -> Only store CVE for lower version of plugins
+        #
+        cleaned_cve = set()
+        for p_cve, p_name, p_version in r.fetchall():
+            if difflib.SequenceMatcher(None, plugin_version,
+                                       p_version).real_quick_ratio() > 0.8 and \
+                difflib.SequenceMatcher(None, plugin_name,
+                                        p_name).real_quick_ratio() > 0.9:
+
+                # Compare plugin versions
+                if tuple(p_version.split(".")) >= \
+                        tuple(plugin_version.split(".")):
+                    cleaned_cve.add(p_cve)
+
+        return cleaned_cve
 
     # ----------------------------------------------------------------------
     def query_wordpress(self, wordpress_version):
@@ -180,14 +237,14 @@ class DB:
 
         """
         tables = dict(
-            q_table_vulns="CREATE TABLE PLUGIN_VULNERABILITIES ("
-                          "_id INTEGER PRIMARY KEY autoincrement,"
+            q_table_vulns="CREATE VIRTUAL TABLE PLUGIN_VULNERABILITIES USING fts4 ("
                           "plugin_name TEXT NOT NULL, "
-                          "plugin_version TEXT NOT NULL,"
-                          "UNIQUE (plugin_name, plugin_version));",
+                          "plugin_long_name TEXT NOT NULL, "
+                          "plugin_version TEXT NOT NULL);",
 
             q_table_vulns_cve="CREATE TABLE PLUGIN_VULNERABILITIES_CVE ("
-                              "_id TEXT REFERENCES PLUGIN_VULNERABILITIES(_id), "
+            # "_id TEXT REFERENCES PLUGIN_VULNERABILITIES(_id), "
+                              "_id TEXT REFERENCES PLUGIN_VULNERABILITIES(rowid), "
                               "cve TEXT REFERENCES cve(cve));",
 
             q_table_wordpress="CREATE TABLE WORDPRESS_VULNERABILITIES (wordpress_version TEXT PRIMARY KEY NOT NULL);",

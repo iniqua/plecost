@@ -135,9 +135,7 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
     data = data_map[url]
 
     # Plugin properties
-    plugin_uri = data[0]
-    plugin_name = data[1]
-    plugin_last_version = data[2]
+    plugin_uri, plugin_name, plugin_last_version = data
 
     # --------------------------------------------------------------------------
     # Looking for plugin info
@@ -168,7 +166,9 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
         # --------------------------------------------------------------------------
         # Looking for CVE
         # --------------------------------------------------------------------------
-        cves = db.query_plugin(plugin_uri.replace("_", "-"), plugin_installed_version)
+        cves = db.query_plugin(plugin_uri.replace("_", "-"),
+                               plugin_name,
+                               plugin_installed_version)
 
         plugin = PlecostPluginInfo(current_version=plugin_installed_version,
                                    last_version=plugin_last_version,
@@ -196,6 +196,12 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
                        ) % {"cve": colorize(cve, "red")}
 
                 log(text)
+        else:
+            text = (
+                       "\n        |_CVEs: %(text)s"
+                   ) % {"text": colorize("NO CVEs found for this plugin",
+                                        "green")}
+            log(text)
 
         return plugin  # Plugin found -> not more URL test for this plugin
 

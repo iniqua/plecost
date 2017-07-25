@@ -132,7 +132,9 @@ def find_versions(args):
             # Error page content.
             headers, status, error_page = loop.run_until_complete(_download(generate_error_page(url)))
 
-            _is_wp = loop.run_until_complete(is_remote_a_wordpress(url, error_page, _download))
+            _is_wp = loop.run_until_complete(is_remote_a_wordpress(url,
+                                                                   error_page,
+                                                                   _download))
 
             if not _is_wp:
                 if force_scan is False:
@@ -213,6 +215,7 @@ def find_versions(args):
     # Clean up
     # --------------------------------------------------------------------------
     session.close()
+    conn.close()
 
     # --------------------------------------------------------------------------
     # Make results

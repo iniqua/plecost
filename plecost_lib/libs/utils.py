@@ -46,8 +46,8 @@ This file contains some orphan functions
 import urllib
 import aiohttp
 import asyncio
-
 import os.path as op
+
 from urllib.parse import urljoin
 from random import choice, randint
 from difflib import SequenceMatcher
@@ -254,45 +254,51 @@ def download(url,
     :return: Web page content as a tuple: (http_header, status, basestring)
     :rtype: (dict, int, str)
     """
-    _loop = loop or asyncio.get_event_loop()
-
-    # session = session or aiohttp.ClientSession(loop=_loop)
-
-    if max_redirect < 0:
-        return None, None, None
-
-    # with aiohttp.Timeout(timeout=5):
-    response = yield from session.request(
-        method,
-        url,
-        allow_redirects=False)
 
     ret_status = None
     ret_headers = None
     ret_content = None
 
-    if response.status in (300, 301, 302, 303, 307):
-        location = response.headers.get('location')
-        next_url = urllib.parse.urljoin(url, location)
-        if max_redirect > 0:
-            log('\n[!] redirect to %r from %r\n' % (next_url, url),
-                log_level=1)
-            if auto_redirect is True:
-                return _loop.run_until_complete(download(next_url,
-                                                         max_redirect=(max_redirect-1)))
+    try:
+        with aiohttp.Timeout(5):
+            if max_redirect < 0:
+                return None, None, None
+
+            # with aiohttp.Timeout(timeout=5):
+            response = yield from session.request(
+                method,
+                url,
+                allow_redirects=False)
+
+            if response.status in (300, 301, 302, 303, 307):
+                location = response.headers.get('location')
+                next_url = urllib.parse.urljoin(url, location)
+                if max_redirect > 0:
+                    log('\n[!] redirect to %r from %r\n' % (next_url, url),
+                        log_level=1)
+                    if auto_redirect is True:
+                        # return _loop.run_until_complete(download(next_url,
+                        #                                          max_redirect=(max_redirect-1)))
+                        r = yield from download(next_url,
+                                                max_redirect=(max_redirect - 1))
+                        return r
+                    else:
+                        ret_headers, ret_status, ret_content = response.headers, response.status, None
+                else:
+                    log('\n[!] redirect limit reached for %r from %r\n' % (next_url, url), log_level=2)
+
+                    ret_headers, ret_status, ret_content = response.headers, response.status, None
             else:
-                ret_headers, ret_status, ret_content = response.headers, response.status, None
-        else:
-            log('\n[!] redirect limit reached for %r from %r\n' % (next_url, url), log_level=2)
+                content = None
 
-            ret_headers, ret_status, ret_content = response.headers, response.status, None
-    else:
-        content = None
+                if get_content:
+                    content = (yield from response.read()).decode(errors="ignore")
 
-        if get_content:
-            content = (yield from response.read()).decode(errors="ignore")
+                ret_headers, ret_status, ret_content = response.headers, response.status, content
 
-        ret_headers, ret_status, ret_content = response.headers, response.status, content
+    # Timeout error
+    except Exception:
+        pass
 
     return ret_headers, ret_status, ret_content
 

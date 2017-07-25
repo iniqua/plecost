@@ -56,21 +56,7 @@ from ..db import DB
 
 
 # ----------------------------------------------------------------------
-def _insert_cves(cves, con):
-    """
-    Insert CVE
-    """
-    for cve, description in cves:
-        try:
-            con.execute("INSERT INTO CVE (cve, cve_description) VALUES (?, ?)", (cve, description))
-        except sqlite3.IntegrityError:
-            pass
-
-        yield cve
-
-
-# ----------------------------------------------------------------------
-def _store_plugins_vulnerabilities_in_db(data, connection, log):
+def _store_plugins_vulnerabilities_in_db(data, plugins_versions, connection, log):
     """Comment"""
 
     for plugin_name, version_cv in data.items():
@@ -79,18 +65,34 @@ def _store_plugins_vulnerabilities_in_db(data, connection, log):
 
             # Store plugin info
             try:
-                c = connection.execute("INSERT INTO PLUGIN_VULNERABILITIES (plugin_name, plugin_version) VALUES(?, ?)",
-                                       (plugin_name, plugin_version, ))
+                try:
+                    plugin_description = plugins_versions[plugin_name][plugin_version]
+                except KeyError:
+                    _tmp_desc = list(plugins_versions[plugin_name].keys())
+                    if _tmp_desc:
+                        _tmp_desc = _tmp_desc[0]
+                    plugin_description = plugins_versions[plugin_name][_tmp_desc]
+
+                c = connection.execute("INSERT INTO PLUGIN_VULNERABILITIES (plugin_name, plugin_long_name, plugin_version) VALUES(?, ?, ?)",
+                                       (plugin_name, plugin_description, plugin_version, ))
             except sqlite3.IntegrityError:
                 log("Error integrity in plugin: (%s, %s)" % (plugin_name, plugin_version), log_level=3)
                 continue
 
             # Store CVEs
-            for cve in _insert_cves(cves, connection):
-                # Store relations
-                connection.execute("INSERT INTO PLUGIN_VULNERABILITIES_CVE VALUES(?, ?)", (c.lastrowid, cve, ))
+            for cve, description in cves:
+                # Insert CVE
+                try:
+                    connection.execute("INSERT INTO CVE (cve, cve_description) VALUES (?, ?)", (cve, description))
+
+                    # Store relations
+                    connection.execute("INSERT INTO PLUGIN_VULNERABILITIES_CVE VALUES(?, ?)", (c.lastrowid, cve, ))
+                except sqlite3.IntegrityError:
+                    pass
 
     connection.commit()
+
+    pass
 
 
 # ----------------------------------------------------------------------
@@ -176,6 +178,7 @@ def _parse_vulnerabilities_from_nvd(stream, log=None, cpe=None):
     regex = re.compile("([\d]*\.[\d]+\.*[\d]*)")
 
     plugins = {}
+    plugins_versions = defaultdict(dict)
     wordpress = defaultdict(list)
 
     log("        Processing file: ")
@@ -192,17 +195,12 @@ def _parse_vulnerabilities_from_nvd(stream, log=None, cpe=None):
             for v in _tmp_v:
                 _v_name = v.get("name")
                 if "~~~wordpress~~" in _v_name or ":wordpress:" in _v_name:
-                    _v_name_split = _v_name.split(":")
-
-                    if len(_v_name_split) > 3:
-                        _product = _v_name_split[3]
-                    else:
+                    try:
+                        _, _, _, _product, _version, *_ = _v_name.split(":")
+                    except ValueError:
                         continue
 
-                    if len(_v_name_split) > 4:
-                        _version = _v_name.split(":")[4]
-                    else:
-                        continue
+                    _product_long_description = cpe.get(_v_name, "")
 
                     if regex.match(_version):
 
@@ -211,28 +209,38 @@ def _parse_vulnerabilities_from_nvd(stream, log=None, cpe=None):
 
                         # Wordpress vuln
                         if _product == "wordpress":
+                            plugins_versions[_product][_version] = _product_long_description
                             wordpress[_version].append((cve_id, cve_description))
 
                             # generate previous versions
-                            for v in _generate_previous_versions(_version):
-                                wordpress[v].append((cve_id, cve_description))
-
-                            if _version == "3.9.3":
-                                print(_version)
+                            for h in _generate_previous_versions(_version):
+                                wordpress[h].append((cve_id, cve_description))
 
                         else:
                             # Plugin vulns
                             try:
+                                plugins_versions[_product][_version] = _product_long_description
                                 plugins[_product][_version].append((cve_id, cve_description))
                             except KeyError:
+                                plugins_versions[_product][_version] = _product_long_description
                                 plugins[_product] = defaultdict(list)
                                 plugins[_product][_version].append((cve_id, cve_description))
 
                             # generate previous versions
-                            for v in _generate_previous_versions(_version):
-                                plugins[_product][v].append((cve_id, cve_description))
+                            for h in _generate_previous_versions(_version):
+                                plugins[_product][h].append((cve_id, cve_description))
 
-    return plugins, wordpress
+    return plugins, plugins_versions, wordpress
+
+
+def _cpe_to_dict(xml_content):
+
+    ret = {}
+
+    for cpe in xml_content.findall("{http://cpe.mitre.org/dictionary/2.0}cpe-item"):
+        ret[cpe.get("name")] = cpe.find("{http://cpe.mitre.org/dictionary/2.0}title").text
+
+    return ret
 
 
 # --------------------------------------------------------------------------
@@ -253,11 +261,27 @@ def update_cve(log, since=2013):
         raise TypeError("Expected int, got '%s' instead" % type(since))
 
     nvd_base_url = "https://nvd.nist.gov/feeds/xml/cve/nvdcve-2.0-%s.xml.gz"
+    cpe_base_url = "http://static.nvd.nist.gov/feeds/xml/cpe/dictionary" \
+                   "/official-cpe-dictionary_v2.3.xml.gz "
+
+    log("[*] Downloading CPE database...\n")
+    try:
+        cpe_content = urlopen(cpe_base_url).read()
+    except URLError as e:
+        log("[%s] %s" % (
+            colorize("!"),
+            colorize("Can't obtain CPE database.")
+        ))
+        log("    |- Error details: %s" % e, 3)
+
+    # Load
+    unzipped_cpe_content = gzip.GzipFile(fileobj=io.BytesIO(cpe_content)).read()
+    parsed_cpe = _cpe_to_dict(ET.fromstring(unzipped_cpe_content))
 
     log("[*] Updating CVE database...\n")
 
     # Create database
-    db = DB(join(get_data_folder(), "cve.db"), auto_create=False)
+    db = DB(join(get_data_folder(), "cve.db"), auto_create=True)
     db.clean_db()
     db.create_db()
 
@@ -284,15 +308,17 @@ def update_cve(log, since=2013):
                 log("    |- Error details: %s" % e, 3)
 
         # Load
-        unziped_content = gzip.GzipFile(fileobj=io.BytesIO(content)).read()
+        unzipped_content = gzip.GzipFile(fileobj=io.BytesIO(content)).read()
 
         # Parse info
-        p, w = _parse_vulnerabilities_from_nvd(unziped_content, log)
+        plugins, plugins_versions, w = _parse_vulnerabilities_from_nvd(unzipped_content,
+                                               log,
+                                               parsed_cpe)
 
         log("\n")
 
         # Store
-        _store_plugins_vulnerabilities_in_db(p, db.con, log)
+        _store_plugins_vulnerabilities_in_db(plugins, plugins_versions, db.con, log)
         _store_wordpress_vulnerabilities_in_db(w, db.con, log)
 
     log("\n[*] Done!\n")

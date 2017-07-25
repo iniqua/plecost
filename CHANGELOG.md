@@ -4,6 +4,7 @@ Version 1.1.1
 Internal modifications
 ----------------------
 
+- Improved CVE database. Now it implement full-text queries to locate plugins CVEs.
 - Improved internal system that does the scan -> increased the performance
 - Minor PEP8 improvements.
 - Changed BeatufilSoup 4 HTML parser in favor of Lxml -> more fault tolerant & performance

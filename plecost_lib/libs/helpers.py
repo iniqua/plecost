@@ -111,19 +111,23 @@ def is_remote_a_wordpress(base_url, error_page, downloader):
             #
             _, _, _content = yield from downloader(base_url)
 
-            _web_links = re.findall(REGEX_FIND_CSS_SCRIPT_LINKS,
-                                    _content)
+            if _content:
+                _web_links = re.findall(REGEX_FIND_CSS_SCRIPT_LINKS,
+                                        _content)
 
-            is_wp_content = any("/wp-content/" in x[3] for x in
-                                _web_links)
-            is_wp_includes = any("/wp-includes/" in x[3] for x in
-                                 _web_links)
+                is_wp_content = any("/wp-content/" in x[3] for x in
+                                    _web_links)
+                is_wp_includes = any("/wp-includes/" in x[3] for x in
+                                     _web_links)
 
-            if is_wp_content or is_wp_includes:
-                return True
+                if is_wp_content or is_wp_includes:
+                    return True
+                else:
+                    return False
+
+            # No content
             else:
                 return False
-
     else:
         return True
 
