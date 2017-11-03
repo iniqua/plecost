@@ -127,6 +127,8 @@ Examples:
 
     # Scanner options
     gr_wordlist = parser.add_argument_group("scanner options")
+    gr_wordlist.add_argument('--hostname', dest="HOSTNAME", default=None,
+                             help="set custom hostname for the HTTP request")
     gr_wordlist.add_argument('-np', '--no-plugins', dest="NO_PLUGINS_VERSIONS", action="store_true", default=False,
                              help="do not try to find plugins versions")
     gr_wordlist.add_argument('-nc', '--no-check-wordpress', dest="NO_CHECK_WORDPRESS", action="store_true",
@@ -250,6 +252,7 @@ Examples:
     try:
         # Set config
         config = PlecostOptions(target=args.target[0],
+                                hostname=args.HOSTNAME,
                                 # proxy=args.PROXY,
                                 concurrency=args.CONCURRENCY,
                                 verbosity=args.verbose,

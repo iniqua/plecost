@@ -1,0 +1,18 @@
+include README.md requirements.txt VERSION
+recursive-include plecost_lib/resources *
+
+recursive-exclude * __pycache__
+recursive-exclude * *.pyc
+recursive-exclude * *.pyo
+recursive-exclude * *.omdmdrig
+recursive-exclude * .DS_Store
+global-exclude __pycache__/*
+global-exclude .cache
+global-exclude .tox
+global-exclude .deps/*
+global-exclude *.so
+global-exclude *.pyd
+global-exclude *.pyc
+global-exclude .git*
+global-exclude .DS_Store
+global-exclude .mailmap

@@ -39,24 +39,32 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from os import path
+from os.path import join, abspath, dirname
+
 from setuptools import setup, find_packages
 
-files = ["resources/*"]
+here = path.abspath(path.dirname(__file__))
+
+with open(path.join(here, 'README.md')) as f:
+    readme = f.read()
+
+with open(join(here, 'requirements.txt')) as f:
+    required = f.read().splitlines()
+
+with open(join(abspath(dirname(__file__)), "VERSION"), "r") as v:
+    VERSION = v.read().replace("\n", "")
 
 setup(
     name='plecost',
-    version='1.1.1',
+    version=VERSION,
     packages=find_packages(),
-    install_requires=[
-        "termcolor==1.1.0",
-        "lxml==3.8.0",
-        "aiohttp==2.2.3"
-    ],
+    long_description=readme,
+    install_requires=required,
     url='https://github.com/iniqua/plecost/tree/python3',
     license='GPL2',
     author='Plecost team',
     author_email='plecost@iniqua.com',
-    package_data={'plecost_lib': files},
     entry_points={'console_scripts': [
         'plecost = plecost_lib.plecost:main',
         ]},

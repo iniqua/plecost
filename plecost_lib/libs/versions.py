@@ -92,6 +92,7 @@ def find_versions(args):
     no_check_plugins = args.no_check_plugins
     no_check_wordpress_version = args.no_check_wordpress_version
     force_scan = args.force_scan
+    hostname = args.hostname
 
     # Jackass mode is set?
     if args.jackass is True:
@@ -102,7 +103,11 @@ def find_versions(args):
     asyncio.set_event_loop(loop)
     conn = aiohttp.TCPConnector(verify_ssl=False)
     session = aiohttp.ClientSession(loop=loop, connector=conn)
-    _download = partial(download, session=session, max_redirect=0, loop=loop)
+    _download = partial(download,
+                        session=session,
+                        max_redirect=0,
+                        loop=loop,
+                        custom_hostname=hostname)
 
     # Get CVE database
     db = DB(path=op.join(get_data_folder(), "cve.db"))

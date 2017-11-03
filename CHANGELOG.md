@@ -1,3 +1,17 @@
+Version 1.1.2
+=============
+
+Improvements and fixes
+----------------------
+
+- Fixed issue: #18 (https://github.com/iniqua/plecost/issues/18)
+
+New features
+------------
+
+- Added option to set custom hostname. Issue #20 (https://github.com/iniqua/plecost/issues/20)
+
+
 Version 1.1.1
 =============
 

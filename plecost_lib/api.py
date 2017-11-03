@@ -97,6 +97,6 @@ def run(config):
         report.save(content)
 
 
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 __all__ = ["run", "find_versions", "PlecostOptions",
            "PlecostInvalidReportFormat"]

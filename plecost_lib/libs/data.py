@@ -66,6 +66,9 @@ class PlecostOptions(object):
     # ----------------------------------------------------------------------
     def __init__(self, **kwargs):
         """
+        :param hostname: hostname sent in the HTTP Request
+        :type hostname: str
+
         :param proxy: Proxy as format: {HOST:PORT}. Default None.
         :type proxy: dict()
 
@@ -93,6 +96,7 @@ class PlecostOptions(object):
         self.__proxy = kwargs.get("proxy", {})
         self.__target = kwargs.get("target", None)
         self.__verbosity = kwargs.get("verbosity", 0)
+        self.__hostname = kwargs.get("hostname", None)
         self.__concurrency = kwargs.get("concurrency", 4)
         self.__report_filename = kwargs.get("report", None)
         self.__log_function = kwargs.get("log_function",
@@ -247,6 +251,15 @@ class PlecostOptions(object):
         :rtype: basestring
         """
         return self.__wordlist
+
+    # ----------------------------------------------------------------------
+    @property
+    def hostname(self):
+        """
+        :return: hostname sent in the HTTP request
+        :rtype: basestring
+        """
+        return self.__hostname
 
 
 # --------------------------------------------------------------------------

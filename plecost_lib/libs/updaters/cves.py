@@ -109,9 +109,11 @@ def _store_wordpress_vulnerabilities_in_db(data, connection, log):
             continue
 
         # Store CVEs
-        for cve in _insert_cves(cves, connection):
+        for cve in cves:
+            cve_number, cve_description = cve
             # Store relations
-            connection.execute("INSERT INTO WORDPRESS_VULNERABILITIES_CVE VALUES(?, ?)", (wordpress_version, cve, ))
+            connection.execute("INSERT INTO WORDPRESS_VULNERABILITIES_CVE "
+                               "VALUES(?, ?)", (cve_number, cve_description))
 
     connection.commit()
 

@@ -229,7 +229,8 @@ def download(url,
              session=None,
              method="get",
              get_content=True,
-             auto_redirect=True):
+             auto_redirect=True,
+             custom_hostname=None):
     """
     Download a web page content.
 
@@ -259,15 +260,19 @@ def download(url,
     ret_headers = None
     ret_content = None
 
+    custom_headers = {}
+    if custom_hostname:
+        custom_headers["host"] = custom_hostname
+
     try:
         with aiohttp.Timeout(5):
             if max_redirect < 0:
                 return None, None, None
 
-            # with aiohttp.Timeout(timeout=5):
             response = yield from session.request(
                 method,
                 url,
+                headers=custom_headers,
                 allow_redirects=False)
 
             if response.status in (300, 301, 302, 303, 307):
