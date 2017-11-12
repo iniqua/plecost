@@ -319,6 +319,7 @@ class ConcurrentDownloader:
                  session,
                  max_redirects=2,
                  max_tasks=10,
+                 ignore_403=False,
                  loop=None):
         """
         :param process_url_content: function to process URL content, after it is downloaded
@@ -336,6 +337,9 @@ class ConcurrentDownloader:
         :param loop: optional event loop object
         :type loop: loop
 
+        :param ignore_403: Ignore 403 responses from server
+        :type ignore_403: bool
+
         :param connector: aioTCPConnector object
         :type connector: aiohttp.TCPConnector
 
@@ -347,6 +351,7 @@ class ConcurrentDownloader:
         >>> loop.run_until_complete(v.run())
         """
         self.session = session
+        self.ignore_403 = ignore_403,
         self.max_redirects = max_redirects
         self.process_url_function = process_url_content or (lambda x: None)
         self.max_tasks = max_tasks
@@ -375,10 +380,13 @@ class ConcurrentDownloader:
                                                            max_redirect=self.max_redirects,
                                                            loop=self.loop)
 
-            # Processing response
-            _r = self.process_url_function(url, headers, status, content)
-            if _r is not None:
-                self.__results_append(_r)
+            if self.ignore_403 is True and status == 403:
+                continue
+            else:
+                # Processing response
+                _r = self.process_url_function(url, headers, status, content)
+                if _r is not None:
+                    self.__results_append(_r)
 
             del headers, status, content
 

@@ -92,6 +92,7 @@ def find_versions(args):
     no_check_plugins = args.no_check_plugins
     no_check_wordpress_version = args.no_check_wordpress_version
     force_scan = args.force_scan
+    ignore_403 = args.ignore_403
     hostname = args.hostname
 
     # Jackass mode is set?
@@ -210,6 +211,7 @@ def find_versions(args):
                                                                cve_info,
                                                                db,
                                                                concurrency,
+                                                               ignore_403,
                                                                loop))
     log("\n[*] Done! \n")
 

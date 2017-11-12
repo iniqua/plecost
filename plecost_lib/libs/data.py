@@ -108,6 +108,7 @@ class PlecostOptions(object):
         self.__no_check_wordpress_version = kwargs.get("no_check_wordpress_version", False)
         self.__force_scan = kwargs.get("force_scan", False)
         self.__jackass = kwargs.get("jackass", False)
+        self.ignore_403 = kwargs.get("IGNORE_403", False)
 
         # Check types and default values
         if not isinstance(self.__target, str):

@@ -151,6 +151,10 @@ Examples:
     gr_performance = parser.add_argument_group("advanced options")
     gr_performance.add_argument('-c', '--concurrency', dest="CONCURRENCY", type=int, help="number of parallel processes.",
                                 default=4)
+    gr_performance.add_argument('--ignore-403', dest="IGNORE_403",
+                                action="store_true",
+                                help="ignore 403 server responses",
+                                default=False)
     # gr_performance.add_argument('--proxy', dest="PROXY", help="proxy as format proxy:port.", default=None)
     gr_performance.add_argument('-nb', dest="NO_BANNER", action="store_true", help="don't display banner",
                                 default=False)
@@ -253,7 +257,7 @@ Examples:
         # Set config
         config = PlecostOptions(target=args.target[0],
                                 hostname=args.HOSTNAME,
-                                # proxy=args.PROXY,
+                                ignore_403=args.IGNORE_403,
                                 concurrency=args.CONCURRENCY,
                                 verbosity=args.verbose,
                                 log_function=log,

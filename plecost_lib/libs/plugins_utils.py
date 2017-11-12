@@ -75,7 +75,7 @@ def _url_generator(url_base, data):
     urls_plugin_regex = {
         "readme.txt": exp,
         "README.txt": exp,
-        }
+    }
 
     results = []
     # Test each URL with possible plugin version info
@@ -178,7 +178,7 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
         text = ("\n    <%(symbol)s> Plugin found: %(name)s\n"
                 "        |_Latest version: %(last)s\n"
                 "        |_Installed version: %(curr)s"
-               ) % {
+                ) % {
                    "symbol": colorize("!", "red") if plugin.is_outdated else "i",
                    "name": colorize(plugin.plugin_name, "blue"),
                    "last": colorize(plugin.latest_version),
@@ -200,7 +200,7 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
             text = (
                        "\n        |_CVEs: %(text)s"
                    ) % {"text": colorize("NO CVEs found for this plugin",
-                                        "green")}
+                                         "green")}
             log(text)
 
         return plugin  # Plugin found -> not more URL test for this plugin
@@ -218,6 +218,7 @@ def plugins_testing(url,
                     data_list,
                     db,
                     concurrency=4,
+                    ignore_403=False,
                     loop=None,
                     con=None):
     """
@@ -257,6 +258,7 @@ def plugins_testing(url,
                               session=session,
                               max_tasks=concurrency,
                               loop=loop,
+                              ignore_403=ignore_403,
                               max_redirects=0)
     cr.add_url_list(urls)
 

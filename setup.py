@@ -60,14 +60,15 @@ setup(
     version=VERSION,
     packages=find_packages(),
     long_description=readme,
+    include_package_data=True,
     install_requires=required,
     url='https://github.com/iniqua/plecost/tree/python3',
-    license='GPL2',
+    license='BSD',
     author='Plecost team',
     author_email='plecost@iniqua.com',
     entry_points={'console_scripts': [
-        'plecost = plecost_lib.plecost:main',
-        ]},
+        'plecost = plecost_lib.__main__:main',
+    ]},
     description='Wordpress finger printer tool and vulnerabilities searcher',
     classifiers=[
         'Environment :: Console',
@@ -79,5 +80,5 @@ setup(
         'Operating System :: POSIX',
         'Programming Language :: Python :: 3',
         'Topic :: Security',
-        ]
+    ]
 )
