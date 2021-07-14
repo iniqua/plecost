@@ -3,7 +3,7 @@ name: Build Databases
 on:
   push:
     branches:
-      - master
+      - v3.0.0
 
 jobs:
 
