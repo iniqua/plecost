@@ -1,0 +1,42 @@
+#name: Build Pypi Artifacts
+#
+#on:
+##  create:
+##    tags:
+##      - v*
+#  push:
+#    branches:
+#      - master
+#
+#    paths:
+#      - dnsrecon/*
+#      - setup.py
+#      - setup.cfg
+#      - MANIFEST.in
+#      - VERSION
+#
+#jobs:
+#
+#  deploy:
+#    name: Publish in Pypi
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: Setup Python
+#        uses: actions/setup-python@v2
+#        with:
+#          python-version: '3.8'
+#
+#      - name: Install dependencies
+#        run: |
+#          python3 -m pip install -U pip
+#
+#      - name: Make package
+#        run: |
+#          python3 setup.py sdist
+#
+#      - name: Publish Package Manager PyPI
+#        uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          user: __token__
+#          password: ${{ secrets.pypi_password }}

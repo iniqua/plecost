@@ -1,0 +1,10 @@
+contact-form-7,Contact Form 7,4.8
+akismet,Akismet,3.3.3
+wordpress-seo,Yoast SEO,5.0.2
+jetpack,Jetpack by WordPress.com,5.1
+wordpress-importer,WordPress Importer,0.6.3
+woocommerce,WooCommerce,3.1.1
+all-in-one-seo-pack,All in One SEO Pack,2.3.14.1
+google-sitemap-generator,Google XML Sitemaps,4.0.8
+limit-login-attempts,Limit Login Attempts,1.7.1
+tinymce-advanced,TinyMCE Advanced,4.6.3

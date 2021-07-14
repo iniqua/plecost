@@ -1,0 +1,49 @@
+contact-form-7,Contact Form 7,4.8
+akismet,Akismet,3.3.3
+wordpress-seo,Yoast SEO,5.0.2
+jetpack,Jetpack by WordPress.com,5.1
+wordpress-importer,WordPress Importer,0.6.3
+woocommerce,WooCommerce,3.1.1
+all-in-one-seo-pack,All in One SEO Pack,2.3.14.1
+google-sitemap-generator,Google XML Sitemaps,4.0.8
+limit-login-attempts,Limit Login Attempts,1.7.1
+tinymce-advanced,TinyMCE Advanced,4.6.3
+wordfence,Wordfence Security,6.3.14
+wp-super-cache,WP Super Cache,1.5.0
+duplicate-post,Duplicate Post,3.2
+google-analytics-for-wordpress,Google Analytics for WordPress by MonsterInsights,6.2.0
+regenerate-thumbnails,Regenerate Thumbnails,2.2.6
+hello-dolly,Hello Dolly,1.6
+advanced-custom-fields,Advanced Custom Fields,4.4.11
+siteorigin-panels,Page Builder by SiteOrigin,2.5.8
+updraftplus,UpdraftPlus WordPress Backup Plugin,1.13.4
+w3-total-cache,W3 Total Cache,0.9.5.4
+really-simple-captcha,Really Simple CAPTCHA,2.0
+google-analytics-dashboard-for-wp,Google Analytics Dashboard for WP (GADWP),5.1.1.1
+nextgen-gallery,NextGEN Gallery – WordPress Gallery Plugin,2.2.10
+duplicator,Duplicator – WordPress Migration Plugin,1.2.12
+so-widgets-bundle,SiteOrigin Widgets Bundle,1.9.3
+wp-pagenavi,WP-PageNavi,2.92
+disable-comments,Disable Comments,1.7
+wp-multibyte-patch,WP Multibyte Patch,2.8.1
+ninja-forms,Ninja Forms – The Easy and Powerful Forms Builder,3.1.6
+black-studio-tinymce-widget,Black Studio TinyMCE Widget,2.3.2
+mailchimp-for-wp,MailChimp for WordPress,4.1.5
+better-wp-security,iThemes Security (formerly Better WP Security),6.3.0
+ml-slider,Meta Slider,3.5.1
+wp-smushit,Smush Image Compression and Optimization,2.7.4
+redirection,Redirection,2.6.5
+shortcodes-ultimate,Shortcodes Ultimate,4.10.1
+breadcrumb-navxt,Breadcrumb NavXT,5.7.1
+wp-mail-smtp,WP Mail SMTP by WPForms,0.10.1
+googleanalytics,Google Analytics,2.1.3
+wp-optimize,WP-Optimize,2.1.1
+all-in-one-wp-migration,All-in-One WP Migration,6.53
+backwpup,BackWPup – WordPress Backup Plugin,3.4.1
+tablepress,TablePress,1.8
+all-in-one-wp-security-and-firewall,All In One WP Security & Firewall,4.2.8
+force-regenerate-thumbnails,Force Regenerate Thumbnails,2.0.6
+the-events-calendar,The Events Calendar,4.5.8
+ewww-image-optimizer,EWWW Image Optimizer,3.5.1
+image-widget,Image Widget,4.4.5
+broken-link-checker,Broken Link Checker,1.11.3
