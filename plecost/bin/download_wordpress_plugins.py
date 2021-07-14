@@ -33,7 +33,7 @@ def main():
 
     pickle.dump(
         plugins,
-        open(os.path.join(os.getcwd(), "plugins.bin", "wb")),
+        open(os.path.join(os.getcwd(), "plugins.bin"), "wb"),
         pickle.HIGHEST_PROTOCOL
     )
 
