@@ -6,7 +6,7 @@ import orjson as json
 
 from plecost.models import WordpressPlugin
 
-MAX_PAGES = 40
+MAX_PAGES = 5
 PER_PAGE = 250
 BASE_URL = "https://api.wordpress.org/plugins/info/1.1/?action=query_plugins&" \
            "request[browse]=popular&request[per_page]=" \
