@@ -1,4 +1,6 @@
 whoosh
 
+tqdm
 orjson
 termcolor
+pluginbase

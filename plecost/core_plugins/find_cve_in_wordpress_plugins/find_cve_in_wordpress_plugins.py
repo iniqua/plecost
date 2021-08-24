@@ -1,25 +1,52 @@
-import os
 import zipfile
+import os.path
 import argparse
 import urllib.request as req
 
-from typing import Dict, Union
+from typing import List, Union, Dict
 
 import orjson as json
 
-from whoosh.fields import *
-from whoosh.index import create_in, open_dir
+from whoosh.qparser import QueryParser
+from whoosh.index import open_dir, create_in
+from whoosh.fields import Schema, ID, TEXT, STORED
 
-from plecost.models import *
+from dataclasses import dataclass
 
 HERE = os.path.dirname(__file__)
+
+
+@dataclass
+class CPE:
+    cpe: str
+    vulnerable: bool
+    version_end_including: str or None = None
+    version_end_excluding: str or None = None
+    version_start_including: str or None = None
+    version_start_excluding: str or None = None
+
+
+@dataclass
+class CVEInfo:
+    cve: str
+    description: str
+    cpes: List[CPE]
+    cvss: float or None
+
+
+# -------------------------------------------------------------------------
+# Update database
+# -------------------------------------------------------------------------
 FEED_BASE_PATH = "nvdcve-1.1-20"
 FEED_DIR = os.path.abspath(os.path.join(HERE, "old_nvd_feeds"))
-FEED_RECENT_URL = "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-recent.json.zip"
+FEED_RECENT_URL = "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-recent" \
+                  ".json.zip"
 
 
+# -------------------------------------------------------------------------
+# Update plugin data
+# -------------------------------------------------------------------------
 def load_cve(feed: str) -> List[CVEInfo]:
-
     def json_recursive_search(json_input: Union[List, Dict], lookup_key: str):
         if isinstance(json_input, dict):
             for k, v in json_input.items():
@@ -50,7 +77,6 @@ def load_cve(feed: str) -> List[CVEInfo]:
         if "REJECT" in cve_description[:20]:
             continue
 
-
         # -------------------------------------------------------------------------
         # CVSS
         # -------------------------------------------------------------------------
@@ -59,7 +85,8 @@ def load_cve(feed: str) -> List[CVEInfo]:
         except KeyError:
             # No Base Metric V3 available
             try:
-                cvss = cve_data["impact"]["baseMetricV2"]["cvssV2"]["baseScore"]
+                cvss = cve_data["impact"]["baseMetricV2"]["cvssV2"][
+                    "baseScore"]
             except KeyError:
                 cvss = None
 
@@ -82,8 +109,10 @@ def load_cve(feed: str) -> List[CVEInfo]:
                     vulnerable=cpe["vulnerable"],
                     version_end_including=cpe.get("versionEndIncluding", None),
                     version_end_excluding=cpe.get("versionEndExcluding", None),
-                    version_start_including=cpe.get("versionStartIncluding", None),
-                    version_start_excluding=cpe.get("versionStartExcluding", None)
+                    version_start_including=cpe.get("versionStartIncluding",
+                                                    None),
+                    version_start_excluding=cpe.get("versionStartExcluding",
+                                                    None)
                 ))
 
         # If this CVE is not related for Wordpress... skip it
@@ -99,8 +128,8 @@ def load_cve(feed: str) -> List[CVEInfo]:
 
     return cves
 
-def indexing_cve(cves: List[CVEInfo], index_folder: str):
 
+def indexing_cve(cves: List[CVEInfo], index_folder: str):
     schema = Schema(
         cve=ID(stored=True),
         cve_description_search=TEXT(stored=True),
@@ -136,6 +165,7 @@ def indexing_cve(cves: List[CVEInfo], index_folder: str):
             )
 
     writer.commit()
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -200,9 +230,9 @@ def main():
 
         for root, directories, files in os.walk(db_path):
             for filename in files:
-                filePath = os.path.join(root, filename)
+                file_path = os.path.join(root, filename)
 
-                to_compress_files.append(filePath)
+                to_compress_files.append(file_path)
 
         compressed_db_path = os.path.join(os.getcwd(), "plecost.db.zip")
 
@@ -217,5 +247,65 @@ def main():
             print(f"[*] Plecost db wrote on: {compressed_db_path}")
 
 
-if __name__ == '__main__':
-    main()
+# -------------------------------------------------------------------------
+# Search for CVE
+# -------------------------------------------------------------------------
+def search_cves(vender_name: str, max_items: int = 10):
+    index_folder = os.path.join(HERE, "indexes")
+
+    ix = open_dir(index_folder)
+
+    with ix.searcher() as searcher:
+        q = QueryParser("cpe", ix.schema).parse(vender_name)
+
+        ret = searcher.search(q)
+
+        for i in range(max_items):
+            try:
+                yield ret[i]
+
+            except IndexError:
+                return
+
+
+class PlecostFindCVEs:
+    slug = "core-cve-finder"
+    name = "CVE finder"
+    description = "asdfas"
+    author = "Iniqua Team"
+
+    # def cli_run(self,
+    #             parser: argparse.ArgumentParser) -> argparse._ArgumentGroup:
+    #     gr_wordlist = parser.add_argument_group("Plugins discovery options")
+    #     gr_wordlist.add_argument('-w', '--wordlist', dest="WORDLIST",
+    #                              help="set custom word list. Default 200 "
+    #                                   "most common",
+    #                              default=None)
+
+    def cli_update(self,
+                   parser: argparse.ArgumentParser) -> argparse._ArgumentGroup:
+        cli_update = parser.add_argument_group("Plugins discovery options")
+        cli_update.add_argument('DB_PATH',
+                                nargs="*",
+                                help="database directory destination")
+        cli_update.add_argument('-c', '--compress',
+                                default=True,
+                                help="compress database as .zip")
+        cli_update.add_argument('-q', '--quiet',
+                                default=False,
+                                help="quiet mode")
+
+    async def on_start(self, **kwargs):
+        print("load")
+
+    # async def on_finding_wordpress(self, **kwargs):
+    #     print("load")
+    #
+    # async def on_plugin_found(self, **kwargs):
+    #     print("load")
+    #
+    # async def on_information_found(self, **kwargs):
+    #     print("load")
+    #
+    def on_update(self):
+        pass

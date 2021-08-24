@@ -1,25 +1,22 @@
 from typing import List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
-class WordpressPlugin:
-    name: str
-    slug: str
+class WordpressVersion:
+    status: str  # insecure | outdated | latest
+    installed_version: str
     latest_version: str
 
-@dataclass
-class CPE:
-    cpe: str
-    vulnerable: bool
-    version_end_including: str or None = None
-    version_end_excluding: str or None = None
-    version_start_including: str or None = None
-    version_start_excluding: str or None = None
 
 @dataclass
-class CVEInfo:
-    cve: str
-    description: str
-    cpes: List[CPE]
-    cvss: float or None
+class PlecostRunningOptions:
+    target: str
+    concurrency: int = 4
+    report_filename: str = None
+    proxy: dict = field(default_factory=dict)
+    no_check_plugins: bool = False
+    no_check_wordpress: bool = False
+    no_check_wordpress_version: bool = False
+    force_scan: bool = False
+    jackass: bool = False
