@@ -44,7 +44,7 @@
 This file contains some orphan functions
 """
 import urllib
-import aiohttp
+import async_timeout
 import asyncio
 import os.path as op
 
@@ -265,7 +265,7 @@ def download(url,
         custom_headers["host"] = custom_hostname
 
     try:
-        with aiohttp.Timeout(5):
+        with async_timeout.timeout(5):
             if max_redirect < 0:
                 return None, None, None
 
@@ -302,7 +302,7 @@ def download(url,
                 ret_headers, ret_status, ret_content = response.headers, response.status, content
 
     # Timeout error
-    except Exception:
+    except asyncio.TimeoutError:
         pass
 
     return ret_headers, ret_status, ret_content
@@ -355,8 +355,7 @@ class ConcurrentDownloader:
         self.max_redirects = max_redirects
         self.process_url_function = process_url_content or (lambda x: None)
         self.max_tasks = max_tasks
-        self.loop = loop or asyncio.get_event_loop()
-        self.q = asyncio.Queue(loop=self.loop)
+        self.q = asyncio.Queue()
         self.__results = []
         self.__results_append = self.results.append
 
@@ -377,8 +376,7 @@ class ConcurrentDownloader:
 
             headers, status, content = yield from download(url,
                                                            session=self.session,
-                                                           max_redirect=self.max_redirects,
-                                                           loop=self.loop)
+                                                           max_redirect=self.max_redirects)
 
             if self.ignore_403 is True and status == 403:
                 continue
@@ -409,7 +407,7 @@ class ConcurrentDownloader:
         """
 
         # Add workers
-        workers = [asyncio.Task(self._work(), loop=self.loop)
+        workers = [asyncio.Task(self._work())
                    for _ in range(self.max_tasks)]
 
         # Wait content of workers ends
