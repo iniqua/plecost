@@ -1,3 +1,4 @@
 aiohttp
+async-timeout
 termcolor
 lxml

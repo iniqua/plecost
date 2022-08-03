@@ -167,7 +167,7 @@ def get_wordpress_version(url, downloader, db):
     try:
         _, _, last_version_content = yield from downloader("https://wordpress.org/download/")
 
-        last_version = re.search("(WordPress\&nbsp\;)([0-9\.]*)", str(last_version_content))
+        last_version = re.search("(WordPress )([0-9\.]*)", str(last_version_content))
         if last_version is None:
             last_version = "unknown"
         else:
@@ -262,7 +262,7 @@ def get_wordpress_version(url, downloader, db):
         for url_pre, regex in url_version.items():
             # URL to find wordpress version
             url_current_version = urljoin(url, url_pre)
-            _, _, current_version_content = yield from download(url_current_version, auto_redirect=False)
+            _, _, current_version_content = yield from downloader(url_current_version, auto_redirect=False)
 
             # Find the version
             if current_version_content is not None:
