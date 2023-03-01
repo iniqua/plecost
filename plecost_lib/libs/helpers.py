@@ -296,7 +296,7 @@ def get_wordpress_vulnerabilities(current_version, db):
     if not isinstance(db, DB):
         raise TypeError("Expected DB, got '%s' instead" % type(db))
 
-    if current_version is "unknown" or \
+    if current_version == "unknown" or \
             not current_version:
         return []
 
