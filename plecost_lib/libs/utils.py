@@ -222,8 +222,7 @@ def update_progress(values, print_function=None, prefix_text="", bar_len=40):
 
 
 # ------------------------------------------------------------------------------
-@asyncio.coroutine
-def download(url,
+async def download(url,
              max_redirect=2,
              loop=None,
              session=None,
@@ -365,8 +364,7 @@ class ConcurrentDownloader:
         return self.__results
 
     # ----------------------------------------------------------------------
-    @asyncio.coroutine
-    def _work(self):
+    async def _work(self):
         while True:
             # Get an URL to process
             url = yield from self.q.get()
@@ -400,8 +398,7 @@ class ConcurrentDownloader:
         self.connector.close()
 
     # --------------------------------------------------------------------------
-    @asyncio.coroutine
-    def run(self):
+    async def run(self):
         """
         Start the analyzer daemon.
         """

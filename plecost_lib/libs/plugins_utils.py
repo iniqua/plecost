@@ -210,8 +210,7 @@ def _plugin_analyze(data_map, error_page, db, log, url, headers, status, content
 
 
 # ----------------------------------------------------------------------
-@asyncio.coroutine
-def plugins_testing(url,
+async def plugins_testing(url,
                     session,
                     error_page,
                     log,
