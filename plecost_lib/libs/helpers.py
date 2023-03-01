@@ -57,8 +57,7 @@ REGEX_FIND_CSS_SCRIPT_LINKS = r'''((script|link).*(src|href)=)(.*)(>)'''
 # ----------------------------------------------------------------------
 # WordPress testing functions
 # ----------------------------------------------------------------------
-@asyncio.coroutine
-def is_remote_a_wordpress(base_url, error_page, downloader):
+async def is_remote_a_wordpress(base_url, error_page, downloader):
     """
     This functions checks if remote host contains a WordPress installation.
 
@@ -133,8 +132,7 @@ def is_remote_a_wordpress(base_url, error_page, downloader):
 
 
 # ----------------------------------------------------------------------
-@asyncio.coroutine
-def get_wordpress_version(url, downloader, db):
+async def get_wordpress_version(url, downloader, db):
     """
     This functions checks remote WordPress version.
 
@@ -296,7 +294,7 @@ def get_wordpress_vulnerabilities(current_version, db):
     if not isinstance(db, DB):
         raise TypeError("Expected DB, got '%s' instead" % type(db))
 
-    if current_version is "unknown" or \
+    if current_version == "unknown" or \
             not current_version:
         return []
 
