@@ -1,4 +1,3 @@
-import pytest
 from plecost.engine.context import ScanContext
 from plecost.models import ScanOptions, Finding, Severity, Plugin
 

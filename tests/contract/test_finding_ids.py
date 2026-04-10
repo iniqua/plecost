@@ -3,7 +3,6 @@ Ensure all finding IDs follow the PC-XXX-NNN format and are unique.
 This test must NEVER be broken — IDs are permanent and used in dashboards.
 """
 import re
-import pytest
 
 KNOWN_FINDING_IDS = [
     "PC-FP-001", "PC-FP-002",

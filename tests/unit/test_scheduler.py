@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 from plecost.engine.scheduler import Scheduler
 from plecost.engine.context import ScanContext

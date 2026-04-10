@@ -1,5 +1,4 @@
 import json
-import pytest
 import respx
 import httpx
 from typer.testing import CliRunner

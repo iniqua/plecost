@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from plecost.models import (
     Finding, Severity, ScanResult, ScanOptions,
-    Plugin, Theme, User, ScanSummary
+    ScanSummary
 )
 
 

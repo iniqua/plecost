@@ -1,7 +1,6 @@
 import pytest
 import respx
 import httpx
-import json
 from pathlib import Path
 from plecost.database.updater import DatabaseUpdater
 

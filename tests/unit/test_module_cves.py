@@ -1,8 +1,7 @@
 import pytest
 import sqlite3
-import json
 from plecost.engine.context import ScanContext
-from plecost.models import ScanOptions, Plugin, Theme
+from plecost.models import ScanOptions, Plugin
 from plecost.modules.cves import CVEsModule
 from plecost.database.store import CVEStore
 

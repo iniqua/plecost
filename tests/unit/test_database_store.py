@@ -1,6 +1,6 @@
 import pytest
 import sqlite3
-from plecost.database.store import CVEStore, VulnerabilityRecord
+from plecost.database.store import CVEStore
 
 
 @pytest.fixture
