@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/content_analysis.py
+# hypothesis_version: 6.151.12
+
+[5.3, 9.0, '...', '/', 'PC-CNT-001', 'PC-CNT-002', 'PC-CNT-003', 'REM-CNT-001', 'REM-CNT-002', 'REM-CNT-003', '^https?://', 'content_analysis', 'fingerprint', 'iframe_domain', 'match', 'script_src', 'url']

@@ -22,13 +22,13 @@ class DebugExposureModule(ScanModule):
             return
 
         # PC-DBG-001: WP_DEBUG active
-        if _PHP_ERROR_RE.search(r.text):
+        if debug_match := _PHP_ERROR_RE.search(r.text):
             ctx.add_finding(Finding(
                 id="PC-DBG-001", remediation_id="REM-DBG-001",
                 title="WP_DEBUG is active — PHP errors exposed in response",
                 severity=Severity.HIGH,
                 description="PHP error messages are visible in the page response, indicating WP_DEBUG=true.",
-                evidence={"url": ctx.url + "/", "match": _PHP_ERROR_RE.search(r.text).group(0)},
+                evidence={"url": ctx.url + "/", "match": debug_match.group(0)},
                 remediation="Set WP_DEBUG to false in wp-config.php for production.",
                 references=["https://wordpress.org/support/article/debugging-in-wordpress/"],
                 cvss_score=5.3, module=self.name

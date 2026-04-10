@@ -56,14 +56,13 @@ class ContentAnalysisModule(ScanModule):
                 break
 
         # PC-CNT-003: Hardcoded secrets in JS
-        if _SECRET_RE.search(r.text):
-            m = _SECRET_RE.search(r.text)
+        if secret_match := _SECRET_RE.search(r.text):
             ctx.add_finding(Finding(
                 id="PC-CNT-003", remediation_id="REM-CNT-003",
                 title="Potential API key or secret hardcoded in page source",
                 severity=Severity.MEDIUM,
                 description="An API key pattern was found in the page source code.",
-                evidence={"url": ctx.url + "/", "match": m.group(0)[:50] + "..."},
+                evidence={"url": ctx.url + "/", "match": secret_match.group(0)[:50] + "..."},
                 remediation="Move secrets to server-side configuration. Never expose API keys in client-side code.",
                 references=[], cvss_score=5.3, module=self.name
             ))
