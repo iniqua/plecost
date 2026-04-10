@@ -1,26 +1,56 @@
-Copyright (c) Iniqua Team
+Functional Source License, Version 1.1, MIT Future License
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Copyright (c) 2026 Dani (cr0hn@cr0hn.com)
 
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
+TERMS AND CONDITIONS
 
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
+Licensor: Dani (cr0hn@cr0hn.com)
+Licensed Work: Plecost v4.0
+The Licensed Work is © 2026 Dani (cr0hn@cr0hn.com)
 
-    3. Neither the name of cr0hn nor the names of its contributors may be used
-       to endorse or promote products derived from this software without
-       specific prior written permission.
+Use Grant:
+Subject to the terms and conditions of this License, Licensor grants you a
+non-exclusive, worldwide, royalty-free license to use, copy, modify, and
+distribute the Licensed Work for any Non-Commercial Purpose.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"Non-Commercial Purpose" means any use that is not primarily intended for or
+directed toward commercial advantage or monetary compensation. For avoidance
+of doubt, making the Licensed Work available as a Software-as-a-Service
+(SaaS) or any hosted service for which payment is charged is a Commercial
+Purpose and is NOT permitted under this License.
+
+Permitted uses include (but are not limited to):
+- Personal security research and testing
+- Internal corporate security audits (not resold as a service)
+- Academic and educational purposes
+- Open source projects
+- Building tools on top of this project for internal use
+
+Prohibited uses include (but are not limited to):
+- Offering Plecost scanning as a paid SaaS or API service
+- Reselling scan results as part of a commercial product
+
+Change Date: Four years from the date of each version's public release.
+
+Change License: MIT License
+
+For information about alternative licensing arrangements, contact: cr0hn@cr0hn.com
+
+---
+
+NOTICE
+
+On the Change Date for a given version, the rights described above for that
+version automatically convert to the terms of the Change License specified
+above. The Change License is the MIT License as published by the Open Source
+Initiative.
+
+This License does not grant you any right in any trademark or logo of
+Licensor or its affiliates (providing that you may use a trademark or logo of
+Licensor as expressly required by this License).
+
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED WORK IS PROVIDED ON
+AN "AS IS" BASIS. LICENSOR HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS,
+EXPRESS OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
+TITLE.

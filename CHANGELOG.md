@@ -1,3 +1,13 @@
+## [4.0.0] - 2026-04-10
+
+### Changed
+- Licencia cambiada de MIT a FSL-1.1-MIT (Functional Source License)
+  - Uso libre para investigación, auditorías internas y proyectos open source
+  - Prohibido ofrecer como SaaS o servicio de pago
+  - Convierte automáticamente a MIT tras 4 años
+
+---
+
 ## 2026-04-10 — CI/CD workflows
 
 ### Added

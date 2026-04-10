@@ -13,7 +13,7 @@
 [![CI](https://github.com/cr0hn/plecost/actions/workflows/ci.yml/badge.svg)](https://github.com/cr0hn/plecost/actions)
 [![PyPI](https://img.shields.io/pypi/v/plecost.svg)](https://pypi.org/project/plecost/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://python.org)
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-green.svg)](LICENSE)
+[![License: FSL-1.1-MIT](https://img.shields.io/badge/License-FSL--1.1--MIT-blue.svg)](LICENSE)
 
 Plecost v4.0 is a fully async, zero-interaction WordPress security scanner built for professionals. It detects vulnerabilities in core, plugins, and themes, enumerates users, identifies misconfigurations, and correlates everything against a daily-updated CVE database.
 
@@ -276,6 +276,8 @@ CLI/Library → ScanOptions → ScanContext → Scheduler
 
 ## License
 
-GPL-3.0 — See [LICENSE](LICENSE) for details.
+Plecost usa la Functional Source License (FSL-1.1-MIT). Puedes usar, modificar y distribuir la herramienta libremente, incluyendo para auditorías de seguridad corporativas internas. Lo que NO está permitido es ofrecer Plecost como SaaS o servicio de pago. La licencia cambia automáticamente a MIT pasados 4 años.
+
+See [LICENSE](LICENSE) for full details.
 
 **Author:** Dani (cr0hn) — [cr0hn@cr0hn.com](mailto:cr0hn@cr0hn.com)
