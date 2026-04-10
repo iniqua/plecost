@@ -2,7 +2,6 @@ from __future__ import annotations
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-from rich.text import Text
 from plecost.models import ScanResult, Severity
 
 _SEVERITY_COLORS = {
