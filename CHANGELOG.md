@@ -1,3 +1,12 @@
+## 2026-04-10 — CI/CD workflows
+
+### Added
+- `.github/workflows/docker-publish.yml`: publica imagen multi-arch (amd64/arm64) en `ghcr.io/iniqua/plecost` al hacer push a master (tag `latest`) o push de tags `v*.*.*`
+- `.github/workflows/pypi-publish.yml`: publica paquete en PyPI con trusted publishing (OIDC) al hacer push de tags `v*.*.*`
+- `Dockerfile`: añadidas labels OCI estándar (`source`, `description`, `licenses`) e instalación de `uvloop`
+
+---
+
 ## 2026-04-10 — v4.0.0
 
 Complete rewrite from scratch. Plecost v4.0.0 is a fully async WordPress security scanner built with httpx + asyncio.

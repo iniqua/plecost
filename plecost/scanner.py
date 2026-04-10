@@ -72,6 +72,31 @@ class Scanner:
             modules.append(cve_mod)
         return modules
 
+    async def run_many(self, urls: list[str]) -> list[ScanResult]:
+        """Scan multiple targets sequentially and return a list of ScanResults."""
+        results: list[ScanResult] = []
+        for target_url in urls:
+            opts = ScanOptions(
+                url=target_url,
+                concurrency=self._opts.concurrency,
+                timeout=self._opts.timeout,
+                proxy=self._opts.proxy,
+                modules=self._opts.modules,
+                skip_modules=self._opts.skip_modules,
+                credentials=self._opts.credentials,
+                stealth=self._opts.stealth,
+                aggressive=self._opts.aggressive,
+                user_agent=self._opts.user_agent,
+                random_user_agent=self._opts.random_user_agent,
+                verify_ssl=self._opts.verify_ssl,
+                force=self._opts.force,
+                output=self._opts.output,
+            )
+            scanner = Scanner(opts)
+            result = await scanner.run()
+            results.append(result)
+        return results
+
     async def run(self) -> ScanResult:
         start = time.monotonic()
         ctx = ScanContext(self._opts)
