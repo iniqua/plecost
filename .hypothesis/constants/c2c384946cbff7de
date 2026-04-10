@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/reporters/terminal.py
+# hypothesis_version: 6.151.12
+
+['CRITICAL', 'Count', 'Detected Plugins', 'Detected Users', 'Findings', 'HIGH', 'ID', 'INFO', 'LOW', 'MEDIUM', 'Module', 'Severity', 'Slug', 'Source', 'Summary', 'Title', 'Username', 'Version', 'bold', 'bold red', 'cyan', 'red', 'right', 'unknown', 'white', 'yellow']

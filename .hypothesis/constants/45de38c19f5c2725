@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/plugins.py
+# hypothesis_version: 6.151.12
+
+[100, 200, 403, '/', '\\?ver=([\\d.]+)', 'fingerprint', 'plugins']

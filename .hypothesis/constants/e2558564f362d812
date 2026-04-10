@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/users.py
+# hypothesis_version: 6.151.12
+
+[5.3, 200, 301, 302, '/author/([^/]+)/', 'PC-USR-001', 'PC-USR-002', 'REM-USR-001', 'REM-USR-002', 'author_archive', 'fingerprint', 'id', 'location', 'name', 'rest_api', 'slug', 'url', 'users']

@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/waf.py
+# hypothesis_version: 6.151.12
+
+['/', 'AWS WAF', 'Akamai', 'Cloudflare', 'Fastly', 'Imperva', 'PC-WAF-001', 'REM-WAF-001', 'Sucuri', 'Wordfence', 'cf-ray', 'cloudflare', 'fastly-restarts', 'headers', 'server', 'waf', 'x-akamai-transformed', 'x-amz-cf-id', 'x-amzn-requestid', 'x-fastly-request-id', 'x-iinfo', 'x-sucuri-cache', 'x-sucuri-id', 'x-wf-sid']

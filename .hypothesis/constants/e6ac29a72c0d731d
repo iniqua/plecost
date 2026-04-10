@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/http_headers.py
+# hypothesis_version: 6.151.12
+
+['/', 'PC-HDR-001', 'PC-HDR-002', 'PC-HDR-003', 'PC-HDR-004', 'PC-HDR-005', 'PC-HDR-006', 'PC-HDR-007', 'PC-HDR-008', 'REM-HDR-001', 'REM-HDR-002', 'REM-HDR-003', 'REM-HDR-004', 'REM-HDR-005', 'REM-HDR-006', 'REM-HDR-007', 'REM-HDR-008', '\\d+\\.\\d+', 'fingerprint', 'http_headers', 'permissions-policy', 'php', 'referrer-policy', 'server', 'url', 'x-frame-options', 'x-powered-by']

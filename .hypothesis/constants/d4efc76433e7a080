@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/scanner.py
+# hypothesis_version: 6.151.12
+
+['.plecost', 'db', 'plecost.db']

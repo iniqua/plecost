@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wp
+      MYSQL_PASSWORD: wppass
+
+  wordpress:
+    image: wordpress:6.4
+    depends_on: [mysql]
+    ports:
+      - "8765:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wppass
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: "true"
+    volumes:
+      - ./tests/fixtures/wp-config-extra.php:/var/www/html/wp-config-extra.php

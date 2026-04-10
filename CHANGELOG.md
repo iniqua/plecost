@@ -1,3 +1,27 @@
+## 2026-04-10 — v4.0.0
+
+Complete rewrite from scratch. Plecost v4.0.0 is a fully async WordPress security scanner built with httpx + asyncio.
+
+### New Features
+- 15 detection modules: fingerprint, waf, plugins, themes, users, xmlrpc, rest_api, misconfigs, directory_listing, http_headers, ssl_tls, debug_exposure, content_analysis, auth, cves
+- Async task scheduler with explicit dependency graph (maximum parallelism)
+- Full Python library API: `from plecost import Scanner, ScanOptions`
+- Stable finding IDs (PC-XXX-NNN) for dashboard integration
+- Daily CVE database updates via GitHub Actions
+- Rich terminal reporter with colored output and tables
+- JSON reporter for automation pipelines
+- Typer CLI with commands: scan, update-db, modules list, explain
+- Docker support: `ghcr.io/cr0hn/plecost`
+- Celery-compatible async scanner
+- TDD: 62 tests across unit/integration/contract/property suites
+
+### Architecture
+- Python 3.11+, httpx, typer, rich, packaging, SQLite
+- `pyproject.toml` with hatchling build backend
+- Optional uvloop for better async performance
+
+---
+
 Version 1.1.2
 =============
 

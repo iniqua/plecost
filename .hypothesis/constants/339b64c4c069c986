@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/ssl_tls.py
+# hypothesis_version: 6.151.12
+
+[301, 302, 308, '/', 'PC-SSL-001', 'PC-SSL-002', 'PC-SSL-003', 'REM-SSL-001', 'REM-SSL-002', 'REM-SSL-003', 'certificate', 'error', 'fingerprint', 'http://', 'https://', 'ssl', 'ssl_tls', 'status_code', 'url']

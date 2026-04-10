@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/cli.py
+# hypothesis_version: 6.151.12
+
+[',', '--output', '--password', '--random-user-agent', '--rua', '--user', '-o', '-p', '-u', '.plecost', 'Available Modules', 'CRITICAL', 'Depends On', 'Description', 'HIGH', 'Module', 'Target WordPress URL', 'WordPress password', 'WordPress username', '__main__', 'auth', 'content_analysis', 'cves', 'cyan', 'db', 'debug_exposure', 'directory_listing', 'explain', 'fingerprint', 'http_headers', 'list', 'misconfigs', 'modules', 'plecost', 'plecost.db', 'plugins', 'plugins, themes', 'rest_api', 'ssl_tls', 'themes', 'update-db', 'users', 'uvloop', 'waf', 'xmlrpc', '—']

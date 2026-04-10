@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/directory_listing.py
+# hypothesis_version: 6.151.12
+
+[5.3, 200, '/wp-content/', '/wp-content/plugins/', '/wp-content/themes/', '/wp-content/uploads/', '<title>index of', 'PC-DIR-001', 'PC-DIR-002', 'PC-DIR-003', 'PC-DIR-004', 'REM-DIR-001', 'REM-DIR-002', 'REM-DIR-003', 'REM-DIR-004', 'directory_listing', 'fingerprint', 'index of', 'url']

@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/xmlrpc.py
+# hypothesis_version: 6.151.12
+
+[3.1, 5.3, 7.5, 200, 405, '<methodResponse>', 'Content-Type', 'PC-XMLRPC-001', 'PC-XMLRPC-002', 'PC-XMLRPC-003', 'REM-XMLRPC-001', 'REM-XMLRPC-002', 'REM-XMLRPC-003', 'fingerprint', 'method', 'pingback.ping', 'status_code', 'text/xml', 'url', 'xmlrpc']
