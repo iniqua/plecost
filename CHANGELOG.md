@@ -1,3 +1,12 @@
+## 2026-04-10 — Corrección de imports y calidad de tests
+
+### Fixed
+- Eliminados 11 imports no usados en ficheros de test (`pytest`, `json`, `asyncio`, `VulnerabilityRecord`, `Plugin`, `Theme`, `User`) detectados por ruff
+- Todos los 53 tests unitarios pasan correctamente
+- mypy y ruff sin errores en `plecost/` y `tests/`
+
+---
+
 ## [4.0.0] - 2026-04-10
 
 ### Changed
