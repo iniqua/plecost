@@ -21,9 +21,11 @@ from plecost.modules.debug_exposure import DebugExposureModule
 from plecost.modules.content_analysis import ContentAnalysisModule
 from plecost.modules.auth import AuthModule
 from plecost.modules.cves import CVEsModule
+from plecost.modules.base import ScanModule
+from plecost.models import Finding
 
 
-def _build_summary(findings: list) -> ScanSummary:
+def _build_summary(findings: list[Finding]) -> ScanSummary:
     s = ScanSummary()
     for f in findings:
         if f.severity == Severity.CRITICAL:
@@ -43,7 +45,7 @@ class Scanner:
     def __init__(self, opts: ScanOptions) -> None:
         self._opts = opts
 
-    def _build_modules(self) -> list:
+    def _build_modules(self) -> list[ScanModule]:
         try:
             from plecost.database.store import CVEStore
             from pathlib import Path

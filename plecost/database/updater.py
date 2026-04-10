@@ -43,7 +43,7 @@ class DatabaseUpdater:
         return conn
 
     async def _fetch_nvd(self, client: httpx.AsyncClient, conn: sqlite3.Connection) -> None:
-        params = {"keywordSearch": "wordpress", "resultsPerPage": 2000, "startIndex": 0}
+        params: dict[str, str | int] = {"keywordSearch": "wordpress", "resultsPerPage": 2000, "startIndex": 0}
         r = await client.get(NVD_BASE, params=params)
         data = r.json()
         for item in data.get("vulnerabilities", []):
