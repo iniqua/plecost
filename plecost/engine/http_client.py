@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import random
 from typing import Any
 import httpx
@@ -29,13 +30,20 @@ class PlecostHTTPClient:
             follow_redirects=True,
         )
 
+    async def _stealth_delay(self) -> None:
+        if self._opts.stealth:
+            await asyncio.sleep(random.uniform(0.5, 2.0))
+
     async def get(self, url: str, **kwargs: Any) -> httpx.Response:
+        await self._stealth_delay()
         return await self._client.get(url, **kwargs)
 
     async def post(self, url: str, **kwargs: Any) -> httpx.Response:
+        await self._stealth_delay()
         return await self._client.post(url, **kwargs)
 
     async def head(self, url: str, **kwargs: Any) -> httpx.Response:
+        await self._stealth_delay()
         return await self._client.head(url, **kwargs)
 
     async def __aenter__(self) -> "PlecostHTTPClient":
