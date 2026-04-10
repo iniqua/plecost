@@ -26,7 +26,11 @@ class UsersModule(ScanModule):
             r = await http.get(f"{ctx.url}/wp-json/wp/v2/users")
             if r.status_code != 200:
                 return
-            users_data = json.loads(r.text)
+            try:
+                users_data = json.loads(r.text)
+            except json.JSONDecodeError:
+                # WordPress may return HTML when REST API is restricted
+                return
             if not isinstance(users_data, list) or not users_data:
                 return
             for u in users_data:
