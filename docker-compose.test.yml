@@ -7,10 +7,17 @@ services:
       MYSQL_DATABASE: wordpress
       MYSQL_USER: wp
       MYSQL_PASSWORD: wppass
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   wordpress:
     image: wordpress:6.4
-    depends_on: [mysql]
+    depends_on:
+      mysql:
+        condition: service_healthy
     ports:
       - "8765:80"
     environment:
@@ -18,6 +25,8 @@ services:
       WORDPRESS_DB_USER: wp
       WORDPRESS_DB_PASSWORD: wppass
       WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_DEBUG: "true"
-    volumes:
-      - ./tests/fixtures/wp-config-extra.php:/var/www/html/wp-config-extra.php
+      WORDPRESS_DEBUG: "1"
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_DEBUG', true);
+        define('WP_DEBUG_LOG', true);
+        define('WP_DEBUG_DISPLAY', true);

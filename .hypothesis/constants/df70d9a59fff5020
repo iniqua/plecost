@@ -1,0 +1,4 @@
+# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/misconfigs.py
+# hypothesis_version: 6.151.12
+
+[200, '/.env', '/.git/HEAD', '/backup.sql', '/debug.log', '/license.txt', '/readme.html', '/wlwmanifest.xml', '/wp-config.php', '/wp-config.php.bak', '/wp-cron.php', 'PC-MCFG-001', 'PC-MCFG-002', 'PC-MCFG-003', 'PC-MCFG-004', 'PC-MCFG-005', 'PC-MCFG-006', 'PC-MCFG-007', 'PC-MCFG-008', 'PC-MCFG-009', 'PC-MCFG-010', 'PC-MCFG-011', 'PC-MCFG-012', 'REM-MCFG-001', 'REM-MCFG-002', 'REM-MCFG-003', 'REM-MCFG-004', 'REM-MCFG-005', 'REM-MCFG-006', 'REM-MCFG-007', 'REM-MCFG-008', 'REM-MCFG-009', 'REM-MCFG-010', 'REM-MCFG-011', 'REM-MCFG-012', 'body_size', 'fingerprint', 'misconfigs', 'status_code', 'url']
