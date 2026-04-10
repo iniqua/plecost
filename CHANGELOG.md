@@ -1,3 +1,15 @@
+## [4.0.1] - 2026-04-11
+
+### Changed
+- Licencia cambiada de FSL-1.1-MIT a PolyForm Noncommercial License 1.0.0
+  - Licencia estándar redactada por abogados, sin conversión automática a open source
+  - Uso comercial requiere licencia de pago (contacto: cr0hn@cr0hn.com)
+  - Link: https://polyformproject.org/licenses/noncommercial/1.0.0/
+- README reescrito completamente en inglés
+- Aspecto profesional mejorado: estilo Nuclei/WPScan, tablas limpias, demo output, arquitectura, benchmarks
+
+---
+
 ## 2026-04-10 — Tests funcionales contra WordPress real con Docker
 
 ### Added
