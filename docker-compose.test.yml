@@ -1,32 +1,34 @@
-version: "3.9"
+version: '3.8'
 services:
-  mysql:
+  db:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: wordpress
-      MYSQL_USER: wp
-      MYSQL_PASSWORD: wppass
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
 
   wordpress:
     image: wordpress:6.4
     depends_on:
-      mysql:
+      db:
         condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: 1
     ports:
       - "8765:80"
-    environment:
-      WORDPRESS_DB_HOST: mysql
-      WORDPRESS_DB_USER: wp
-      WORDPRESS_DB_PASSWORD: wppass
-      WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_DEBUG: "1"
-      WORDPRESS_CONFIG_EXTRA: |
-        define('WP_DEBUG', true);
-        define('WP_DEBUG_LOG', true);
-        define('WP_DEBUG_DISPLAY', true);
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/wp-login.php"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s

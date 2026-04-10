@@ -1,3 +1,14 @@
+## 2026-04-10 — Tests funcionales contra WordPress real con Docker
+
+### Added
+- `docker-compose.test.yml`: actualizado con healthcheck mejorado (mysqladmin con credenciales, curl wp-login.php) y variables de entorno correctas
+- `tests/functional/test_scanner_functional.py`: 8 tests funcionales que verifican detección de WordPress, versión, findings, summary, readme.html, REST API y JSON reporter
+- `tests/conftest.py`: registra el marker `functional` para pytest
+- `scripts/run_functional_tests.sh`: script helper para CI que levanta Docker, espera WordPress y ejecuta los tests
+- `pyproject.toml`: añadido `markers` en `[tool.pytest.ini_options]` con el marker `functional`
+
+---
+
 ## 2026-04-10 — Corrección de imports y calidad de tests
 
 ### Fixed
