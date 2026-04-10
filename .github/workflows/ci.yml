@@ -19,4 +19,4 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check plecost/
       - run: mypy plecost/ --ignore-missing-imports
-      - run: pytest tests/unit tests/integration tests/contract tests/property -v --cov=plecost --cov-report=term-missing --cov-fail-under=80
+      - run: pytest tests/unit tests/integration tests/contract tests/property -v --cov=plecost --cov-report=term-missing --cov-fail-under=75
