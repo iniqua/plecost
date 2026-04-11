@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import httpx
 
 from plecost.database.engine import make_engine, make_session_factory
-from plecost.database.models import Base, NormalizedVuln, PluginsWordlist, ThemesWordlist
+from plecost.database.models import Base, DbMetadata, NormalizedVuln, PluginsWordlist, ThemesWordlist
 
 NVD_CVE_API = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 WP_PLUGINS_API = "https://api.wordpress.org/plugins/info/1.2/?action=query_plugins&request[per_page]=250&request[page]={page}"
@@ -111,22 +111,176 @@ def _match_slug(cpe_product: str, known_slugs: list[str], threshold: float = 0.8
     return None, 0.0
 
 
+async def _upsert_vuln_free(session: object, vuln: NormalizedVuln) -> None:
+    from sqlalchemy import select
+    existing = (await session.execute(  # type: ignore[union-attr]
+        select(NormalizedVuln).where(
+            NormalizedVuln.cve_id == vuln.cve_id,
+            NormalizedVuln.slug == vuln.slug,
+        )
+    )).scalar_one_or_none()
+    if existing:
+        if vuln.match_confidence > existing.match_confidence:
+            for attr in ["cpe_vendor", "cpe_product", "match_confidence",
+                         "version_start_incl", "version_start_excl",
+                         "version_end_incl", "version_end_excl",
+                         "cvss_score", "severity", "description", "references_json"]:
+                setattr(existing, attr, getattr(vuln, attr))
+    else:
+        session.add(vuln)  # type: ignore[union-attr]
+
+
+async def process_nvd_batch(
+    vulns: list, sf: object, plugin_slugs: list[str], theme_slugs: list[str]
+) -> None:
+    """Función libre reutilizable desde updater e incremental."""
+    async with sf() as session:  # type: ignore[operator]
+        for item in vulns:
+            cve = item.get("cve", {})
+            cve_id = cve.get("id", "")
+            if not cve_id:
+                continue
+
+            desc = next(
+                (d["value"] for d in cve.get("descriptions", []) if d.get("lang") == "en"),
+                ""
+            )
+            metrics = cve.get("metrics", {})
+            cvss_score: float | None = None
+            severity = "MEDIUM"
+            if v31 := metrics.get("cvssMetricV31"):
+                cvss_score = v31[0]["cvssData"]["baseScore"]
+                severity = v31[0]["cvssData"]["baseSeverity"]
+            elif v30 := metrics.get("cvssMetricV30"):
+                cvss_score = v30[0]["cvssData"]["baseScore"]
+                severity = v30[0]["cvssData"]["baseSeverity"]
+
+            refs = json.dumps([r2["url"] for r2 in cve.get("references", [])])
+            published = cve.get("published", "")
+
+            # Extraer CPEs de configurations
+            found_any = False
+            configurations = cve.get("configurations", [])
+            for config in configurations:
+                for node in config.get("nodes", []):
+                    for cpe_match in node.get("cpeMatch", []):
+                        if not cpe_match.get("vulnerable", False):
+                            continue
+                        cpe_uri = cpe_match.get("criteria", "")
+                        vendor, product, target_sw = _parse_cpe(cpe_uri)
+                        if not product:
+                            continue
+
+                        v_start_i = cpe_match.get("versionStartIncluding")
+                        v_start_e = cpe_match.get("versionStartExcluding")
+                        v_end_i = cpe_match.get("versionEndIncluding")
+                        v_end_e = cpe_match.get("versionEndExcluding")
+
+                        # WordPress Core: CPE product="wordpress", vendor="wordpress"
+                        if vendor.lower() == "wordpress" and product.lower() == "wordpress":
+                            await _upsert_vuln_free(session, NormalizedVuln(
+                                cve_id=cve_id,
+                                software_type="core",
+                                slug="wordpress",
+                                cpe_vendor=vendor,
+                                cpe_product=product,
+                                match_confidence=1.0,
+                                version_start_incl=v_start_i,
+                                version_start_excl=v_start_e,
+                                version_end_incl=v_end_i,
+                                version_end_excl=v_end_e,
+                                cvss_score=cvss_score,
+                                severity=severity,
+                                title=f"WordPress Core: {cve_id}",
+                                description=desc,
+                                remediation="Update WordPress to the latest version.",
+                                references_json=refs,
+                                published_at=published,
+                            ))
+                            found_any = True
+                            continue
+
+                        # Plugins/Themes: filtrar por target_sw=wordpress
+                        if not _is_wp_plugin_cpe(target_sw):
+                            continue
+
+                        # Intentar mapear a plugin slug conocido
+                        slug, conf = _match_slug(product, plugin_slugs)
+                        sw_type = "plugin"
+                        if not slug:
+                            slug, conf = _match_slug(product, theme_slugs)
+                            sw_type = "theme"
+                        if not slug:
+                            slug = product
+                            conf = 0.5
+                            sw_type = "plugin"
+
+                        await _upsert_vuln_free(session, NormalizedVuln(
+                            cve_id=cve_id,
+                            software_type=sw_type,
+                            slug=slug,
+                            cpe_vendor=vendor,
+                            cpe_product=product,
+                            match_confidence=conf,
+                            version_start_incl=v_start_i,
+                            version_start_excl=v_start_e,
+                            version_end_incl=v_end_i,
+                            version_end_excl=v_end_e,
+                            cvss_score=cvss_score,
+                            severity=severity,
+                            title=f"{product}: {cve_id}",
+                            description=desc,
+                            remediation="Update the plugin/theme to the latest version.",
+                            references_json=refs,
+                            published_at=published,
+                        ))
+                        found_any = True
+
+            # Si no había configurations útiles, ignorar
+            if not found_any and desc:
+                pass  # Ignorar CVEs sin CPEs útiles
+
+        await session.commit()
+
+
 class DatabaseUpdater:
-    def __init__(self, db_url: str) -> None:
+    def __init__(self, db_url: str, years_back: int = 5, nvd_api_key: str | None = None) -> None:
         self._db_url = db_url
+        self._years_back = years_back
+        self._api_key = nvd_api_key
 
     async def run(self) -> None:
+        from datetime import timezone
         engine = make_engine(self._db_url)
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         sf = make_session_factory(engine)
 
-        async with httpx.AsyncClient(timeout=60, headers={"User-Agent": "Plecost/4.0 (security research)"}) as client:
+        headers: dict[str, str] = {"User-Agent": "Plecost/4.0 (security research; github.com/iniqua/plecost)"}
+        if self._api_key:
+            headers["apiKey"] = self._api_key
+
+        start_date = (datetime.utcnow() - timedelta(days=self._years_back * 365)).strftime("%Y-%m-%dT00:00:00.000")
+
+        async with httpx.AsyncClient(timeout=60, headers=headers) as client:
             # Descargar wordlists primero (necesitamos slugs para el matching)
             plugin_slugs = await self._fetch_plugin_slugs(client, sf)
             theme_slugs = await self._fetch_theme_slugs(client, sf)
-            # Descargar y procesar CVEs del NVD (últimos 5 años)
-            await self._fetch_nvd(client, sf, plugin_slugs, theme_slugs)
+            # Descargar y procesar CVEs del NVD
+            await self._fetch_nvd(client, sf, plugin_slugs, theme_slugs, start_date)
+
+        # Guardar metadatos de sincronización
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000")
+        async with sf() as session:
+            existing = await session.get(DbMetadata, "last_nvd_sync")
+            if existing:
+                existing.value = now_str
+            else:
+                session.add(DbMetadata(key="last_nvd_sync", value=now_str))
+            start_date_meta = await session.get(DbMetadata, "initial_sync_from")
+            if not start_date_meta:
+                session.add(DbMetadata(key="initial_sync_from", value=start_date))
+            await session.commit()
 
         await engine.dispose()
 
@@ -182,9 +336,11 @@ class DatabaseUpdater:
         return slugs
 
     async def _fetch_nvd(
-        self, client: httpx.AsyncClient, sf: object, plugin_slugs: list[str], theme_slugs: list[str]
+        self, client: httpx.AsyncClient, sf: object, plugin_slugs: list[str], theme_slugs: list[str],
+        start_date: str | None = None,
     ) -> None:
-        start_date = (datetime.utcnow() - timedelta(days=5 * 365)).strftime("%Y-%m-%dT00:00:00.000")
+        if start_date is None:
+            start_date = (datetime.utcnow() - timedelta(days=self._years_back * 365)).strftime("%Y-%m-%dT00:00:00.000")
         end_date = datetime.utcnow().strftime("%Y-%m-%dT23:59:59.999")
         start_index = 0
         results_per_page = 2000
@@ -207,143 +363,14 @@ class DatabaseUpdater:
             if not vulns:
                 break
 
-            await self._process_nvd_batch(vulns, sf, plugin_slugs, theme_slugs)
+            await process_nvd_batch(vulns, sf, plugin_slugs, theme_slugs)
 
             total = data.get("totalResults", 0)
             start_index += len(vulns)
             if start_index >= total:
                 break
-            # Rate limiting NVD: 6 req/30s sin API key
-            await asyncio.sleep(6)
-
-    async def _process_nvd_batch(
-        self, vulns: list, sf: object, plugin_slugs: list[str], theme_slugs: list[str]
-    ) -> None:
-        async with sf() as session:  # type: ignore[operator]
-            for item in vulns:
-                cve = item.get("cve", {})
-                cve_id = cve.get("id", "")
-                if not cve_id:
-                    continue
-
-                desc = next(
-                    (d["value"] for d in cve.get("descriptions", []) if d.get("lang") == "en"),
-                    ""
-                )
-                metrics = cve.get("metrics", {})
-                cvss_score: float | None = None
-                severity = "MEDIUM"
-                if v31 := metrics.get("cvssMetricV31"):
-                    cvss_score = v31[0]["cvssData"]["baseScore"]
-                    severity = v31[0]["cvssData"]["baseSeverity"]
-                elif v30 := metrics.get("cvssMetricV30"):
-                    cvss_score = v30[0]["cvssData"]["baseScore"]
-                    severity = v30[0]["cvssData"]["baseSeverity"]
-
-                refs = json.dumps([r2["url"] for r2 in cve.get("references", [])])
-                published = cve.get("published", "")
-
-                # Extraer CPEs de configurations
-                found_any = False
-                configurations = cve.get("configurations", [])
-                for config in configurations:
-                    for node in config.get("nodes", []):
-                        for cpe_match in node.get("cpeMatch", []):
-                            if not cpe_match.get("vulnerable", False):
-                                continue
-                            cpe_uri = cpe_match.get("criteria", "")
-                            vendor, product, target_sw = _parse_cpe(cpe_uri)
-                            if not product:
-                                continue
-
-                            v_start_i = cpe_match.get("versionStartIncluding")
-                            v_start_e = cpe_match.get("versionStartExcluding")
-                            v_end_i = cpe_match.get("versionEndIncluding")
-                            v_end_e = cpe_match.get("versionEndExcluding")
-
-                            # WordPress Core: CPE product="wordpress", vendor="wordpress"
-                            if vendor.lower() == "wordpress" and product.lower() == "wordpress":
-                                await self._upsert_vuln(session, NormalizedVuln(
-                                    cve_id=cve_id,
-                                    software_type="core",
-                                    slug="wordpress",
-                                    cpe_vendor=vendor,
-                                    cpe_product=product,
-                                    match_confidence=1.0,
-                                    version_start_incl=v_start_i,
-                                    version_start_excl=v_start_e,
-                                    version_end_incl=v_end_i,
-                                    version_end_excl=v_end_e,
-                                    cvss_score=cvss_score,
-                                    severity=severity,
-                                    title=f"WordPress Core: {cve_id}",
-                                    description=desc,
-                                    remediation="Update WordPress to the latest version.",
-                                    references_json=refs,
-                                    published_at=published,
-                                ))
-                                found_any = True
-                                continue
-
-                            # Plugins/Themes: filtrar por target_sw=wordpress
-                            if not _is_wp_plugin_cpe(target_sw):
-                                continue
-
-                            # Intentar mapear a plugin slug conocido
-                            slug, conf = _match_slug(product, plugin_slugs)
-                            sw_type = "plugin"
-                            if not slug:
-                                slug, conf = _match_slug(product, theme_slugs)
-                                sw_type = "theme"
-                            if not slug:
-                                # No se pudo mapear - guardar con el producto CPE como slug
-                                # para búsqueda manual futura
-                                slug = product
-                                conf = 0.5
-                                sw_type = "plugin"  # asumimos plugin
-
-                            await self._upsert_vuln(session, NormalizedVuln(
-                                cve_id=cve_id,
-                                software_type=sw_type,
-                                slug=slug,
-                                cpe_vendor=vendor,
-                                cpe_product=product,
-                                match_confidence=conf,
-                                version_start_incl=v_start_i,
-                                version_start_excl=v_start_e,
-                                version_end_incl=v_end_i,
-                                version_end_excl=v_end_e,
-                                cvss_score=cvss_score,
-                                severity=severity,
-                                title=f"{product}: {cve_id}",
-                                description=desc,
-                                remediation="Update the plugin/theme to the latest version.",
-                                references_json=refs,
-                                published_at=published,
-                            ))
-                            found_any = True
-
-                # Si no había configurations útiles, ignorar
-                if not found_any and desc:
-                    pass  # Ignorar CVEs sin CPEs útiles
-
-            await session.commit()
+            # Rate limiting NVD: 6 req/30s sin API key, 0.6s con key
+            await asyncio.sleep(6 if not self._api_key else 0.6)
 
     async def _upsert_vuln(self, session: object, vuln: NormalizedVuln) -> None:
-        from sqlalchemy import select
-        existing = (await session.execute(  # type: ignore[union-attr]
-            select(NormalizedVuln).where(
-                NormalizedVuln.cve_id == vuln.cve_id,
-                NormalizedVuln.slug == vuln.slug,
-            )
-        )).scalar_one_or_none()
-        if existing:
-            # Actualizar si la nueva tiene mayor confianza
-            if vuln.match_confidence > existing.match_confidence:
-                for attr in ["cpe_vendor", "cpe_product", "match_confidence",
-                             "version_start_incl", "version_start_excl",
-                             "version_end_incl", "version_end_excl",
-                             "cvss_score", "severity", "description", "references_json"]:
-                    setattr(existing, attr, getattr(vuln, attr))
-        else:
-            session.add(vuln)  # type: ignore[union-attr]
+        await _upsert_vuln_free(session, vuln)

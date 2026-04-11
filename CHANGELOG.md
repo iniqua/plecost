@@ -1,3 +1,21 @@
+## [4.2.0] - 2026-04-10
+
+### Changed
+- Sistema de distribución de base de datos CVE rediseñado:
+  - `plecost update-db`: descarga DB pre-construida desde GitHub releases (rápido, para usuarios)
+  - `plecost build-db`: construye DB desde cero desde NVD (para maintainers, primera vez)
+  - `plecost sync-db`: actualización incremental (solo CVEs nuevos/modificados desde última sync)
+  - GitHub Action usa sync incremental: descarga DB del release anterior, aplica delta NVD, publica nuevo release
+  - Tabla `db_metadata` en SQLite guarda `last_nvd_sync` para updates incrementales
+  - Soporte para `NVD_API_KEY` en variable de entorno (mayor rate limit: 0.6s vs 6s entre requests)
+  - `DatabaseUpdater` acepta `years_back` y `nvd_api_key` en constructor
+  - `process_nvd_batch` refactorizado como función libre reutilizable desde `updater.py` e `incremental.py`
+  - Nuevo módulo `plecost/database/downloader.py`: descarga streaming desde GitHub releases
+  - Nuevo módulo `plecost/database/incremental.py`: `IncrementalUpdater` para sync delta NVD
+  - `.github/workflows/update-cve-db.yml` actualizado con permisos `contents: write` y flujo incremental
+
+---
+
 ## [4.1.0] - 2026-04-10
 
 ### Changed

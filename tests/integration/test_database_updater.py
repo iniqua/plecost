@@ -29,6 +29,6 @@ async def test_updater_creates_database(tmp_path):
         respx.route(url__regex=r".*wordpress\.org.*plugins.*").mock(
             return_value=httpx.Response(200, json={"plugins": {"woocommerce": {}, "akismet": {}}})
         )
-        updater = DatabaseUpdater(db_path=db_path)
+        updater = DatabaseUpdater(db_url=f"sqlite+aiosqlite:///{db_path}")
         await updater.run()
     assert Path(db_path).exists()

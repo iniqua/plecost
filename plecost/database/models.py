@@ -48,3 +48,11 @@ class ThemesWordlist(Base):
     __tablename__ = "themes_wordlist"
     slug: Mapped[str] = mapped_column(String(255), primary_key=True)
     last_updated: Mapped[str] = mapped_column(String(30), default="")
+
+
+class DbMetadata(Base):
+    """Metadatos de la base de datos: última sincronización, versión, etc."""
+    __tablename__ = "db_metadata"
+
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, default="")

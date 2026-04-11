@@ -109,21 +109,28 @@ def update_db(
     db_url: Optional[str] = typer.Option(
         None,
         "--db-url",
-        help="Database URL (sqlite+aiosqlite:///path or postgresql+asyncpg://...)",
+        help="Database URL. Default: sqlite en ~/.plecost/db/plecost.db",
+    ),
+    github_token: Optional[str] = typer.Option(
+        None, "--token", envvar="GITHUB_TOKEN",
+        help="GitHub token para mayor rate limit en descargas",
     ),
 ) -> None:
-    """Download and update the CVE vulnerability database from NVD."""
-    from pathlib import Path
+    """Download the latest pre-built CVE database from GitHub releases."""
+    from plecost.database.downloader import download_latest_db
+
     if not db_url:
         db_path = Path.home() / ".plecost" / "db" / "plecost.db"
         db_path.parent.mkdir(parents=True, exist_ok=True)
-        db_url = f"sqlite+aiosqlite:///{db_path}"
+        dest = db_path
+    else:
+        if db_url.startswith("sqlite"):
+            dest = Path(db_url.replace("sqlite+aiosqlite:///", ""))
+        else:
+            console.print("[red]update-db solo soporta SQLite. Para PostgreSQL usa build-db y carga manual.[/red]")
+            raise typer.Exit(1)
 
-    console.print("[bold]Updating CVE database...[/bold]")
-    console.print(f"Target: {db_url}")
-    console.print("[dim]Fetching last 5 years from NVD + WordPress.org...[/dim]")
-
-    from plecost.database.updater import DatabaseUpdater
+    console.print("[bold]Downloading latest CVE database from GitHub releases...[/bold]")
 
     try:
         uvloop = __import__("uvloop")
@@ -131,8 +138,75 @@ def update_db(
     except ImportError:
         pass
 
-    asyncio.run(DatabaseUpdater(db_url).run())
-    console.print("[green]Database updated successfully.[/green]")
+    asyncio.run(download_latest_db(dest, token=github_token))
+    console.print(f"[green]Database saved to {dest}[/green]")
+
+
+@app.command("build-db")
+def build_db(
+    db_url: Optional[str] = typer.Option(
+        None,
+        "--db-url",
+        help="Database URL. Default: sqlite en ~/.plecost/db/plecost.db",
+    ),
+    years: int = typer.Option(5, "--years", help="Años de historial NVD a descargar"),
+    nvd_api_key: Optional[str] = typer.Option(
+        None, "--nvd-key", envvar="NVD_API_KEY",
+        help="NVD API key para mayor rate limit (gratis en nvd.nist.gov)",
+    ),
+) -> None:
+    """Build the CVE database from scratch (maintainers only). Downloads N years from NVD."""
+    from plecost.database.updater import DatabaseUpdater
+
+    if not db_url:
+        db_path = Path.home() / ".plecost" / "db" / "plecost.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        db_url = f"sqlite+aiosqlite:///{db_path}"
+
+    console.print(f"[bold]Building CVE database from NVD (last {years} years)...[/bold]")
+    console.print("[dim]This may take several minutes due to NVD rate limits.[/dim]")
+    console.print(f"[dim]Target: {db_url}[/dim]")
+
+    try:
+        uvloop = __import__("uvloop")
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    except ImportError:
+        pass
+
+    asyncio.run(DatabaseUpdater(db_url, years_back=years, nvd_api_key=nvd_api_key).run())
+    console.print("[green]Database built successfully[/green]")
+    console.print("[dim]Upload plecost.db to GitHub releases as 'db-base' tag to enable update-db for users.[/dim]")
+
+
+@app.command("sync-db")
+def sync_db(
+    db_url: Optional[str] = typer.Option(
+        None,
+        "--db-url",
+        help="Database URL. Default: sqlite en ~/.plecost/db/plecost.db",
+    ),
+    nvd_api_key: Optional[str] = typer.Option(
+        None, "--nvd-key", envvar="NVD_API_KEY",
+        help="NVD API key para mayor rate limit",
+    ),
+) -> None:
+    """Incremental sync: fetch only CVEs modified since last run. Used by CI."""
+    from plecost.database.incremental import IncrementalUpdater
+
+    if not db_url:
+        db_path = Path.home() / ".plecost" / "db" / "plecost.db"
+        db_url = f"sqlite+aiosqlite:///{db_path}"
+
+    console.print("[bold]Syncing CVE database (incremental)...[/bold]")
+
+    try:
+        uvloop = __import__("uvloop")
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    except ImportError:
+        pass
+
+    count = asyncio.run(IncrementalUpdater(db_url, nvd_api_key=nvd_api_key).run())
+    console.print(f"[green]Processed {count} CVEs[/green]")
 
 
 modules_app = typer.Typer(help="Manage scanner modules.")
