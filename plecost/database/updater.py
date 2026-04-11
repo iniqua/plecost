@@ -1,74 +1,349 @@
 from __future__ import annotations
 import asyncio
 import json
-import sqlite3
-from pathlib import Path
+import re
+from datetime import datetime, timedelta
+
 import httpx
 
-NVD_BASE = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+from plecost.database.engine import make_engine, make_session_factory
+from plecost.database.models import Base, NormalizedVuln, PluginsWordlist, ThemesWordlist
+
+NVD_CVE_API = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 WP_PLUGINS_API = "https://api.wordpress.org/plugins/info/1.2/?action=query_plugins&request[per_page]=250&request[page]={page}"
+WP_THEMES_API = "https://api.wordpress.org/themes/info/1.2/?action=query_themes&request[per_page]=100&request[page]={page}"
+
+
+def _normalize(s: str) -> str:
+    """Normaliza para comparación: elimina separadores, lowercase."""
+    return re.sub(r'[-_\s]', '', s).lower()
+
+
+def _jaro_winkler(s1: str, s2: str) -> float:
+    """
+    Implementación inline de Jaro-Winkler para no requerir dependencia extra.
+    Devuelve similitud entre 0.0 y 1.0.
+    """
+    if s1 == s2:
+        return 1.0
+    len1, len2 = len(s1), len(s2)
+    if len1 == 0 or len2 == 0:
+        return 0.0
+    match_dist = max(len1, len2) // 2 - 1
+    if match_dist < 0:
+        match_dist = 0
+    s1_matches = [False] * len1
+    s2_matches = [False] * len2
+    matches = 0
+    transpositions = 0
+    for i in range(len1):
+        start = max(0, i - match_dist)
+        end = min(i + match_dist + 1, len2)
+        for j in range(start, end):
+            if s2_matches[j] or s1[i] != s2[j]:
+                continue
+            s1_matches[i] = True
+            s2_matches[j] = True
+            matches += 1
+            break
+    if matches == 0:
+        return 0.0
+    k = 0
+    for i in range(len1):
+        if not s1_matches[i]:
+            continue
+        while not s2_matches[k]:
+            k += 1
+        if s1[i] != s2[k]:
+            transpositions += 1
+        k += 1
+    jaro = (matches / len1 + matches / len2 + (matches - transpositions / 2) / matches) / 3
+    # Winkler prefix bonus
+    prefix = 0
+    for i in range(min(4, len1, len2)):
+        if s1[i] == s2[i]:
+            prefix += 1
+        else:
+            break
+    return jaro + prefix * 0.1 * (1 - jaro)
+
+
+def _parse_cpe(cpe_uri: str) -> tuple[str, str, str]:
+    """
+    Parsea CPE 2.3: cpe:2.3:a:{vendor}:{product}:{version}:..:{target_sw}:..
+    Devuelve (vendor, product, target_sw). target_sw está en posición 10 (0-indexed desde 'cpe').
+    """
+    parts = cpe_uri.split(':')
+    if len(parts) < 13:
+        return '', '', ''
+    vendor = parts[3]
+    product = parts[4]
+    target_sw = parts[10]
+    return vendor, product, target_sw
+
+
+def _is_wp_plugin_cpe(target_sw: str) -> bool:
+    return target_sw.lower() in ('wordpress', 'wordpress_plugin', '*')
+
+
+def _match_slug(cpe_product: str, known_slugs: list[str], threshold: float = 0.82) -> tuple[str | None, float]:
+    """
+    Intenta mapear cpe_product a un slug conocido.
+    1. Exact match normalizado
+    2. Jaro-Winkler fuzzy
+    Devuelve (slug, confidence) o (None, 0.0)
+    """
+    norm_product = _normalize(cpe_product)
+    # Exact match
+    for slug in known_slugs:
+        if _normalize(slug) == norm_product:
+            return slug, 1.0
+    # Fuzzy
+    best_slug = None
+    best_score = 0.0
+    for slug in known_slugs:
+        score = _jaro_winkler(norm_product, _normalize(slug))
+        if score > best_score:
+            best_score = score
+            best_slug = slug
+    if best_score >= threshold and best_slug:
+        return best_slug, best_score
+    return None, 0.0
 
 
 class DatabaseUpdater:
-    def __init__(self, db_path: str) -> None:
-        self._db_path = db_path
+    def __init__(self, db_url: str) -> None:
+        self._db_url = db_url
 
     async def run(self) -> None:
-        Path(self._db_path).parent.mkdir(parents=True, exist_ok=True)
-        conn = self._init_db()
-        async with httpx.AsyncClient(timeout=30) as client:
-            await asyncio.gather(
-                self._fetch_nvd(client, conn),
-                self._fetch_plugin_wordlist(client, conn),
-            )
-        conn.commit()
-        conn.close()
+        engine = make_engine(self._db_url)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        sf = make_session_factory(engine)
 
-    def _init_db(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self._db_path)
-        conn.executescript("""
-            CREATE TABLE IF NOT EXISTS vulnerabilities (
-                id TEXT PRIMARY KEY, software_type TEXT, software_slug TEXT,
-                version_from TEXT, version_to TEXT, cvss_score REAL,
-                severity TEXT, title TEXT, description TEXT, remediation TEXT,
-                "references" TEXT, has_exploit INTEGER, published_at TEXT
-            );
-            CREATE TABLE IF NOT EXISTS plugins_wordlist (
-                slug TEXT PRIMARY KEY, last_updated TEXT, active_installs INTEGER
-            );
-            CREATE TABLE IF NOT EXISTS themes_wordlist (
-                slug TEXT PRIMARY KEY, last_updated TEXT
-            );
-        """)
-        return conn
+        async with httpx.AsyncClient(timeout=60, headers={"User-Agent": "Plecost/4.0 (security research)"}) as client:
+            # Descargar wordlists primero (necesitamos slugs para el matching)
+            plugin_slugs = await self._fetch_plugin_slugs(client, sf)
+            theme_slugs = await self._fetch_theme_slugs(client, sf)
+            # Descargar y procesar CVEs del NVD (últimos 5 años)
+            await self._fetch_nvd(client, sf, plugin_slugs, theme_slugs)
 
-    async def _fetch_nvd(self, client: httpx.AsyncClient, conn: sqlite3.Connection) -> None:
-        params: dict[str, str | int] = {"keywordSearch": "wordpress", "resultsPerPage": 2000, "startIndex": 0}
-        r = await client.get(NVD_BASE, params=params)
-        data = r.json()
-        for item in data.get("vulnerabilities", []):
-            cve = item.get("cve", {})
-            cve_id = cve.get("id", "")
-            desc = next((d["value"] for d in cve.get("descriptions", []) if d["lang"] == "en"), "")
-            metrics = cve.get("metrics", {})
-            cvss = None
-            severity = "MEDIUM"
-            if v31 := metrics.get("cvssMetricV31"):
-                cvss = v31[0]["cvssData"]["baseScore"]
-                severity = v31[0]["cvssData"]["baseSeverity"]
-            refs = [r["url"] for r in cve.get("references", [])]
-            conn.execute(
-                "INSERT OR REPLACE INTO vulnerabilities VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (cve_id, "core", "wordpress", "0.0.1", "99.99.99", cvss, severity,
-                 f"WordPress vulnerability: {cve_id}", desc, "Update WordPress to the latest version.",
-                 json.dumps(refs), 0, cve.get("published", ""))
-            )
+        await engine.dispose()
 
-    async def _fetch_plugin_wordlist(self, client: httpx.AsyncClient, conn: sqlite3.Connection) -> None:
-        r = await client.get(WP_PLUGINS_API.format(page=1))
-        data = r.json()
-        for slug in data.get("plugins", {}).keys():
-            conn.execute(
-                "INSERT OR REPLACE INTO plugins_wordlist VALUES (?,?,?)",
-                (slug, "", 0)
+    async def _fetch_plugin_slugs(
+        self, client: httpx.AsyncClient, sf: object
+    ) -> list[str]:
+        slugs: list[str] = []
+        for page in range(1, 20):  # hasta 5000 plugins
+            try:
+                r = await client.get(WP_PLUGINS_API.format(page=page), timeout=30)
+                data = r.json()
+                plugins = data.get("plugins", {})
+                if not plugins:
+                    break
+                page_slugs = list(plugins.keys()) if isinstance(plugins, dict) else [p.get("slug", "") for p in plugins]
+                slugs.extend(s for s in page_slugs if s)
+                if len(page_slugs) < 250:
+                    break
+            except Exception:
+                break
+        # Guardar en DB
+        async with sf() as session:  # type: ignore[operator]
+            for slug in slugs:
+                existing = await session.get(PluginsWordlist, slug)
+                if not existing:
+                    session.add(PluginsWordlist(slug=slug))
+            await session.commit()
+        return slugs
+
+    async def _fetch_theme_slugs(
+        self, client: httpx.AsyncClient, sf: object
+    ) -> list[str]:
+        slugs: list[str] = []
+        for page in range(1, 10):
+            try:
+                r = await client.get(WP_THEMES_API.format(page=page), timeout=30)
+                data = r.json()
+                themes = data.get("themes", [])
+                if not themes:
+                    break
+                page_slugs = [t.get("slug", "") for t in themes if isinstance(t, dict)]
+                slugs.extend(s for s in page_slugs if s)
+                if len(themes) < 100:
+                    break
+            except Exception:
+                break
+        async with sf() as session:  # type: ignore[operator]
+            for slug in slugs:
+                existing = await session.get(ThemesWordlist, slug)
+                if not existing:
+                    session.add(ThemesWordlist(slug=slug))
+            await session.commit()
+        return slugs
+
+    async def _fetch_nvd(
+        self, client: httpx.AsyncClient, sf: object, plugin_slugs: list[str], theme_slugs: list[str]
+    ) -> None:
+        start_date = (datetime.utcnow() - timedelta(days=5 * 365)).strftime("%Y-%m-%dT00:00:00.000")
+        end_date = datetime.utcnow().strftime("%Y-%m-%dT23:59:59.999")
+        start_index = 0
+        results_per_page = 2000
+
+        while True:
+            params = {
+                "keywordSearch": "wordpress",
+                "pubStartDate": start_date,
+                "pubEndDate": end_date,
+                "resultsPerPage": results_per_page,
+                "startIndex": start_index,
+            }
+            try:
+                r = await client.get(NVD_CVE_API, params=params, timeout=60)
+                data = r.json()
+            except Exception:
+                break
+
+            vulns = data.get("vulnerabilities", [])
+            if not vulns:
+                break
+
+            await self._process_nvd_batch(vulns, sf, plugin_slugs, theme_slugs)
+
+            total = data.get("totalResults", 0)
+            start_index += len(vulns)
+            if start_index >= total:
+                break
+            # Rate limiting NVD: 6 req/30s sin API key
+            await asyncio.sleep(6)
+
+    async def _process_nvd_batch(
+        self, vulns: list, sf: object, plugin_slugs: list[str], theme_slugs: list[str]
+    ) -> None:
+        async with sf() as session:  # type: ignore[operator]
+            for item in vulns:
+                cve = item.get("cve", {})
+                cve_id = cve.get("id", "")
+                if not cve_id:
+                    continue
+
+                desc = next(
+                    (d["value"] for d in cve.get("descriptions", []) if d.get("lang") == "en"),
+                    ""
+                )
+                metrics = cve.get("metrics", {})
+                cvss_score: float | None = None
+                severity = "MEDIUM"
+                if v31 := metrics.get("cvssMetricV31"):
+                    cvss_score = v31[0]["cvssData"]["baseScore"]
+                    severity = v31[0]["cvssData"]["baseSeverity"]
+                elif v30 := metrics.get("cvssMetricV30"):
+                    cvss_score = v30[0]["cvssData"]["baseScore"]
+                    severity = v30[0]["cvssData"]["baseSeverity"]
+
+                refs = json.dumps([r2["url"] for r2 in cve.get("references", [])])
+                published = cve.get("published", "")
+
+                # Extraer CPEs de configurations
+                found_any = False
+                configurations = cve.get("configurations", [])
+                for config in configurations:
+                    for node in config.get("nodes", []):
+                        for cpe_match in node.get("cpeMatch", []):
+                            if not cpe_match.get("vulnerable", False):
+                                continue
+                            cpe_uri = cpe_match.get("criteria", "")
+                            vendor, product, target_sw = _parse_cpe(cpe_uri)
+                            if not product:
+                                continue
+
+                            v_start_i = cpe_match.get("versionStartIncluding")
+                            v_start_e = cpe_match.get("versionStartExcluding")
+                            v_end_i = cpe_match.get("versionEndIncluding")
+                            v_end_e = cpe_match.get("versionEndExcluding")
+
+                            # WordPress Core: CPE product="wordpress", vendor="wordpress"
+                            if vendor.lower() == "wordpress" and product.lower() == "wordpress":
+                                await self._upsert_vuln(session, NormalizedVuln(
+                                    cve_id=cve_id,
+                                    software_type="core",
+                                    slug="wordpress",
+                                    cpe_vendor=vendor,
+                                    cpe_product=product,
+                                    match_confidence=1.0,
+                                    version_start_incl=v_start_i,
+                                    version_start_excl=v_start_e,
+                                    version_end_incl=v_end_i,
+                                    version_end_excl=v_end_e,
+                                    cvss_score=cvss_score,
+                                    severity=severity,
+                                    title=f"WordPress Core: {cve_id}",
+                                    description=desc,
+                                    remediation="Update WordPress to the latest version.",
+                                    references_json=refs,
+                                    published_at=published,
+                                ))
+                                found_any = True
+                                continue
+
+                            # Plugins/Themes: filtrar por target_sw=wordpress
+                            if not _is_wp_plugin_cpe(target_sw):
+                                continue
+
+                            # Intentar mapear a plugin slug conocido
+                            slug, conf = _match_slug(product, plugin_slugs)
+                            sw_type = "plugin"
+                            if not slug:
+                                slug, conf = _match_slug(product, theme_slugs)
+                                sw_type = "theme"
+                            if not slug:
+                                # No se pudo mapear - guardar con el producto CPE como slug
+                                # para búsqueda manual futura
+                                slug = product
+                                conf = 0.5
+                                sw_type = "plugin"  # asumimos plugin
+
+                            await self._upsert_vuln(session, NormalizedVuln(
+                                cve_id=cve_id,
+                                software_type=sw_type,
+                                slug=slug,
+                                cpe_vendor=vendor,
+                                cpe_product=product,
+                                match_confidence=conf,
+                                version_start_incl=v_start_i,
+                                version_start_excl=v_start_e,
+                                version_end_incl=v_end_i,
+                                version_end_excl=v_end_e,
+                                cvss_score=cvss_score,
+                                severity=severity,
+                                title=f"{product}: {cve_id}",
+                                description=desc,
+                                remediation="Update the plugin/theme to the latest version.",
+                                references_json=refs,
+                                published_at=published,
+                            ))
+                            found_any = True
+
+                # Si no había configurations útiles, ignorar
+                if not found_any and desc:
+                    pass  # Ignorar CVEs sin CPEs útiles
+
+            await session.commit()
+
+    async def _upsert_vuln(self, session: object, vuln: NormalizedVuln) -> None:
+        from sqlalchemy import select
+        existing = (await session.execute(  # type: ignore[union-attr]
+            select(NormalizedVuln).where(
+                NormalizedVuln.cve_id == vuln.cve_id,
+                NormalizedVuln.slug == vuln.slug,
             )
+        )).scalar_one_or_none()
+        if existing:
+            # Actualizar si la nueva tiene mayor confianza
+            if vuln.match_confidence > existing.match_confidence:
+                for attr in ["cpe_vendor", "cpe_product", "match_confidence",
+                             "version_start_incl", "version_start_excl",
+                             "version_end_incl", "version_end_excl",
+                             "cvss_score", "severity", "description", "references_json"]:
+                    setattr(existing, attr, getattr(vuln, attr))
+        else:
+            session.add(vuln)  # type: ignore[union-attr]

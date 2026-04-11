@@ -45,33 +45,6 @@ class Scanner:
     def __init__(self, opts: ScanOptions) -> None:
         self._opts = opts
 
-    def _build_modules(self) -> list[ScanModule]:
-        try:
-            from plecost.database.store import CVEStore
-            from pathlib import Path
-            db_path = str(Path.home() / ".plecost" / "db" / "plecost.db")
-            store = CVEStore(db_path)
-            cve_mod: CVEsModule | None = CVEsModule(store)
-            plugin_wl = store.get_plugins_wordlist()
-            theme_wl = store.get_themes_wordlist()
-        except Exception:
-            cve_mod = None
-            plugin_wl = []
-            theme_wl = []
-
-        modules = [
-            FingerprintModule(), WAFModule(),
-            PluginsModule(wordlist=plugin_wl),
-            ThemesModule(wordlist=theme_wl),
-            UsersModule(), XMLRPCModule(), RESTAPIModule(),
-            MisconfigsModule(), DirectoryListingModule(),
-            HTTPHeadersModule(), SSLTLSModule(),
-            DebugExposureModule(), ContentAnalysisModule(), AuthModule(),
-        ]
-        if cve_mod:
-            modules.append(cve_mod)
-        return modules
-
     async def run_many(self, urls: list[str]) -> list[ScanResult]:
         """Scan multiple targets sequentially and return a list of ScanResults."""
         results: list[ScanResult] = []
@@ -100,7 +73,34 @@ class Scanner:
     async def run(self) -> ScanResult:
         start = time.monotonic()
         ctx = ScanContext(self._opts)
-        modules = self._build_modules()
+
+        # Inicializar store y wordlists de forma async
+        cve_mod: CVEsModule | None = None
+        plugin_wl: list[str] = []
+        theme_wl: list[str] = []
+        try:
+            from plecost.database.store import CVEStore
+            from pathlib import Path
+            db_url = f"sqlite+aiosqlite:///{Path.home() / '.plecost' / 'db' / 'plecost.db'}"
+            store = CVEStore.from_url(db_url)
+            cve_mod = CVEsModule(store)
+            plugin_wl = await store.get_plugins_wordlist()
+            theme_wl = await store.get_themes_wordlist()
+        except Exception:
+            pass
+
+        modules: list[ScanModule] = [
+            FingerprintModule(), WAFModule(),
+            PluginsModule(wordlist=plugin_wl),
+            ThemesModule(wordlist=theme_wl),
+            UsersModule(), XMLRPCModule(), RESTAPIModule(),
+            MisconfigsModule(), DirectoryListingModule(),
+            HTTPHeadersModule(), SSLTLSModule(),
+            DebugExposureModule(), ContentAnalysisModule(), AuthModule(),
+        ]
+        if cve_mod:
+            modules.append(cve_mod)
+
         scheduler = Scheduler(modules)
         async with PlecostHTTPClient(self._opts) as http:
             await scheduler.run(ctx, http)

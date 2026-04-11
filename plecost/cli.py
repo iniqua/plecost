@@ -106,14 +106,23 @@ def scan(
 
 @app.command("update-db")
 def update_db(
-    db_path: Optional[str] = typer.Option(None, help="Path to save the database"),
+    db_url: Optional[str] = typer.Option(
+        None,
+        "--db-url",
+        help="Database URL (sqlite+aiosqlite:///path or postgresql+asyncpg://...)",
+    ),
 ) -> None:
-    """Download and update the CVE database."""
+    """Download and update the CVE vulnerability database from NVD."""
     from pathlib import Path
-    if not db_path:
-        db_path = str(Path.home() / ".plecost" / "db" / "plecost.db")
+    if not db_url:
+        db_path = Path.home() / ".plecost" / "db" / "plecost.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        db_url = f"sqlite+aiosqlite:///{db_path}"
 
-    console.print(f"[cyan]Updating CVE database at {db_path}...[/cyan]")
+    console.print("[bold]Updating CVE database...[/bold]")
+    console.print(f"Target: {db_url}")
+    console.print("[dim]Fetching last 5 years from NVD + WordPress.org...[/dim]")
+
     from plecost.database.updater import DatabaseUpdater
 
     try:
@@ -122,7 +131,7 @@ def update_db(
     except ImportError:
         pass
 
-    asyncio.run(DatabaseUpdater(db_path=db_path).run())
+    asyncio.run(DatabaseUpdater(db_url).run())
     console.print("[green]Database updated successfully.[/green]")
 
 

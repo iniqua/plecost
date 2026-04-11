@@ -1,44 +1,57 @@
 import pytest
-import sqlite3
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+
+from plecost.database.models import Base, NormalizedVuln
 from plecost.database.store import CVEStore
 
 
 @pytest.fixture
-def db_path(tmp_path):
-    db = tmp_path / "test.db"
-    conn = sqlite3.connect(str(db))
-    conn.execute("""CREATE TABLE vulnerabilities (
-        id TEXT PRIMARY KEY, software_type TEXT, software_slug TEXT,
-        version_from TEXT, version_to TEXT, cvss_score REAL,
-        severity TEXT, title TEXT, description TEXT, remediation TEXT,
-        "references" TEXT, has_exploit INTEGER, published_at TEXT
-    )""")
-    conn.execute("""INSERT INTO vulnerabilities VALUES
-        ('CVE-2024-1234','plugin','woocommerce','8.0.0','8.3.0',
-         8.1,'HIGH','SQL Injection in WooCommerce','SQL injection via order param',
-         'Update to 8.3.1','["https://nvd.nist.gov/vuln/detail/CVE-2024-1234"]',1,'2024-01-15')
-    """)
-    conn.commit()
-    conn.close()
-    return str(db)
+async def store(tmp_path):
+    db_url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
+    engine = create_async_engine(db_url)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    sf = async_sessionmaker(engine, expire_on_commit=False)
+    # Insert test data
+    async with sf() as session:
+        session.add(NormalizedVuln(
+            cve_id="CVE-2024-1234",
+            software_type="plugin",
+            slug="woocommerce",
+            cpe_vendor="woocommerce",
+            cpe_product="woocommerce",
+            match_confidence=1.0,
+            version_start_incl="8.0.0",
+            version_end_incl="8.3.0",
+            cvss_score=8.1,
+            severity="HIGH",
+            title="SQL Injection in WooCommerce",
+            description="SQL injection via order param",
+            remediation="Update to 8.3.1",
+            references_json='["https://nvd.nist.gov/vuln/detail/CVE-2024-1234"]',
+            has_exploit=True,
+            published_at="2024-01-15",
+        ))
+        await session.commit()
+    return CVEStore(sf)
 
 
-def test_find_plugin_vulnerabilities(db_path):
-    store = CVEStore(db_path)
-    vulns = store.find("plugin", "woocommerce", "8.1.0")
+@pytest.mark.asyncio
+async def test_find_plugin_vulnerabilities(store):
+    vulns = await store.find("plugin", "woocommerce", "8.1.0")
     assert len(vulns) == 1
     assert vulns[0].cve_id == "CVE-2024-1234"
     assert vulns[0].severity == "HIGH"
     assert vulns[0].has_exploit is True
 
 
-def test_no_vulns_for_patched_version(db_path):
-    store = CVEStore(db_path)
-    vulns = store.find("plugin", "woocommerce", "8.4.0")
+@pytest.mark.asyncio
+async def test_no_vulns_for_patched_version(store):
+    vulns = await store.find("plugin", "woocommerce", "8.4.0")
     assert len(vulns) == 0
 
 
-def test_no_vulns_for_different_plugin(db_path):
-    store = CVEStore(db_path)
-    vulns = store.find("plugin", "akismet", "5.0.0")
+@pytest.mark.asyncio
+async def test_no_vulns_for_different_plugin(store):
+    vulns = await store.find("plugin", "akismet", "5.0.0")
     assert len(vulns) == 0

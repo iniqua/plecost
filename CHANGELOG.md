@@ -1,3 +1,22 @@
+## [4.1.0] - 2026-04-10
+
+### Changed
+- Rediseño completo del sistema de base de datos CVE
+  - SQLAlchemy 2.0 async (aiosqlite para SQLite, asyncpg para PostgreSQL)
+  - Nuevo modelo `NormalizedVuln` con rangos de versión exactos (versionStartIncluding/Excluding, versionEndIncluding/Excluding)
+  - Parseo real de CPEs del NVD con filtro target_sw=wordpress
+  - Fuzzy matching Jaro-Winkler inline (sin dependencias extra) para mapeo slug→CPE product
+  - Descarga los últimos 5 años de CVEs del NVD paginado
+  - `DatabaseUpdater` acepta `db_url` en lugar de `db_path` (soporte SQLite y PostgreSQL)
+  - `CVEStore` completamente async con método `from_url()` factory
+  - `scanner.py`: carga de wordlists y store movida a `run()` async
+  - `cves.py`: `store.find()` ahora se llama con `await`
+  - `cli.py update-db`: nuevo flag `--db-url` en lugar de `--db-path`
+  - Eliminada dependencia `aiofiles`, añadidas `sqlalchemy[asyncio]>=2.0` y `aiosqlite>=0.19`
+  - Tests unitarios actualizados para el nuevo store async con SQLAlchemy
+
+---
+
 ## 2026-04-10 — Debate técnico y decisión arquitectónica de la base de datos CVE
 
 ### Added

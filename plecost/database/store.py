@@ -1,9 +1,12 @@
 from __future__ import annotations
 import json
-import sqlite3
 from dataclasses import dataclass
-from pathlib import Path
+
 from packaging.version import Version, InvalidVersion
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+
+from plecost.database.models import NormalizedVuln, PluginsWordlist, ThemesWordlist
 
 
 @dataclass
@@ -11,8 +14,10 @@ class VulnerabilityRecord:
     cve_id: str
     software_type: str
     software_slug: str
-    version_from: str
-    version_to: str
+    version_start_incl: str | None
+    version_start_excl: str | None
+    version_end_incl: str | None
+    version_end_excl: str | None
     cvss_score: float | None
     severity: str
     title: str
@@ -21,52 +26,84 @@ class VulnerabilityRecord:
     references: list[str]
     has_exploit: bool
     published_at: str
+    match_confidence: float
 
 
 class CVEStore:
-    def __init__(self, db_path: str) -> None:
-        if not Path(db_path).exists():
-            from plecost.exceptions import DatabaseNotFoundError
-            raise DatabaseNotFoundError(f"CVE database not found at {db_path}. Run: plecost update-db")
-        self._conn = sqlite3.connect(db_path, check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+        self._sf = session_factory
 
-    def find(self, software_type: str, slug: str, installed_version: str) -> list[VulnerabilityRecord]:
-        rows = self._conn.execute(
-            "SELECT * FROM vulnerabilities WHERE software_type=? AND software_slug=?",
-            (software_type, slug)
-        ).fetchall()
-        results = []
+    @classmethod
+    def from_url(cls, db_url: str) -> "CVEStore":
+        from plecost.database.engine import make_engine, make_session_factory
+        engine = make_engine(db_url)
+        return cls(make_session_factory(engine))
+
+    async def find(
+        self, software_type: str, slug: str, installed_version: str
+    ) -> list[VulnerabilityRecord]:
+        async with self._sf() as session:
+            result = await session.execute(
+                select(NormalizedVuln).where(
+                    NormalizedVuln.software_type == software_type,
+                    NormalizedVuln.slug == slug,
+                )
+            )
+            rows = result.scalars().all()
+
         try:
             iv = Version(installed_version)
         except InvalidVersion:
             return []
-        for row in rows:
-            try:
-                if Version(row["version_from"]) <= iv <= Version(row["version_to"]):
-                    results.append(VulnerabilityRecord(
-                        cve_id=row["id"], software_type=row["software_type"],
-                        software_slug=row["software_slug"], version_from=row["version_from"],
-                        version_to=row["version_to"], cvss_score=row["cvss_score"],
-                        severity=row["severity"], title=row["title"],
-                        description=row["description"], remediation=row["remediation"],
-                        references=json.loads(row["references"] or "[]"),
-                        has_exploit=bool(row["has_exploit"]), published_at=row["published_at"]
-                    ))
-            except InvalidVersion:
-                continue
-        return results
 
-    def get_plugins_wordlist(self) -> list[str]:
-        try:
-            rows = self._conn.execute("SELECT slug FROM plugins_wordlist").fetchall()
-            return [r["slug"] for r in rows]
-        except Exception:
-            return []
+        return [self._to_record(row) for row in rows if self._is_affected(iv, row)]
 
-    def get_themes_wordlist(self) -> list[str]:
+    def _is_affected(self, iv: Version, row: NormalizedVuln) -> bool:
         try:
-            rows = self._conn.execute("SELECT slug FROM themes_wordlist").fetchall()
-            return [r["slug"] for r in rows]
-        except Exception:
-            return []
+            start_i = Version(row.version_start_incl) if row.version_start_incl else None
+            start_e = Version(row.version_start_excl) if row.version_start_excl else None
+            end_i = Version(row.version_end_incl) if row.version_end_incl else None
+            end_e = Version(row.version_end_excl) if row.version_end_excl else None
+
+            if start_i and iv < start_i:
+                return False
+            if start_e and iv <= start_e:
+                return False
+            if end_i and iv > end_i:
+                return False
+            if end_e and iv >= end_e:
+                return False
+            # Si no hay rangos definidos, asumir afectado (raro pero posible)
+            return True
+        except InvalidVersion:
+            return False
+
+    def _to_record(self, row: NormalizedVuln) -> VulnerabilityRecord:
+        return VulnerabilityRecord(
+            cve_id=row.cve_id,
+            software_type=row.software_type,
+            software_slug=row.slug,
+            version_start_incl=row.version_start_incl,
+            version_start_excl=row.version_start_excl,
+            version_end_incl=row.version_end_incl,
+            version_end_excl=row.version_end_excl,
+            cvss_score=row.cvss_score,
+            severity=row.severity,
+            title=row.title,
+            description=row.description,
+            remediation=row.remediation,
+            references=json.loads(row.references_json or "[]"),
+            has_exploit=row.has_exploit,
+            published_at=row.published_at,
+            match_confidence=row.match_confidence,
+        )
+
+    async def get_plugins_wordlist(self) -> list[str]:
+        async with self._sf() as session:
+            result = await session.execute(select(PluginsWordlist.slug))
+            return list(result.scalars().all())
+
+    async def get_themes_wordlist(self) -> list[str]:
+        async with self._sf() as session:
+            result = await session.execute(select(ThemesWordlist.slug))
+            return list(result.scalars().all())
