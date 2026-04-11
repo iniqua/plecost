@@ -3,8 +3,10 @@ import asyncio
 import json
 import re
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import httpx
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from plecost.database.engine import make_engine, make_session_factory
 from plecost.database.models import Base, DbMetadata, NormalizedVuln, PluginsWordlist, ThemesWordlist
@@ -111,9 +113,9 @@ def _match_slug(cpe_product: str, known_slugs: list[str], threshold: float = 0.8
     return None, 0.0
 
 
-async def _upsert_vuln_free(session: object, vuln: NormalizedVuln) -> None:
+async def _upsert_vuln_free(session: AsyncSession, vuln: NormalizedVuln) -> None:
     from sqlalchemy import select
-    existing = (await session.execute(  # type: ignore[union-attr]
+    existing = (await session.execute(
         select(NormalizedVuln).where(
             NormalizedVuln.cve_id == vuln.cve_id,
             NormalizedVuln.slug == vuln.slug,
@@ -127,14 +129,15 @@ async def _upsert_vuln_free(session: object, vuln: NormalizedVuln) -> None:
                          "cvss_score", "severity", "description", "references_json"]:
                 setattr(existing, attr, getattr(vuln, attr))
     else:
-        session.add(vuln)  # type: ignore[union-attr]
+        session.add(vuln)
 
 
 async def process_nvd_batch(
-    vulns: list[object], sf: object, plugin_slugs: list[str], theme_slugs: list[str]
+    vulns: list[Any], sf: async_sessionmaker[AsyncSession],
+    plugin_slugs: list[str], theme_slugs: list[str]
 ) -> None:
     """Free reusable function called from both updater and incremental."""
-    async with sf() as session:  # type: ignore[operator]
+    async with sf() as session:
         for item in vulns:
             cve = item.get("cve", {})
             cve_id = cve.get("id", "")
@@ -284,7 +287,7 @@ class DatabaseUpdater:
         await engine.dispose()
 
     async def _fetch_plugin_slugs(
-        self, client: httpx.AsyncClient, sf: object
+        self, client: httpx.AsyncClient, sf: async_sessionmaker[AsyncSession]
     ) -> list[str]:
         slugs: list[str] = []
         for page in range(1, 20):  # up to 5000 plugins
@@ -301,7 +304,7 @@ class DatabaseUpdater:
             except Exception:
                 break
         # Save to DB
-        async with sf() as session:  # type: ignore[operator]
+        async with sf() as session:
             for slug in slugs:
                 existing = await session.get(PluginsWordlist, slug)
                 if not existing:
@@ -310,7 +313,7 @@ class DatabaseUpdater:
         return slugs
 
     async def _fetch_theme_slugs(
-        self, client: httpx.AsyncClient, sf: object
+        self, client: httpx.AsyncClient, sf: async_sessionmaker[AsyncSession]
     ) -> list[str]:
         slugs: list[str] = []
         for page in range(1, 10):
@@ -326,7 +329,7 @@ class DatabaseUpdater:
                     break
             except Exception:
                 break
-        async with sf() as session:  # type: ignore[operator]
+        async with sf() as session:
             for slug in slugs:
                 existing = await session.get(ThemesWordlist, slug)
                 if not existing:
@@ -335,7 +338,7 @@ class DatabaseUpdater:
         return slugs
 
     async def _fetch_nvd(
-        self, client: httpx.AsyncClient, sf: object, plugin_slugs: list[str], theme_slugs: list[str],
+        self, client: httpx.AsyncClient, sf: async_sessionmaker[AsyncSession], plugin_slugs: list[str], theme_slugs: list[str],
         start_date: str | None = None,
     ) -> None:
         if start_date is None:
@@ -371,5 +374,5 @@ class DatabaseUpdater:
             # NVD rate limiting: 6 req/30s without API key, 0.6s with key
             await asyncio.sleep(6 if not self._api_key else 0.6)
 
-    async def _upsert_vuln(self, session: object, vuln: NormalizedVuln) -> None:
+    async def _upsert_vuln(self, session: AsyncSession, vuln: NormalizedVuln) -> None:
         await _upsert_vuln_free(session, vuln)
