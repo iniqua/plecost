@@ -8,7 +8,7 @@ class Base(DeclarativeBase):
 
 
 class NormalizedVuln(Base):
-    """Una fila por (cve_id, slug). Tabla principal de consulta en scan time."""
+    """One row per (cve_id, slug). Main lookup table at scan time."""
     __tablename__ = "normalized_vulns"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -51,7 +51,7 @@ class ThemesWordlist(Base):
 
 
 class DbMetadata(Base):
-    """Metadatos de la base de datos: última sincronización, versión, etc."""
+    """Database metadata: last synchronization, version, etc."""
     __tablename__ = "db_metadata"
 
     key: Mapped[str] = mapped_column(String(100), primary_key=True)

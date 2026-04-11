@@ -1,20 +1,20 @@
-# Plecost v4.0 — Spec de Diseño
+# Plecost v4.0 — Design Spec
 
-> Fecha: 2026-04-10
-> Estado: Aprobado
+> Date: 2026-04-10
+> Status: Approved
 
 ---
 
-## 1. Visión General
+## 1. Overview
 
-Plecost es la mejor herramienta de análisis de seguridad de caja negra para WordPress. Detecta vulnerabilidades en el core, plugins y temas, enumera usuarios, identifica configuraciones inseguras y correlaciona todo con una base de datos CVE actualizada diariamente.
+Plecost is the best black-box security analysis tool for WordPress. It detects vulnerabilities in core, plugins and themes, enumerates users, identifies insecure configurations and correlates everything with a daily-updated CVE database.
 
-**Principios de diseño:**
-- 100% automática — cero interacción durante el scan
-- Doble modo: CLI interactiva (Typer + Rich) y librería Python (para Celery workers, APIs, etc.)
-- Grafo de tareas async con dependencias explícitas (máximo paralelismo)
-- httpx + asyncio; uvloop como dependencia opcional
-- Cada hallazgo tiene un ID estable y permanente para dashboards externos
+**Design principles:**
+- 100% automated — zero interaction during the scan
+- Dual mode: interactive CLI (Typer + Rich) and Python library (for Celery workers, APIs, etc.)
+- Async task graph with explicit dependencies (maximum parallelism)
+- httpx + asyncio; uvloop as optional dependency
+- Each finding has a stable permanent ID for external dashboards
 
 ---
 
@@ -27,9 +27,9 @@ plecost/
 ├── cli.py                      # Typer app — punto de entrada CLI
 ├── engine/
 │   ├── scheduler.py            # Grafo de tareas async con dependencias
-│   ├── context.py              # ScanContext: estado compartido entre módulos
+│   ├── context.py              # ScanContext: shared state between modules
 │   └── http_client.py          # httpx.AsyncClient wrapper (proxy, auth, stealth)
-├── modules/                    # Módulos de detección independientes
+├── modules/                    # Independent detection modules
 │   ├── base.py                 # Clase base ScanModule
 │   ├── fingerprint.py
 │   ├── plugins.py
@@ -55,14 +55,14 @@ plecost/
 └── models.py                   # Dataclasses: ScanResult, Finding, Plugin, etc.
 ```
 
-### Flujo de ejecución
+### Execution flow
 
 ```
 CLI/Library → ScanOptions → ScanContext → Scheduler
                                               │
                     ┌─────────────────────────┤
                     ↓                         ↓
-             [fingerprint]               [waf] (paralelo desde inicio)
+             [fingerprint]               [waf] (parallel from the start)
                     │
         ┌───────────┼───────────┬──────────┬──────────┬──────────┐
         ↓           ↓           ↓          ↓          ↓          ↓
@@ -78,11 +78,11 @@ CLI/Library → ScanOptions → ScanContext → Scheduler
 
 ---
 
-## 3. Módulos de Detección
+## 3. Detection Modules
 
-### Grafo de dependencias
+### Dependency graph
 
-| Módulo | Depende de | Se ejecuta en paralelo con |
+| Module | Depends on | Runs in parallel with |
 |--------|-----------|---------------------------|
 | fingerprint | — | waf |
 | waf | — | fingerprint |
@@ -100,187 +100,187 @@ CLI/Library → ScanOptions → ScanContext → Scheduler
 | auth | fingerprint | plugins, themes, ... |
 | cves | plugins, themes | — |
 
-### Capacidades por módulo
+### Capabilities per module
 
 #### fingerprint
-- Versión WP via meta generator tag
-- Versión WP via `/readme.html` y `/readme.txt` (stable tag)
-- Versión WP via query params `?ver=X.X.X` en JS/CSS
-- Versión WP via hashes de archivos en `/wp-includes/`
-- Versión WP via feed RSS/Atom (`<generator>`)
-- Versión WP via assets versionados en `wp-login.php`
-- Detección de tema activo
-- Detección de si es WordPress (requisito para todos los demás módulos)
+- WP version via meta generator tag
+- WP version via `/readme.html` and `/readme.txt` (stable tag)
+- WP version via query params `?ver=X.X.X` in JS/CSS
+- WP version via file hashes in `/wp-includes/`
+- WP version via RSS/Atom feed (`<generator>`)
+- WP version via versioned assets in `wp-login.php`
+- Active theme detection
+- WordPress detection (prerequisite for all other modules)
 
 #### plugins
 - Fuerza bruta de ~59.000 slugs de plugins WordPress.org
-- Detección pasiva de plugins via rutas en HTML source
-- Versión via `/wp-content/plugins/{slug}/readme.txt`
-- Versión via query params `?ver=X.X` en assets del plugin
-- Detección de plugins abandonados (cerrados en WP.org)
-- Comparación versión instalada vs. última disponible
+- Passive plugin detection via paths in HTML source
+- Version via `/wp-content/plugins/{slug}/readme.txt`
+- Version via query params `?ver=X.X` in plugin assets
+- Detection of abandoned plugins (closed on WP.org)
+- Comparison of installed version vs. latest available
 
 #### themes
-- Fuerza bruta de ~2.600 slugs de temas WordPress.org
-- Detección pasiva via rutas en HTML source
-- Versión via `/wp-content/themes/{slug}/style.css` (comentario Version:)
-- Versión via `/wp-content/themes/{slug}/readme.txt`
-- Temas inactivos instalados
+- Brute force of ~2,600 WordPress.org theme slugs
+- Passive detection via paths in HTML source
+- Version via `/wp-content/themes/{slug}/style.css` (Version: comment)
+- Version via `/wp-content/themes/{slug}/readme.txt`
+- Inactive installed themes
 
 #### users
-- Enumeración via author archives `/?author=1` hasta N
-- Enumeración via REST API `/wp-json/wp/v2/users`
-- Enumeración via RSS/Atom feeds (`<dc:creator>`)
-- Enumeración via oEmbed response (metadata de autor)
-- Login differential (respuesta diferente para usuario válido vs inválido)
-- Verificación de usuario "admin" con ID=1
+- Enumeration via author archives `/?author=1` up to N
+- Enumeration via REST API `/wp-json/wp/v2/users`
+- Enumeration via RSS/Atom feeds (`<dc:creator>`)
+- Enumeration via oEmbed response (author metadata)
+- Login differential (different response for valid vs invalid user)
+- Verification of "admin" user with ID=1
 
 #### xmlrpc
-- Detección de `xmlrpc.php` accesible
-- `system.listMethods` disponible
-- `pingback.ping` habilitado (amplification DoS)
-- Brute force via `system.multicall` (N intentos en 1 request)
+- Detection of accessible `xmlrpc.php`
+- `system.listMethods` available
+- `pingback.ping` enabled (amplification DoS)
+- Brute force via `system.multicall` (N attempts in 1 request)
 
 #### rest_api
-- `/wp-json/wp/v2/users` expone usernames públicamente
-- CORS misconfiguration en REST API
-- oEmbed endpoint expone información de usuario
-- REST API link expuesto en HTML header (`rel="https://api.w.org/"`)
-- Application Passwords habilitado
+- `/wp-json/wp/v2/users` exposes usernames publicly
+- CORS misconfiguration in REST API
+- oEmbed endpoint exposes user information
+- REST API link exposed in HTML header (`rel="https://api.w.org/"`)
+- Application Passwords enabled
 
 #### cves
-- Correlación de versión WP core con CVE DB local
-- Correlación de cada plugin detectado con CVE DB local
-- Correlación de cada tema detectado con CVE DB local
-- Severidad CVSS 3.1 (Critical/High/Medium/Low)
-- Flag de exploit público disponible
-- Rangos de versión afectados (exactos)
+- Correlation of WP core version with local CVE DB
+- Correlation of each detected plugin with local CVE DB
+- Correlation of each detected theme with local CVE DB
+- CVSS 3.1 severity (Critical/High/Medium/Low)
+- Public exploit available flag
+- Exact affected version ranges
 
 #### misconfigs
-- `/wp-config.php` accesible
-- Backups de wp-config: `.bak`, `.wp-config.php.swp`, `~`
-- `/.env` accesible
-- `/.git/` accesible
-- `/debug.log` accesible
-- `*.sql`, `*.bak` en raíz
-- `/wp-admin/install.php` accesible
-- `/wp-admin/upgrade.php` accesible
-- `/readme.html` y `/license.txt` (version disclosure)
-- `/wlwmanifest.xml` en header (Windows Live Writer)
-- `wp-cron.php` accesible externamente
-- Prefijo de tablas DB default (`wp_`) — inferido por comportamiento
-- Security keys no configuradas o débiles — inferido por errores
-- `DISALLOW_FILE_EDIT` no activo — inferido por acceso al editor
+- `/wp-config.php` accessible
+- wp-config backups: `.bak`, `.wp-config.php.swp`, `~`
+- `/.env` accessible
+- `/.git/` accessible
+- `/debug.log` accessible
+- `*.sql`, `*.bak` in root
+- `/wp-admin/install.php` accessible
+- `/wp-admin/upgrade.php` accessible
+- `/readme.html` and `/license.txt` (version disclosure)
+- `/wlwmanifest.xml` in header (Windows Live Writer)
+- `wp-cron.php` externally accessible
+- Default DB table prefix (`wp_`) — inferred from behavior
+- Security keys not configured or weak — inferred from errors
+- `DISALLOW_FILE_EDIT` not active — inferred from editor access
 
 #### directory_listing
-- Directory indexing en `/wp-content/`
-- Directory indexing en `/wp-content/plugins/`
-- Directory indexing en `/wp-content/themes/`
-- Directory indexing en `/wp-content/uploads/`
+- Directory indexing at `/wp-content/`
+- Directory indexing at `/wp-content/plugins/`
+- Directory indexing at `/wp-content/themes/`
+- Directory indexing at `/wp-content/uploads/`
 - Media enumeration via `/?p=1`, `/?p=2`, ...
 
 #### http_headers
-- `Strict-Transport-Security` (HSTS) ausente
-- `X-Frame-Options` ausente
-- `X-Content-Type-Options` ausente
-- `Content-Security-Policy` ausente
-- `Referrer-Policy` ausente
-- `Permissions-Policy` ausente
-- `X-XSS-Protection` ausente
-- `Server` header expone versión de servidor web
-- `X-Powered-By` expone versión de PHP
+- `Strict-Transport-Security` (HSTS) absent
+- `X-Frame-Options` absent
+- `X-Content-Type-Options` absent
+- `Content-Security-Policy` absent
+- `Referrer-Policy` absent
+- `Permissions-Policy` absent
+- `X-XSS-Protection` absent
+- `Server` header exposes web server version
+- `X-Powered-By` exposes PHP version
 
 #### ssl_tls
-- Certificado SSL válido y no expirado
-- Redirect HTTP → HTTPS ausente
+- Valid and non-expired SSL certificate
+- HTTP → HTTPS redirect absent
 - HSTS preload
-- TLS 1.0/1.1 aún soportado (deprecated)
+- TLS 1.0/1.1 still supported (deprecated)
 
 #### debug_exposure
-- `WP_DEBUG = true` activo (errores en respuestas HTTP)
-- `WP_DEBUG_LOG = true` (log accesible)
-- `WP_DEBUG_DISPLAY = true` (errores visibles en pantalla)
-- `display_errors = On` en PHP
-- `expose_php = On` en PHP
-- `allow_url_include = On` en PHP (RFI risk)
+- `WP_DEBUG = true` active (errors in HTTP responses)
+- `WP_DEBUG_LOG = true` (log accessible)
+- `WP_DEBUG_DISPLAY = true` (errors visible on screen)
+- `display_errors = On` in PHP
+- `expose_php = On` in PHP
+- `allow_url_include = On` in PHP (RFI risk)
 
 #### content_analysis
-- Scripts de terceros sospechosos (card skimming patterns)
-- iFrames externos inesperados
-- Secretos hardcodeados en JS público (API keys, tokens con regex)
+- Suspicious third-party scripts (card skimming patterns)
+- Unexpected external iframes
+- Hardcoded secrets in public JS (API keys, tokens with regex)
 
 #### waf
-- Detección de WAF/CDN por headers y comportamiento
-- Identificación: Cloudflare, Sucuri, WordFence, Imperva, AWS WAF, Akamai, Fastly
+- WAF/CDN detection by headers and behavior
+- Identification: Cloudflare, Sucuri, WordFence, Imperva, AWS WAF, Akamai, Fastly
 
 #### auth
-- Login con credenciales (`--user` / `--password`)
-- Verificación de acceso a `/wp-admin`
-- Detección de 2FA activo
-- Checks adicionales en panel de administración (autenticado)
-- Registro de usuarios abierto (`anyone_can_register`)
+- Login with credentials (`--user` / `--password`)
+- Verification of access to `/wp-admin`
+- Active 2FA detection
+- Additional checks in admin panel (authenticated)
+- Open user registration (`anyone_can_register`)
 
 ---
 
 ## 4. CLI
 
-### Comandos
+### Commands
 
 ```bash
-# Scan básico
+# Basic scan
 plecost scan https://target.com
 
-# Scan completo con autenticación
+# Full scan with authentication
 plecost scan https://target.com --user admin --password secret
 
-# Con proxy y concurrencia
+# With proxy and concurrency
 plecost scan https://target.com --proxy http://127.0.0.1:8080 --concurrency 20
 
-# Solo módulos específicos
+# Specific modules only
 plecost scan https://target.com --modules fingerprint,plugins,cves
 
-# Excluir módulos
+# Exclude modules
 plecost scan https://target.com --skip-modules content_analysis,waf
 
-# Modo stealth (delays, user-agent aleatorio, solo detección pasiva)
+# Stealth mode (delays, random user-agent, passive detection only)
 plecost scan https://target.com --stealth
 
-# Modo agresivo (máxima concurrencia, fuerza bruta completa)
+# Aggressive mode (maximum concurrency, full brute-force)
 plecost scan https://target.com --aggressive
 
-# Output JSON
+# JSON output
 plecost scan https://target.com --output report.json
 
-# Actualizar base de datos CVE
+# Update CVE database
 plecost update-db
 
-# Listar módulos disponibles
+# List available modules
 plecost modules list
 
-# Mostrar detalle de un finding por ID
+# Show detail for a finding by ID
 plecost explain PC-XMLRPC-002
 ```
 
-### Flags globales
+### Global flags
 
-| Flag | Descripción | Default |
+| Flag | Description | Default |
 |------|-------------|---------|
-| `--concurrency N` | Número de requests paralelos | 10 |
-| `--timeout N` | Timeout por request (segundos) | 10 |
-| `--proxy URL` | Proxy HTTP/SOCKS5 | None |
-| `--user-agent UA` | User-Agent personalizado | Plecost/4.0 |
-| `--random-user-agent` | Rotar User-Agent aleatoriamente | False |
-| `--stealth` | Modo silencioso: delays + passive only | False |
-| `--aggressive` | Modo agresivo: max concurrencia | False |
-| `--output FILE` | Guardar JSON en fichero | None |
-| `--no-color` | Desactivar colores en terminal | False |
-| `--quiet` | Solo mostrar hallazgos críticos/altos | False |
-| `--force` | Continuar aunque no se detecte WP | False |
-| `--disable-tls-checks` | No verificar certificados SSL | False |
+| `--concurrency N` | Number of parallel requests | 10 |
+| `--timeout N` | Timeout per request (seconds) | 10 |
+| `--proxy URL` | HTTP/SOCKS5 proxy | None |
+| `--user-agent UA` | Custom User-Agent | Plecost/4.0 |
+| `--random-user-agent` | Rotate User-Agent randomly | False |
+| `--stealth` | Silent mode: delays + passive only | False |
+| `--aggressive` | Aggressive mode: max concurrency | False |
+| `--output FILE` | Save JSON to file | None |
+| `--no-color` | Disable terminal colors | False |
+| `--quiet` | Only show critical/high findings | False |
+| `--force` | Continue even if WP not detected | False |
+| `--disable-tls-checks` | Do not verify SSL certificates | False |
 
 ---
 
-## 5. API de Librería
+## 5. Library API
 
 ```python
 from plecost import Scanner, ScanOptions
@@ -289,10 +289,10 @@ options = ScanOptions(
     url="https://target.com",
     concurrency=10,
     timeout=10,
-    proxy="http://127.0.0.1:8080",      # opcional
-    modules=["fingerprint", "plugins", "cves"],  # None = todos
+    proxy="http://127.0.0.1:8080",      # optional
+    modules=["fingerprint", "plugins", "cves"],  # None = all
     skip_modules=[],
-    credentials=("admin", "secret"),    # opcional
+    credentials=("admin", "secret"),    # optional
     stealth=False,
     aggressive=False,
     user_agent="Plecost/4.0",
@@ -304,49 +304,49 @@ options = ScanOptions(
 scanner = Scanner(options)
 result: ScanResult = await scanner.run()
 
-# Acceso estructurado
+# Structured access
 print(result.wordpress_version)
 print(result.is_wordpress)
 for finding in result.findings:
     print(f"[{finding.severity}] {finding.id}: {finding.title}")
-    print(f"  Remediación: {finding.remediation}")
+    print(f"  Remediation: {finding.remediation}")
 
 result.to_json("report.json")
 ```
 
-El `Scanner` es completamente independiente de Typer. La CLI es solo una capa de presentación sobre él.
+The `Scanner` is completely independent from Typer. The CLI is just a presentation layer on top of it.
 
 ---
 
-## 6. Modelo de Datos
+## 6. Data Model
 
-### Finding (hallazgo individual)
+### Finding (individual finding)
 
 ```python
 @dataclass
 class Finding:
-    id: str                    # "PC-MCFG-001" — estable y permanente
-    remediation_id: str        # "REM-MCFG-001" — ID de mitigación estable
-    title: str                 # Título corto del hallazgo
+    id: str                    # "PC-MCFG-001" — stable and permanent
+    remediation_id: str        # "REM-MCFG-001" — stable remediation ID
+    title: str                 # Short finding title
     severity: Severity         # CRITICAL / HIGH / MEDIUM / LOW / INFO
-    description: str           # Qué se encontró y por qué es un problema
+    description: str           # What was found and why it is a problem
     evidence: dict             # URL, headers, response snippet, etc.
-    remediation: str           # Qué hacer para corregirlo
+    remediation: str           # What to do to fix it
     references: list[str]      # CVE links, OWASP, WP docs
-    cvss_score: float | None   # Solo para CVEs
-    module: str                # Módulo que lo detectó
+    cvss_score: float | None   # Only for CVEs
+    module: str                # Module that detected it
 ```
 
-### IDs estables por categoría
+### Stable IDs by category
 
-| Prefijo | Categoría |
+| Prefix | Category |
 |---------|-----------|
 | `PC-FP-NNN` | Fingerprint / version disclosure |
 | `PC-USR-NNN` | User enumeration |
 | `PC-AUTH-NNN` | Authentication |
 | `PC-XMLRPC-NNN` | XML-RPC |
 | `PC-REST-NNN` | REST API |
-| `PC-CVE-NNN` | CVE en core/plugin/tema |
+| `PC-CVE-NNN` | CVE in core/plugin/theme |
 | `PC-MCFG-NNN` | Misconfiguration |
 | `PC-DIR-NNN` | Directory listing |
 | `PC-HDR-NNN` | HTTP headers |
@@ -357,14 +357,14 @@ class Finding:
 | `PC-PLG-NNN` | Plugin-specific |
 | `PC-THM-NNN` | Theme-specific |
 
-Los IDs son **permanentes** entre versiones. No se reutilizan ni se renumeran aunque se elimine un check.
+IDs are **permanent** across versions. They are not reused or renumbered even if a check is removed.
 
 ### ScanResult
 
 ```python
 @dataclass
 class ScanResult:
-    scan_id: str               # UUID por ejecución
+    scan_id: str               # UUID per execution
     url: str
     timestamp: datetime
     duration_seconds: float
@@ -375,24 +375,24 @@ class ScanResult:
     users: list[User]
     waf_detected: str | None
     findings: list[Finding]
-    summary: ScanSummary       # Conteo por severidad
+    summary: ScanSummary       # Count by severity
 ```
 
 ---
 
-## 7. Base de Datos CVE
+## 7. CVE Database
 
-### Estrategia
-- GitHub Action actualiza la DB **diariamente** usando NVD API 2.0 + WPScan Vulnerability DB pública
-- La DB se publica como **release artifact** en GitHub (SQLite + JSON pre-procesado)
-- Plecost descarga la DB con `plecost update-db` (verifica hash SHA256)
-- La DB se almacena en `~/.plecost/db/`
+### Strategy
+- GitHub Action updates the DB **daily** using NVD API 2.0 + public WPScan Vulnerability DB
+- The DB is published as a **release artifact** on GitHub (SQLite + pre-processed JSON)
+- Plecost downloads the DB with `plecost update-db` (verifies SHA256 hash)
+- The DB is stored in `~/.plecost/db/`
 
-### Estructura SQLite
+### SQLite Structure
 ```sql
--- Vulnerabilidades indexadas por software + versión
+-- Vulnerabilities indexed by software + version
 CREATE TABLE vulnerabilities (
-    id TEXT PRIMARY KEY,        -- "PC-CVE-001" o CVE-YYYY-NNNNN
+    id TEXT PRIMARY KEY,        -- "PC-CVE-001" or CVE-YYYY-NNNNN
     software_type TEXT,         -- "core" | "plugin" | "theme"
     software_slug TEXT,         -- "wordpress" | "woocommerce" | "twentytwentyfour"
     version_from TEXT,
@@ -407,14 +407,14 @@ CREATE TABLE vulnerabilities (
     published_at TEXT
 );
 
--- Wordlist de plugins (slugs conocidos)
+-- Plugin wordlist (known slugs)
 CREATE TABLE plugins_wordlist (
     slug TEXT PRIMARY KEY,
     last_updated TEXT,
     active_installs INTEGER
 );
 
--- Wordlist de temas
+-- Theme wordlist
 CREATE TABLE themes_wordlist (
     slug TEXT PRIMARY KEY,
     last_updated TEXT
@@ -423,12 +423,12 @@ CREATE TABLE themes_wordlist (
 
 ---
 
-## 8. Distribución
+## 8. Distribution
 
 ### pip
 ```bash
 pip install plecost
-pip install plecost[fast]    # incluye uvloop
+pip install plecost[fast]    # includes uvloop
 ```
 
 ### Docker
@@ -442,91 +442,91 @@ docker run --rm ghcr.io/cr0hn/plecost scan https://target.com \
 
 ---
 
-## 9. Estrategia de Testing
+## 9. Testing Strategy
 
-### Tipos de tests
+### Test types
 
 #### Unit tests (`tests/unit/`)
-- Parseo de HTML, feeds, headers (sin red)
-- Correlación de versiones con CVE DB (mocks de DB)
-- IDs estables: no duplicados, formato correcto, ninguno cambia entre versiones
-- Serialización/deserialización de dataclasses
-- Que cada finding tiene su remediación asociada
+- HTML, feed, header parsing (no network)
+- Version correlation with CVE DB (DB mocks)
+- Stable IDs: no duplicates, correct format, none change between versions
+- Dataclass serialization/deserialization
+- Each finding has its associated remediation
 
 #### Integration tests (`tests/integration/`)
-- Scheduler: grafo de dependencias, paralelismo correcto
-- HTTP client: proxy, auth, timeouts, retries (con respx mock)
-- Descarga y parsing de CVE DB
-- Reporters: JSON válido, completo y con todos los campos
+- Scheduler: dependency graph, correct parallelism
+- HTTP client: proxy, auth, timeouts, retries (with respx mock)
+- CVE DB download and parsing
+- Reporters: valid JSON, complete and with all fields
 
 #### Functional tests (`tests/functional/`)
-- Docker Compose levanta WordPress 6.x deliberadamente vulnerable
-- Scan end-to-end verifica findings **exactos** esperados
-- Scan autenticado detecta findings adicionales
-- Modo stealth genera menos requests
-- CLI via subprocess: flags, output JSON válido
+- Docker Compose spins up deliberately vulnerable WordPress 6.x
+- End-to-end scan verifies **exact** expected findings
+- Authenticated scan detects additional findings
+- Stealth mode generates fewer requests
+- CLI via subprocess: flags, valid JSON output
 
 #### Contract tests (`tests/contract/`)
-- `Scanner(options).run()` siempre devuelve `ScanResult` completo
-- Los IDs `PC-XXX-NNN` y `REM-XXX-NNN` son invariantes entre versiones
-- La API pública no rompe entre versiones minor
+- `Scanner(options).run()` always returns a complete `ScanResult`
+- `PC-XXX-NNN` and `REM-XXX-NNN` IDs are invariant between versions
+- The public API does not break between minor versions
 
 #### Property-based tests (`tests/property/`)
-- URLs malformadas/extremas no crashean el scanner
-- Versiones de WP/plugins raras o malformadas no crashean el parser
-- Responses HTTP truncadas/malformadas no crashean los módulos
+- Malformed/extreme URLs do not crash the scanner
+- Rare or malformed WP/plugin versions do not crash the parser
+- Truncated/malformed HTTP responses do not crash the modules
 
-### Infraestructura
+### Infrastructure
 - **pytest** + **pytest-asyncio**
-- **respx** para mockear httpx en unit/integration
-- **Docker Compose** con WordPress 6.x + MySQL + plugins vulnerables para functional tests
-- **Hypothesis** para property-based tests
-- **coverage** con umbral mínimo del 80%
-- **GitHub Actions**: unit + integration en cada PR; functional tests diariamente
+- **respx** for mocking httpx in unit/integration
+- **Docker Compose** with WordPress 6.x + MySQL + vulnerable plugins for functional tests
+- **Hypothesis** for property-based tests
+- **coverage** with a minimum threshold of 80%
+- **GitHub Actions**: unit + integration on each PR; functional tests daily
 
-### WordPress Docker de test
-El `docker-compose.test.yml` incluye:
-- WordPress con versión desactualizada deliberadamente
-- Plugins vulnerables conocidos instalados (ej: WP File Manager < 6.9)
-- `WP_DEBUG=true`, directory listing habilitado
-- XML-RPC activo, REST API sin restricciones
-- Usuario "admin" con password débil
-- Headers de seguridad ausentes
+### Test WordPress Docker
+The `docker-compose.test.yml` includes:
+- WordPress with deliberately outdated version
+- Known vulnerable plugins installed (e.g.: WP File Manager < 6.9)
+- `WP_DEBUG=true`, directory listing enabled
+- XML-RPC active, REST API unrestricted
+- "admin" user with weak password
+- Security headers absent
 
 ---
 
 ## 10. GitHub Actions
 
-### `update-cve-db.yml` (diario)
-1. Descarga vulnerabilidades de NVD API 2.0 (WordPress + plugins + temas)
-2. Descarga wordlist actualizada de plugins de WordPress.org
-3. Construye SQLite + JSON pre-procesado
-4. Publica como release artifact con SHA256
-5. Actualiza `db/latest.json` con URL y hash
+### `update-cve-db.yml` (daily)
+1. Downloads vulnerabilities from NVD API 2.0 (WordPress + plugins + themes)
+2. Downloads updated plugin wordlist from WordPress.org
+3. Builds SQLite + pre-processed JSON
+4. Publishes as release artifact with SHA256
+5. Updates `db/latest.json` with URL and hash
 
-### `ci.yml` (en cada PR)
+### `ci.yml` (on each PR)
 1. Linting (ruff)
 2. Type checking (mypy)
 3. Unit tests
 4. Integration tests
 5. Coverage report
 
-### `docker.yml` (en cada release)
-1. Build imagen Docker
-2. Push a `ghcr.io/cr0hn/plecost`
+### `docker.yml` (on each release)
+1. Build Docker image
+2. Push to `ghcr.io/cr0hn/plecost`
 
 ---
 
 ## 11. README
 
-El README incluirá:
-- Logo/banner ASCII art de plecost
-- Badges: CI, versión pip, Docker pulls, CVE DB última actualización
-- Demo GIF de un scan completo
-- Instalación (pip, Docker)
-- Uso rápido (3 ejemplos en 30 segundos)
-- Tabla completa de módulos y capacidades
-- Tabla de IDs de findings
-- Comparativa con WPScan, Wordfence, ScanTower
+The README will include:
+- Plecost logo/ASCII art banner
+- Badges: CI, pip version, Docker pulls, CVE DB last update
+- Demo GIF of a complete scan
+- Installation (pip, Docker)
+- Quick usage (3 examples in 30 seconds)
+- Complete module and capabilities table
+- Finding IDs table
+- Comparison with WPScan, Wordfence, ScanTower
 - Contributing guide
 - License

@@ -73,7 +73,7 @@ class CVEStore:
                 return False
             if end_e and iv >= end_e:
                 return False
-            # Si no hay rangos definidos, asumir afectado (raro pero posible)
+            # If no ranges are defined, assume affected (rare but possible)
             return True
         except InvalidVersion:
             return False

@@ -109,11 +109,11 @@ def update_db(
     db_url: Optional[str] = typer.Option(
         None,
         "--db-url",
-        help="Database URL. Default: sqlite en ~/.plecost/db/plecost.db",
+        help="Database URL. Default: sqlite at ~/.plecost/db/plecost.db",
     ),
     github_token: Optional[str] = typer.Option(
         None, "--token", envvar="GITHUB_TOKEN",
-        help="GitHub token para mayor rate limit en descargas",
+        help="GitHub token for higher rate limit on downloads",
     ),
 ) -> None:
     """Download the latest pre-built CVE database from GitHub releases."""
@@ -127,7 +127,7 @@ def update_db(
         if db_url.startswith("sqlite"):
             dest = Path(db_url.replace("sqlite+aiosqlite:///", ""))
         else:
-            console.print("[red]update-db solo soporta SQLite. Para PostgreSQL usa build-db y carga manual.[/red]")
+            console.print("[red]update-db only supports SQLite. For PostgreSQL use build-db and load manually.[/red]")
             raise typer.Exit(1)
 
     console.print("[bold]Downloading latest CVE database from GitHub releases...[/bold]")
@@ -147,12 +147,12 @@ def build_db(
     db_url: Optional[str] = typer.Option(
         None,
         "--db-url",
-        help="Database URL. Default: sqlite en ~/.plecost/db/plecost.db",
+        help="Database URL. Default: sqlite at ~/.plecost/db/plecost.db",
     ),
-    years: int = typer.Option(5, "--years", help="Años de historial NVD a descargar"),
+    years: int = typer.Option(5, "--years", help="Years of NVD history to download"),
     nvd_api_key: Optional[str] = typer.Option(
         None, "--nvd-key", envvar="NVD_API_KEY",
-        help="NVD API key para mayor rate limit (gratis en nvd.nist.gov)",
+        help="NVD API key for higher rate limit (free at nvd.nist.gov)",
     ),
 ) -> None:
     """Build the CVE database from scratch (maintainers only). Downloads N years from NVD."""
@@ -183,11 +183,11 @@ def sync_db(
     db_url: Optional[str] = typer.Option(
         None,
         "--db-url",
-        help="Database URL. Default: sqlite en ~/.plecost/db/plecost.db",
+        help="Database URL. Default: sqlite at ~/.plecost/db/plecost.db",
     ),
     nvd_api_key: Optional[str] = typer.Option(
         None, "--nvd-key", envvar="NVD_API_KEY",
-        help="NVD API key para mayor rate limit",
+        help="NVD API key for higher rate limit",
     ),
 ) -> None:
     """Incremental sync: fetch only CVEs modified since last run. Used by CI."""

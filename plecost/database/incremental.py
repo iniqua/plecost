@@ -16,8 +16,8 @@ METADATA_KEY_LAST_SYNC = "last_nvd_sync"
 
 class IncrementalUpdater:
     """
-    Aplica solo los CVEs modificados/publicados desde la última sincronización.
-    Requiere una DB existente con db_metadata.last_nvd_sync.
+    Applies only CVEs modified/published since the last synchronization.
+    Requires an existing DB with db_metadata.last_nvd_sync.
     """
 
     def __init__(self, db_url: str, nvd_api_key: str | None = None) -> None:
@@ -25,7 +25,7 @@ class IncrementalUpdater:
         self._api_key = nvd_api_key
 
     async def run(self) -> int:
-        """Devuelve el número de CVEs procesados."""
+        """Returns the number of CVEs processed."""
         engine = make_engine(self._db_url)
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -41,7 +41,7 @@ class IncrementalUpdater:
         if self._api_key:
             headers["apiKey"] = self._api_key
 
-        # Obtener slugs conocidos para fuzzy matching
+        # Get known slugs for fuzzy matching
         plugin_slugs, theme_slugs = await self._get_slugs(sf)
 
         total = 0
@@ -50,7 +50,7 @@ class IncrementalUpdater:
                 client, sf, last_sync, now_str, plugin_slugs, theme_slugs
             )
 
-        # Actualizar last_sync
+        # Update last_sync
         await self._set_last_sync(sf, now_str)
         await engine.dispose()
         return total
@@ -59,8 +59,8 @@ class IncrementalUpdater:
         async with sf() as session:
             row = await session.get(DbMetadata, METADATA_KEY_LAST_SYNC)
             if row:
-                return row.value
-            # Si no hay last_sync, usar hace 2 días como fallback seguro
+                return str(row.value)
+            # If there is no last_sync, use 2 days ago as a safe fallback
             fallback = datetime.now(timezone.utc) - timedelta(days=2)
             return fallback.strftime("%Y-%m-%dT%H:%M:%S.000")
 
@@ -118,7 +118,7 @@ class IncrementalUpdater:
             if start_index >= total:
                 break
 
-            # Rate limiting: 5 req/30s sin API key, 50/30s con key
+            # Rate limiting: 5 req/30s without API key, 50/30s with key
             await asyncio.sleep(6 if not self._api_key else 0.6)
 
         return total_processed

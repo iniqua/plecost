@@ -1,7 +1,7 @@
 """
-Tests funcionales contra WordPress real.
-Requiere: docker-compose -f docker-compose.test.yml up -d
-Ejecutar con: pytest tests/functional/ -m functional -v
+Functional tests against a real WordPress instance.
+Requires: docker-compose -f docker-compose.test.yml up -d
+Run with: pytest tests/functional/ -m functional -v
 """
 from __future__ import annotations
 import asyncio
@@ -14,7 +14,7 @@ from plecost.scanner import Scanner
 
 WP_URL = os.getenv("PLECOST_TEST_URL", "http://localhost:8765")
 
-# Skip si no hay WordPress disponible
+# Skip if WordPress is not available
 pytestmark = pytest.mark.skipif(
     os.getenv("PLECOST_FUNCTIONAL_TESTS") != "1",
     reason="Set PLECOST_FUNCTIONAL_TESTS=1 to run functional tests"
@@ -30,7 +30,7 @@ def event_loop():
 
 @pytest.mark.asyncio
 async def test_scanner_returns_result():
-    """El scanner devuelve un ScanResult válido."""
+    """The scanner returns a valid ScanResult."""
     opts = ScanOptions(url=WP_URL, concurrency=5, timeout=30)
     scanner = Scanner(opts)
     result = await scanner.run()
@@ -41,7 +41,7 @@ async def test_scanner_returns_result():
 
 @pytest.mark.asyncio
 async def test_scanner_detects_wordpress():
-    """El scanner detecta que es WordPress."""
+    """The scanner detects that the site is WordPress."""
     opts = ScanOptions(url=WP_URL, concurrency=5, timeout=30)
     scanner = Scanner(opts)
     result = await scanner.run()
@@ -50,30 +50,30 @@ async def test_scanner_detects_wordpress():
 
 @pytest.mark.asyncio
 async def test_scanner_finds_wordpress_version():
-    """El scanner detecta la versión de WordPress."""
+    """The scanner detects the WordPress version."""
     opts = ScanOptions(url=WP_URL, concurrency=5, timeout=30)
     scanner = Scanner(opts)
     result = await scanner.run()
-    # WordPress 6.4 debería ser detectado
+    # WordPress 6.4 should be detected
     assert result.wordpress_version is not None
     assert result.wordpress_version.startswith("6.")
 
 
 @pytest.mark.asyncio
 async def test_scanner_findings_have_valid_ids():
-    """Todos los findings tienen IDs con formato PC-XXX-NNN."""
+    """All findings have IDs with format PC-XXX-NNN."""
     opts = ScanOptions(url=WP_URL, concurrency=5, timeout=30)
     scanner = Scanner(opts)
     result = await scanner.run()
     pattern = re.compile(r'^PC-[A-Z]+-\d{3}$')
     for finding in result.findings:
-        assert pattern.match(finding.id), f"ID inválido: {finding.id}"
-        assert finding.remediation_id.startswith("REM-"), f"REM ID inválido: {finding.remediation_id}"
+        assert pattern.match(finding.id), f"Invalid ID: {finding.id}"
+        assert finding.remediation_id.startswith("REM-"), f"Invalid REM ID: {finding.remediation_id}"
 
 
 @pytest.mark.asyncio
 async def test_scanner_summary_counts_match():
-    """El summary cuenta correctamente los findings por severidad."""
+    """The summary correctly counts findings by severity."""
     opts = ScanOptions(url=WP_URL, concurrency=5, timeout=30)
     scanner = Scanner(opts)
     result = await scanner.run()
@@ -89,29 +89,29 @@ async def test_scanner_summary_counts_match():
 
 @pytest.mark.asyncio
 async def test_scanner_detects_readme_html():
-    """WordPress expone readme.html con la versión — debería generar finding."""
+    """WordPress exposes readme.html with version info — should generate a finding."""
     opts = ScanOptions(url=WP_URL, concurrency=5, timeout=30)
     scanner = Scanner(opts)
     result = await scanner.run()
     finding_ids = [f.id for f in result.findings]
-    # readme.html es casi siempre accesible en WordPress nuevo
-    assert "PC-MCFG-009" in finding_ids, f"readme.html no detectado. Findings: {finding_ids}"
+    # readme.html is almost always accessible on fresh WordPress installs
+    assert "PC-MCFG-009" in finding_ids, f"readme.html not detected. Findings: {finding_ids}"
 
 
 @pytest.mark.asyncio
 async def test_scanner_rest_api_users():
-    """El módulo REST API puede enumerar usuarios si está disponible."""
+    """The REST API module can enumerate users if available."""
     opts = ScanOptions(url=WP_URL, concurrency=5, timeout=30)
     scanner = Scanner(opts)
     result = await scanner.run()
-    # WordPress por defecto expone usuarios via REST API
-    # No es obligatorio pero registramos cuántos encontró
+    # WordPress exposes users via REST API by default
+    # Not mandatory but we record how many were found
     assert isinstance(result.users, list)
 
 
 @pytest.mark.asyncio
 async def test_scanner_with_json_reporter():
-    """El JSON reporter serializa correctamente el resultado."""
+    """The JSON reporter correctly serializes the result."""
     from plecost.reporters.json_reporter import JSONReporter
     opts = ScanOptions(url=WP_URL, concurrency=5, timeout=30)
     scanner = Scanner(opts)

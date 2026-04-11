@@ -1,89 +1,106 @@
+## 2026-04-10 — i18n, mypy fixes and git hooks
+
+### Changed
+- Translated all Spanish text to English across the entire codebase (comments, docstrings, CLI messages, error messages, logs, documentation, CHANGELOG)
+- Files translated: `plecost/cli.py`, `plecost/database/downloader.py`, `plecost/database/incremental.py`, `plecost/database/updater.py`, `plecost/database/models.py`, `plecost/database/store.py`, `tests/functional/test_scanner_functional.py`, `CHANGELOG.md`, `ANALYSIS.md`, `docs/cve-database-architecture-decision.md`, `docs/superpowers/specs/2026-04-10-plecost-design.md`
+
+### Fixed
+- `plecost/database/engine.py`: fixed `dict` type without arguments → `dict[str, Any]`
+- `plecost/database/updater.py`: replaced all deprecated `datetime.utcnow()` with `datetime.now(timezone.utc)`, typed `params` as `dict[str, str | int]`, typed `vulns` as `list[object]`, removed redundant `from datetime import timezone` in method body
+- `plecost/database/incremental.py`: added explicit `str()` cast on `row.value` to fix mypy `Returning Any` error
+
+### Added
+- `.githooks/pre-push`: pre-push hook running ruff, mypy and pytest before each push
+- `.githooks/README.md`: instructions to activate the hooks with `git config core.hooksPath .githooks`
+
+---
+
 ## [4.2.0] - 2026-04-10
 
 ### Changed
-- Sistema de distribución de base de datos CVE rediseñado:
-  - `plecost update-db`: descarga DB pre-construida desde GitHub releases (rápido, para usuarios)
-  - `plecost build-db`: construye DB desde cero desde NVD (para maintainers, primera vez)
-  - `plecost sync-db`: actualización incremental (solo CVEs nuevos/modificados desde última sync)
-  - GitHub Action usa sync incremental: descarga DB del release anterior, aplica delta NVD, publica nuevo release
-  - Tabla `db_metadata` en SQLite guarda `last_nvd_sync` para updates incrementales
-  - Soporte para `NVD_API_KEY` en variable de entorno (mayor rate limit: 0.6s vs 6s entre requests)
-  - `DatabaseUpdater` acepta `years_back` y `nvd_api_key` en constructor
-  - `process_nvd_batch` refactorizado como función libre reutilizable desde `updater.py` e `incremental.py`
-  - Nuevo módulo `plecost/database/downloader.py`: descarga streaming desde GitHub releases
-  - Nuevo módulo `plecost/database/incremental.py`: `IncrementalUpdater` para sync delta NVD
-  - `.github/workflows/update-cve-db.yml` actualizado con permisos `contents: write` y flujo incremental
+- CVE database distribution system redesigned:
+  - `plecost update-db`: downloads pre-built DB from GitHub releases (fast, for end users)
+  - `plecost build-db`: builds DB from scratch from NVD (for maintainers, first run)
+  - `plecost sync-db`: incremental update (only new/modified CVEs since last sync)
+  - GitHub Action uses incremental sync: downloads DB from previous release, applies NVD delta, publishes new release
+  - `db_metadata` table in SQLite stores `last_nvd_sync` for incremental updates
+  - Support for `NVD_API_KEY` environment variable (higher rate limit: 0.6s vs 6s between requests)
+  - `DatabaseUpdater` accepts `years_back` and `nvd_api_key` in constructor
+  - `process_nvd_batch` refactored as a free reusable function from `updater.py` and `incremental.py`
+  - New module `plecost/database/downloader.py`: streaming download from GitHub releases
+  - New module `plecost/database/incremental.py`: `IncrementalUpdater` for NVD delta sync
+  - `.github/workflows/update-cve-db.yml` updated with `contents: write` permissions and incremental flow
 
 ---
 
 ## [4.1.0] - 2026-04-10
 
 ### Changed
-- Rediseño completo del sistema de base de datos CVE
-  - SQLAlchemy 2.0 async (aiosqlite para SQLite, asyncpg para PostgreSQL)
-  - Nuevo modelo `NormalizedVuln` con rangos de versión exactos (versionStartIncluding/Excluding, versionEndIncluding/Excluding)
-  - Parseo real de CPEs del NVD con filtro target_sw=wordpress
-  - Fuzzy matching Jaro-Winkler inline (sin dependencias extra) para mapeo slug→CPE product
-  - Descarga los últimos 5 años de CVEs del NVD paginado
-  - `DatabaseUpdater` acepta `db_url` en lugar de `db_path` (soporte SQLite y PostgreSQL)
-  - `CVEStore` completamente async con método `from_url()` factory
-  - `scanner.py`: carga de wordlists y store movida a `run()` async
-  - `cves.py`: `store.find()` ahora se llama con `await`
-  - `cli.py update-db`: nuevo flag `--db-url` en lugar de `--db-path`
-  - Eliminada dependencia `aiofiles`, añadidas `sqlalchemy[asyncio]>=2.0` y `aiosqlite>=0.19`
-  - Tests unitarios actualizados para el nuevo store async con SQLAlchemy
+- Complete redesign of the CVE database system
+  - SQLAlchemy 2.0 async (aiosqlite for SQLite, asyncpg for PostgreSQL)
+  - New `NormalizedVuln` model with exact version ranges (versionStartIncluding/Excluding, versionEndIncluding/Excluding)
+  - Real CPE parsing from NVD with target_sw=wordpress filter
+  - Inline Jaro-Winkler fuzzy matching (no extra dependency) for slug→CPE product mapping
+  - Downloads the last 5 years of CVEs from NVD with pagination
+  - `DatabaseUpdater` accepts `db_url` instead of `db_path` (SQLite and PostgreSQL support)
+  - `CVEStore` fully async with `from_url()` factory method
+  - `scanner.py`: wordlist loading and store moved to async `run()`
+  - `cves.py`: `store.find()` is now called with `await`
+  - `cli.py update-db`: new flag `--db-url` replacing `--db-path`
+  - Removed `aiofiles` dependency, added `sqlalchemy[asyncio]>=2.0` and `aiosqlite>=0.19`
+  - Unit tests updated for the new async SQLAlchemy store
 
 ---
 
-## 2026-04-10 — Debate técnico y decisión arquitectónica de la base de datos CVE
+## 2026-04-10 — Technical debate and architectural decision for the CVE database
 
 ### Added
-- `docs/cve-database-architecture-decision.md`: Documento de decisión resultante de un debate técnico estructurado entre 5 enfoques (CPE Purist, APIs WP-Specific, Diccionario Pre-construido, Híbrido por Capas, NLP/Similarity) para resolver el problema de mapeo slug→CVE en Plecost v4.0
-  - El enfoque ganador es Delta (Híbrido por Capas): NVD para WordPress Core, APIs especializadas WP (Patchstack/Wordfence) para plugins/themes, diccionario seed curado para top 500 plugins
-  - Propuesta técnica concreta: modelos SQLAlchemy 2.0 async, engine factory SQLite/PostgreSQL, flujo de updater por capas, flujo de consulta O(1) en scan time
-  - Estimación de esfuerzo: ~10.5 días / 1 sprint
+- `docs/cve-database-architecture-decision.md`: Decision document resulting from a structured technical debate among 5 approaches (CPE Purist, WP-Specific APIs, Pre-built Dictionary, Layered Hybrid, NLP/Similarity) to solve the slug→CVE mapping problem in Plecost v4.0
+  - Winning approach is Delta (Layered Hybrid): NVD for WordPress Core, specialized WP APIs (Patchstack/Wordfence) for plugins/themes, curated seed dictionary for top 500 plugins
+  - Concrete technical proposal: SQLAlchemy 2.0 async models, SQLite/PostgreSQL engine factory, layered updater flow, O(1) lookup at scan time
+  - Effort estimate: ~10.5 days / 1 sprint
 
 ---
 
 ## [4.0.1] - 2026-04-11
 
 ### Changed
-- Licencia cambiada de FSL-1.1-MIT a PolyForm Noncommercial License 1.0.0
-  - Licencia estándar redactada por abogados, sin conversión automática a open source
-  - Uso comercial requiere licencia de pago (contacto: cr0hn@cr0hn.com)
+- License changed from FSL-1.1-MIT to PolyForm Noncommercial License 1.0.0
+  - Standard license drafted by lawyers, no automatic conversion to open source
+  - Commercial use requires a paid license (contact: cr0hn@cr0hn.com)
   - Link: https://polyformproject.org/licenses/noncommercial/1.0.0/
-- README reescrito completamente en inglés
-- Aspecto profesional mejorado: estilo Nuclei/WPScan, tablas limpias, demo output, arquitectura, benchmarks
+- README completely rewritten in English
+- Improved professional appearance: Nuclei/WPScan style, clean tables, demo output, architecture, benchmarks
 
 ---
 
-## 2026-04-10 — Tests funcionales contra WordPress real con Docker
+## 2026-04-10 — Functional tests against real WordPress with Docker
 
 ### Added
-- `docker-compose.test.yml`: actualizado con healthcheck mejorado (mysqladmin con credenciales, curl wp-login.php) y variables de entorno correctas
-- `tests/functional/test_scanner_functional.py`: 8 tests funcionales que verifican detección de WordPress, versión, findings, summary, readme.html, REST API y JSON reporter
-- `tests/conftest.py`: registra el marker `functional` para pytest
-- `scripts/run_functional_tests.sh`: script helper para CI que levanta Docker, espera WordPress y ejecuta los tests
-- `pyproject.toml`: añadido `markers` en `[tool.pytest.ini_options]` con el marker `functional`
+- `docker-compose.test.yml`: updated with improved healthcheck (mysqladmin with credentials, curl wp-login.php) and correct environment variables
+- `tests/functional/test_scanner_functional.py`: 8 functional tests verifying WordPress detection, version, findings, summary, readme.html, REST API and JSON reporter
+- `tests/conftest.py`: registers the `functional` marker for pytest
+- `scripts/run_functional_tests.sh`: CI helper script that starts Docker, waits for WordPress and runs the tests
+- `pyproject.toml`: added `markers` in `[tool.pytest.ini_options]` with the `functional` marker
 
 ---
 
-## 2026-04-10 — Corrección de imports y calidad de tests
+## 2026-04-10 — Import fixes and test quality
 
 ### Fixed
-- Eliminados 11 imports no usados en ficheros de test (`pytest`, `json`, `asyncio`, `VulnerabilityRecord`, `Plugin`, `Theme`, `User`) detectados por ruff
-- Todos los 53 tests unitarios pasan correctamente
-- mypy y ruff sin errores en `plecost/` y `tests/`
+- Removed 11 unused imports in test files (`pytest`, `json`, `asyncio`, `VulnerabilityRecord`, `Plugin`, `Theme`, `User`) detected by ruff
+- All 53 unit tests pass correctly
+- mypy and ruff clean in `plecost/` and `tests/`
 
 ---
 
 ## [4.0.0] - 2026-04-10
 
 ### Changed
-- Licencia cambiada de MIT a FSL-1.1-MIT (Functional Source License)
-  - Uso libre para investigación, auditorías internas y proyectos open source
-  - Prohibido ofrecer como SaaS o servicio de pago
-  - Convierte automáticamente a MIT tras 4 años
+- License changed from MIT to FSL-1.1-MIT (Functional Source License)
+  - Free use for research, internal audits and open source projects
+  - Prohibited to offer as SaaS or paid service
+  - Automatically converts to MIT after 4 years
 
 ---
 
@@ -92,7 +109,7 @@
 ### Added
 - `.github/workflows/docker-publish.yml`: publica imagen multi-arch (amd64/arm64) en `ghcr.io/iniqua/plecost` al hacer push a master (tag `latest`) o push de tags `v*.*.*`
 - `.github/workflows/pypi-publish.yml`: publica paquete en PyPI con trusted publishing (OIDC) al hacer push de tags `v*.*.*`
-- `Dockerfile`: añadidas labels OCI estándar (`source`, `description`, `licenses`) e instalación de `uvloop`
+- `Dockerfile`: added standard OCI labels (`source`, `description`, `licenses`) and `uvloop` installation
 
 ---
 

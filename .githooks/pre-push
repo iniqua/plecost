@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+
+echo "Running pre-push checks..."
+
+echo "  → ruff..."
+python3 -m ruff check plecost/
+
+echo "  → mypy..."
+python3 -m mypy plecost/ --ignore-missing-imports
+
+echo "  → pytest..."
+python3 -m pytest tests/unit tests/integration tests/contract tests/property -q --tb=short
+
+echo "All checks passed. Pushing..."

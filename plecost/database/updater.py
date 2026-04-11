@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -15,14 +15,14 @@ WP_THEMES_API = "https://api.wordpress.org/themes/info/1.2/?action=query_themes&
 
 
 def _normalize(s: str) -> str:
-    """Normaliza para comparación: elimina separadores, lowercase."""
+    """Normalize for comparison: remove separators, lowercase."""
     return re.sub(r'[-_\s]', '', s).lower()
 
 
 def _jaro_winkler(s1: str, s2: str) -> float:
     """
-    Implementación inline de Jaro-Winkler para no requerir dependencia extra.
-    Devuelve similitud entre 0.0 y 1.0.
+    Inline implementation of Jaro-Winkler to avoid an extra dependency.
+    Returns similarity between 0.0 and 1.0.
     """
     if s1 == s2:
         return 1.0
@@ -58,7 +58,7 @@ def _jaro_winkler(s1: str, s2: str) -> float:
             transpositions += 1
         k += 1
     jaro = (matches / len1 + matches / len2 + (matches - transpositions / 2) / matches) / 3
-    # Winkler prefix bonus
+    # Winkler prefix bonus (unchanged)
     prefix = 0
     for i in range(min(4, len1, len2)):
         if s1[i] == s2[i]:
@@ -70,8 +70,8 @@ def _jaro_winkler(s1: str, s2: str) -> float:
 
 def _parse_cpe(cpe_uri: str) -> tuple[str, str, str]:
     """
-    Parsea CPE 2.3: cpe:2.3:a:{vendor}:{product}:{version}:..:{target_sw}:..
-    Devuelve (vendor, product, target_sw). target_sw está en posición 10 (0-indexed desde 'cpe').
+    Parse CPE 2.3: cpe:2.3:a:{vendor}:{product}:{version}:..:{target_sw}:..
+    Returns (vendor, product, target_sw). target_sw is at position 10 (0-indexed from 'cpe').
     """
     parts = cpe_uri.split(':')
     if len(parts) < 13:
@@ -88,10 +88,10 @@ def _is_wp_plugin_cpe(target_sw: str) -> bool:
 
 def _match_slug(cpe_product: str, known_slugs: list[str], threshold: float = 0.82) -> tuple[str | None, float]:
     """
-    Intenta mapear cpe_product a un slug conocido.
-    1. Exact match normalizado
-    2. Jaro-Winkler fuzzy
-    Devuelve (slug, confidence) o (None, 0.0)
+    Try to map cpe_product to a known slug.
+    1. Normalized exact match
+    2. Jaro-Winkler fuzzy match
+    Returns (slug, confidence) or (None, 0.0)
     """
     norm_product = _normalize(cpe_product)
     # Exact match
@@ -131,9 +131,9 @@ async def _upsert_vuln_free(session: object, vuln: NormalizedVuln) -> None:
 
 
 async def process_nvd_batch(
-    vulns: list, sf: object, plugin_slugs: list[str], theme_slugs: list[str]
+    vulns: list[object], sf: object, plugin_slugs: list[str], theme_slugs: list[str]
 ) -> None:
-    """Función libre reutilizable desde updater e incremental."""
+    """Free reusable function called from both updater and incremental."""
     async with sf() as session:  # type: ignore[operator]
         for item in vulns:
             cve = item.get("cve", {})
@@ -176,7 +176,7 @@ async def process_nvd_batch(
                         v_end_i = cpe_match.get("versionEndIncluding")
                         v_end_e = cpe_match.get("versionEndExcluding")
 
-                        # WordPress Core: CPE product="wordpress", vendor="wordpress"
+                        # WordPress Core: CPE product="wordpress", vendor="wordpress" (unambiguous)
                         if vendor.lower() == "wordpress" and product.lower() == "wordpress":
                             await _upsert_vuln_free(session, NormalizedVuln(
                                 cve_id=cve_id,
@@ -200,11 +200,11 @@ async def process_nvd_batch(
                             found_any = True
                             continue
 
-                        # Plugins/Themes: filtrar por target_sw=wordpress
+                        # Plugins/Themes: filter by target_sw=wordpress
                         if not _is_wp_plugin_cpe(target_sw):
                             continue
 
-                        # Intentar mapear a plugin slug conocido
+                        # Try to map to a known plugin slug
                         slug, conf = _match_slug(product, plugin_slugs)
                         sw_type = "plugin"
                         if not slug:
@@ -236,9 +236,9 @@ async def process_nvd_batch(
                         ))
                         found_any = True
 
-            # Si no había configurations útiles, ignorar
+            # If there were no useful configurations, skip
             if not found_any and desc:
-                pass  # Ignorar CVEs sin CPEs útiles
+                pass  # Skip CVEs without useful CPEs
 
         await session.commit()
 
@@ -250,7 +250,6 @@ class DatabaseUpdater:
         self._api_key = nvd_api_key
 
     async def run(self) -> None:
-        from datetime import timezone
         engine = make_engine(self._db_url)
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -260,16 +259,16 @@ class DatabaseUpdater:
         if self._api_key:
             headers["apiKey"] = self._api_key
 
-        start_date = (datetime.utcnow() - timedelta(days=self._years_back * 365)).strftime("%Y-%m-%dT00:00:00.000")
+        start_date = (datetime.now(timezone.utc) - timedelta(days=self._years_back * 365)).strftime("%Y-%m-%dT00:00:00.000")
 
         async with httpx.AsyncClient(timeout=60, headers=headers) as client:
-            # Descargar wordlists primero (necesitamos slugs para el matching)
+            # Download wordlists first (slugs needed for matching)
             plugin_slugs = await self._fetch_plugin_slugs(client, sf)
             theme_slugs = await self._fetch_theme_slugs(client, sf)
-            # Descargar y procesar CVEs del NVD
+            # Download and process CVEs from NVD
             await self._fetch_nvd(client, sf, plugin_slugs, theme_slugs, start_date)
 
-        # Guardar metadatos de sincronización
+        # Save synchronization metadata
         now_str = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000")
         async with sf() as session:
             existing = await session.get(DbMetadata, "last_nvd_sync")
@@ -288,7 +287,7 @@ class DatabaseUpdater:
         self, client: httpx.AsyncClient, sf: object
     ) -> list[str]:
         slugs: list[str] = []
-        for page in range(1, 20):  # hasta 5000 plugins
+        for page in range(1, 20):  # up to 5000 plugins
             try:
                 r = await client.get(WP_PLUGINS_API.format(page=page), timeout=30)
                 data = r.json()
@@ -301,7 +300,7 @@ class DatabaseUpdater:
                     break
             except Exception:
                 break
-        # Guardar en DB
+        # Save to DB
         async with sf() as session:  # type: ignore[operator]
             for slug in slugs:
                 existing = await session.get(PluginsWordlist, slug)
@@ -340,13 +339,13 @@ class DatabaseUpdater:
         start_date: str | None = None,
     ) -> None:
         if start_date is None:
-            start_date = (datetime.utcnow() - timedelta(days=self._years_back * 365)).strftime("%Y-%m-%dT00:00:00.000")
-        end_date = datetime.utcnow().strftime("%Y-%m-%dT23:59:59.999")
+            start_date = (datetime.now(timezone.utc) - timedelta(days=self._years_back * 365)).strftime("%Y-%m-%dT00:00:00.000")
+        end_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT23:59:59.999")
         start_index = 0
         results_per_page = 2000
 
         while True:
-            params = {
+            params: dict[str, str | int] = {
                 "keywordSearch": "wordpress",
                 "pubStartDate": start_date,
                 "pubEndDate": end_date,
@@ -369,7 +368,7 @@ class DatabaseUpdater:
             start_index += len(vulns)
             if start_index >= total:
                 break
-            # Rate limiting NVD: 6 req/30s sin API key, 0.6s con key
+            # NVD rate limiting: 6 req/30s without API key, 0.6s with key
             await asyncio.sleep(6 if not self._api_key else 0.6)
 
     async def _upsert_vuln(self, session: object, vuln: NormalizedVuln) -> None:

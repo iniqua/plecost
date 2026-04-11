@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Any
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine
 
 
@@ -8,7 +9,7 @@ def make_engine(db_url: str) -> AsyncEngine:
       SQLite:     "sqlite+aiosqlite:////home/user/.plecost/plecost.db"
       PostgreSQL: "postgresql+asyncpg://user:pass@host/plecost"
     """
-    kwargs: dict = {"echo": False}
+    kwargs: dict[str, Any] = {"echo": False}
     if db_url.startswith("sqlite"):
         kwargs["connect_args"] = {"check_same_thread": False}
     return create_async_engine(db_url, **kwargs)
