@@ -1,3 +1,13 @@
+## 2026-04-10 — Debate técnico y decisión arquitectónica de la base de datos CVE
+
+### Added
+- `docs/cve-database-architecture-decision.md`: Documento de decisión resultante de un debate técnico estructurado entre 5 enfoques (CPE Purist, APIs WP-Specific, Diccionario Pre-construido, Híbrido por Capas, NLP/Similarity) para resolver el problema de mapeo slug→CVE en Plecost v4.0
+  - El enfoque ganador es Delta (Híbrido por Capas): NVD para WordPress Core, APIs especializadas WP (Patchstack/Wordfence) para plugins/themes, diccionario seed curado para top 500 plugins
+  - Propuesta técnica concreta: modelos SQLAlchemy 2.0 async, engine factory SQLite/PostgreSQL, flujo de updater por capas, flujo de consulta O(1) en scan time
+  - Estimación de esfuerzo: ~10.5 días / 1 sprint
+
+---
+
 ## [4.0.1] - 2026-04-11
 
 ### Changed
