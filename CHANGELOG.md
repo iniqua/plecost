@@ -1,3 +1,28 @@
+## 2026-04-12 — Audit fixes: severity bug, silent failures, themes display, 43 new tests
+
+### Fixed
+- `plecost/modules/ssl_tls.py`: PC-SSL-002 severity corrected from `MEDIUM` to `HIGH` (aligned with CLI registry)
+- `plecost/modules/ssl_tls.py`: SSL error detection now catches `httpx.TransportError` (covers all transport-layer SSL/TLS failures) and checks for "tls" in addition to "ssl" and "certificate"
+- `plecost/scanner.py`: replaced silent `except Exception: pass` on CVE DB load with a stderr warning directing user to run `plecost update-db`
+- `plecost/scanner.py`: translated Spanish comment to English
+- `plecost/reporters/terminal.py`: detected themes are now displayed in a Rich table (was missing, themes were detected but never shown)
+- `plecost/database/store.py`: `CVEStore.from_url()` raises `FileNotFoundError` with actionable message when SQLite DB file doesn't exist
+
+### Added
+- `tests/unit/test_module_ssl_tls.py`: 6 tests for SSL/TLS module
+- `tests/unit/test_module_debug_exposure.py`: 8 tests for debug exposure module
+- `tests/unit/test_module_content_analysis.py`: 9 tests for content analysis module
+- `tests/unit/test_database_engine.py`: 3 tests for database engine factory
+- `tests/unit/test_database_downloader.py`: 3 tests for GitHub release downloader
+- `tests/unit/test_database_updater.py`: 10 tests for NVD batch processor and Jaro-Winkler matching
+- `tests/unit/test_database_incremental.py`: 3 tests for incremental NVD sync
+- Total test count: 65 → 108 (+43 new tests)
+
+### Removed
+- `plecost/database/updater.py`: dead `DatabaseUpdater._upsert_vuln()` method
+
+---
+
 ## 2026-04-11 — CVE DB guard, dead code removal, CLI envvar support
 
 ### Fixed
