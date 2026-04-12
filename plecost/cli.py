@@ -2,6 +2,7 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
+import httpx
 import typer
 from rich.console import Console
 from plecost.models import ScanOptions
@@ -154,6 +155,33 @@ async def _update_db_async(db_path: Path, token: "str | None", force_full: bool)
     # Check if we need to update (compare remote checksum with local)
     try:
         remote_checksum = await fetch_remote_index_checksum(token)
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            console.print(
+                "[red]CVE patch database not found on GitHub.[/red]\n"
+                "[dim]The 'db-patches' release may not exist yet. "
+                "Run 'plecost build-db' to create the initial database, "
+                "then publish it to GitHub releases.[/dim]"
+            )
+        elif e.response.status_code == 401:
+            console.print(
+                "[red]GitHub authentication failed (401).[/red]\n"
+                "[dim]Check your --token or GITHUB_TOKEN environment variable.[/dim]"
+            )
+        elif e.response.status_code >= 500:
+            console.print(
+                f"[red]GitHub server error ({e.response.status_code}). Try again later.[/red]"
+            )
+        else:
+            console.print(f"[red]GitHub returned {e.response.status_code}: {e}[/red]")
+        await engine.dispose()
+        return
+    except httpx.ConnectError:
+        console.print(
+            "[red]Cannot connect to GitHub. Check your internet connection.[/red]"
+        )
+        await engine.dispose()
+        return
     except Exception as e:
         console.print(f"[yellow]Warning: cannot reach GitHub releases: {e}[/yellow]")
         await engine.dispose()
@@ -173,7 +201,8 @@ async def _update_db_async(db_path: Path, token: "str | None", force_full: bool)
 
     if is_first_run:
         # Download full.json
-        console.print("[bold]First run: downloading full CVE database...[/bold]")
+        console.print("[bold]First run: downloading full CVE database (~50 MB)...[/bold]")
+        console.print("[dim]Subsequent updates will only download daily patches (<100 KB).[/dim]")
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
             tmp_path = Path(tmp.name)
         try:

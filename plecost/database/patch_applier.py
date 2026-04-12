@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Any
 from sqlalchemy import delete, select
@@ -8,6 +9,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from plecost.database.models import NormalizedVuln, RejectedCve, DbMetadata
 
 METADATA_KEY_LAST_PATCH = "last_patch_date"
+UPSERT_BATCH_SIZE = 2_000
+
+logger = logging.getLogger(__name__)
 
 
 async def apply_patch(patch_data: dict[str, Any], sf: async_sessionmaker[AsyncSession]) -> tuple[int, int]:
@@ -23,6 +27,13 @@ async def apply_patch(patch_data: dict[str, Any], sf: async_sessionmaker[AsyncSe
     # Phase 1: validate (before touching DB)
     _validate_patch(upserts)
 
+    logger.info(
+        "Applying patch date=%s: %d upserts, %d deletes",
+        patch_date,
+        len(upserts),
+        len(deletes),
+    )
+
     # Phase 2: single transaction
     async with sf() as session:
         upserted = await _apply_upserts(session, upserts)
@@ -31,6 +42,7 @@ async def apply_patch(patch_data: dict[str, Any], sf: async_sessionmaker[AsyncSe
             await _update_last_patch_date(session, patch_date)
         await session.commit()
 
+    logger.info("Patch applied: %d upserted, %d soft-deleted", upserted, deleted)
     return upserted, deleted
 
 
@@ -41,6 +53,30 @@ def _validate_patch(upserts: list[dict[str, Any]]) -> None:
         missing = required - set(record.keys())
         if missing:
             raise ValueError(f"Patch record {i} missing fields: {missing}")
+
+
+def _build_values(record: dict[str, Any]) -> dict[str, Any]:
+    """Build a values dict from a patch record for use in upserts."""
+    return dict(
+        cve_id=record["cve_id"],
+        software_type=record["software_type"],
+        slug=record["slug"],
+        cpe_vendor=record.get("cpe_vendor", ""),
+        cpe_product=record.get("cpe_product", ""),
+        match_confidence=record.get("match_confidence", 1.0),
+        version_start_incl=record.get("version_start_incl"),
+        version_start_excl=record.get("version_start_excl"),
+        version_end_incl=record.get("version_end_incl"),
+        version_end_excl=record.get("version_end_excl"),
+        cvss_score=record.get("cvss_score"),
+        severity=record.get("severity", "MEDIUM"),
+        title=record.get("title", ""),
+        description=record.get("description", ""),
+        remediation=record.get("remediation", ""),
+        references_json=json.dumps(record.get("references", [])),
+        has_exploit=record.get("has_exploit", False),
+        published_at=record.get("published_at", ""),
+    )
 
 
 async def _apply_upserts(session: AsyncSession, upserts: list[dict[str, Any]]) -> int:
@@ -55,34 +91,17 @@ async def _apply_upserts(session: AsyncSession, upserts: list[dict[str, Any]]) -
             )
         )
         existing = result.scalar_one_or_none()
-
-        values = dict(
-            cve_id=record["cve_id"],
-            software_type=record["software_type"],
-            slug=record["slug"],
-            cpe_vendor=record.get("cpe_vendor", ""),
-            cpe_product=record.get("cpe_product", ""),
-            match_confidence=record.get("match_confidence", 1.0),
-            version_start_incl=record.get("version_start_incl"),
-            version_start_excl=record.get("version_start_excl"),
-            version_end_incl=record.get("version_end_incl"),
-            version_end_excl=record.get("version_end_excl"),
-            cvss_score=record.get("cvss_score"),
-            severity=record.get("severity", "MEDIUM"),
-            title=record.get("title", ""),
-            description=record.get("description", ""),
-            remediation=record.get("remediation", ""),
-            references_json=json.dumps(record.get("references", [])),
-            has_exploit=record.get("has_exploit", False),
-            published_at=record.get("published_at", ""),
-        )
-
+        values = _build_values(record)
         if existing:
             for k, v in values.items():
                 setattr(existing, k, v)
         else:
             session.add(NormalizedVuln(**values))
         count += 1
+        # Flush every UPSERT_BATCH_SIZE to avoid holding too many objects in memory
+        if count % UPSERT_BATCH_SIZE == 0:
+            logger.debug("Flushed batch at %d records", count)
+            await session.flush()
     return count
 
 

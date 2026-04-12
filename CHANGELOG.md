@@ -1,3 +1,12 @@
+## 2026-04-12 — patch_applier: batching and progress logging
+
+### Changed
+- `plecost/database/patch_applier.py`: `_apply_upserts()` flushes every 2000 records to avoid memory pressure with large full.json files
+- `plecost/database/patch_applier.py`: added `logging` calls at INFO/DEBUG level for progress visibility
+- `plecost/database/patch_applier.py`: extracted `_build_values()` helper to remove duplication
+
+---
+
 ## 2026-04-12 — Fix GitHub Actions workflow: consistent DB path + guaranteed patch file
 
 ### Fixed

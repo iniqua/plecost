@@ -6,8 +6,7 @@ LABEL org.opencontainers.image.licenses=FSL-1.1-MIT
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY plecost/ ./plecost/
-RUN pip install --no-cache-dir -e ".[fast]" && \
-    pip install --no-cache-dir uvloop
+RUN pip install --no-cache-dir -e ".[fast]"
 
 ENTRYPOINT ["plecost"]
 CMD ["--help"]
