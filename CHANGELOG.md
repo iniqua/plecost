@@ -1,3 +1,17 @@
+## 2026-04-11 — CVE DB guard, dead code removal, CLI envvar support
+
+### Fixed
+- `plecost/database/store.py`: `CVEStore.from_url()` now raises `FileNotFoundError` with a clear message if the SQLite file does not exist, instead of failing silently downstream
+- `plecost/database/updater.py`: removed dead `DatabaseUpdater._upsert_vuln()` method that only delegated to `_upsert_vuln_free()`
+
+### Added
+- `plecost/cli.py`: added `envvar` support to key CLI options:
+  - `--db-url` → `PLECOST_DB_URL` (in `update-db`, `build-db`, `sync-db` commands)
+  - `--timeout` → `PLECOST_TIMEOUT` (in `scan` command)
+  - `--output` → `PLECOST_OUTPUT` (in `scan` command)
+
+---
+
 ## 2026-04-10 — i18n, mypy fixes and git hooks
 
 ### Changed
