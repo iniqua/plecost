@@ -41,6 +41,7 @@ Plecost v4.0 detects vulnerabilities in WordPress core, plugins, and themes — 
   - [plecost modules list](#plecost-modules-list)
   - [plecost explain](#plecost-explain)
 - [CVE Database Management](#cve-database-management)
+  - [How the patch system works](#how-the-patch-system-works)
 - [Detection Modules](#detection-modules)
 - [Finding IDs](#finding-ids)
 - [Output Formats](#output-formats)

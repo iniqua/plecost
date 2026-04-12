@@ -1,3 +1,11 @@
+## 2026-04-12 — Minor fixes: .gitignore and Dockerfile
+
+### Fixed
+- `.gitignore`: added `.hypothesis/` to ignore hypothesis test database files
+- `Dockerfile`: removed duplicate uvloop installation (already included via [fast] extra)
+
+---
+
 ## 2026-04-12 — patch_applier: batching and progress logging
 
 ### Changed
