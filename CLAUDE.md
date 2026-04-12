@@ -55,6 +55,12 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - Functional tests against real WordPress: `PLECOST_FUNCTIONAL_TESTS=1 pytest tests/functional/`
 - Test Docker WordPress: `docker-compose -f docker-compose.test.yml up -d` (port 8765)
 
+## httpx Gotchas
+- `httpx.SSLError` does not exist — catch SSL errors with `(httpx.ConnectError, httpx.TransportError)` and check `"ssl"/"tls"/"certificate"` in `str(e)`
+
+## Background Agents & Git
+- When running multiple background agents that commit, tell each to commit but NOT push; do a single `git push` from the main session after all agents finish
+
 ## Docker
 - `.dockerignore` has `*.md` + `!README.md` — do not remove the exception or the build will fail
 
