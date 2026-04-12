@@ -1,3 +1,23 @@
+## 2026-04-12 — update-db uses JSON patch system; sync-db supports --output-patch; new CI workflow
+
+### Changed
+- `plecost/cli.py` — `update-db` command now uses the JSON patch system instead of downloading a monolithic SQLite file:
+  - New `--force-full` flag forces re-download of `full.json` even if patches are available
+  - New helper coroutines `_update_db_async()`, `_get_metadata()`, `_set_metadata()` implement the full patch flow:
+    1. Fetch remote `index.checksum` (~64 bytes) and compare with locally stored value in `db_metadata`
+    2. If different (or `--force-full`): download `full.json` on first run, then apply all missing daily patches
+    3. Store updated `index_checksum` in `db_metadata` after success
+  - `update-db` still only supports SQLite; PostgreSQL users should use `build-db`
+- `plecost/cli.py` — `sync-db` command now passes `--output-patch` option through to `IncrementalUpdater`
+- `.github/workflows/update-cve-db.yml` — replaced old workflow (download SQLite + publish) with new patch-generation workflow:
+  - Downloads existing DB via `plecost update-db`
+  - Runs `plecost sync-db --output-patch patch-YYYY-MM-DD.json` to generate today's patch
+  - Downloads existing patch files from the `db-patches` release
+  - Builds `full.json` (all upserts/deletes merged) and `index.json` with SHA256 for each patch
+  - Publishes everything (full.json, full.checksum, index.json, index.checksum, patch-*.json) to the `db-patches` release tag (overwriting)
+
+---
+
 ## 2026-04-12 — incremental updater generates daily JSON patch file
 
 ### Changed

@@ -1,10 +1,13 @@
 from __future__ import annotations
 import asyncio
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 import typer
 from rich.console import Console
 from plecost.models import ScanOptions
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 app = typer.Typer(name="plecost", help="The best black-box WordPress security scanner.")
 console = Console()
@@ -106,6 +109,116 @@ def scan(
         raise typer.Exit(code=1)
 
 
+async def _get_metadata(sf: "async_sessionmaker[AsyncSession]", key: str) -> "str | None":
+    from plecost.database.models import DbMetadata
+
+    async with sf() as session:
+        row = await session.get(DbMetadata, key)
+        return str(row.value) if row else None
+
+
+async def _set_metadata(sf: "async_sessionmaker[AsyncSession]", key: str, value: str) -> None:
+    from plecost.database.models import DbMetadata
+
+    async with sf() as session:
+        row = await session.get(DbMetadata, key)
+        if row:
+            row.value = value
+        else:
+            session.add(DbMetadata(key=key, value=value))
+        await session.commit()
+
+
+async def _update_db_async(db_path: Path, token: "str | None", force_full: bool) -> None:
+    import json
+    import tempfile
+
+    from plecost.database.downloader import (
+        download_full_json,
+        download_patch,
+        fetch_index,
+        fetch_remote_index_checksum,
+    )
+    from plecost.database.engine import make_engine, make_session_factory
+    from plecost.database.models import Base
+    from plecost.database.patch_applier import apply_patch, get_last_patch_date
+
+    db_url = f"sqlite+aiosqlite:///{db_path}"
+    engine = make_engine(db_url)
+
+    # Create schema if needed
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    sf = make_session_factory(engine)
+
+    # Check if we need to update (compare remote checksum with local)
+    try:
+        remote_checksum = await fetch_remote_index_checksum(token)
+    except Exception as e:
+        console.print(f"[yellow]Warning: cannot reach GitHub releases: {e}[/yellow]")
+        await engine.dispose()
+        return
+
+    # Load local stored checksum from db_metadata
+    local_checksum = await _get_metadata(sf, "index_checksum")
+
+    if local_checksum == remote_checksum and not force_full:
+        console.print("[green]CVE database is already up to date.[/green]")
+        await engine.dispose()
+        return
+
+    # Check if DB has data or is first run
+    last_patch = await get_last_patch_date(sf)
+    is_first_run = (last_patch is None) or force_full
+
+    if is_first_run:
+        # Download full.json
+        console.print("[bold]First run: downloading full CVE database...[/bold]")
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
+            tmp_path = Path(tmp.name)
+        try:
+            await download_full_json(tmp_path, token)
+            patch_data = json.loads(tmp_path.read_text(encoding="utf-8"))
+            upserted, deleted = await apply_patch(patch_data, sf)
+            console.print(
+                f"[green]Full database loaded: {upserted} CVEs upserted, {deleted} removed.[/green]"
+            )
+        finally:
+            if tmp_path.exists():
+                tmp_path.unlink()
+
+    # Download and apply missing daily patches
+    index = await fetch_index(token)
+    raw_patches = index.get("patches")
+    patch_list: list[Any] = list(raw_patches) if isinstance(raw_patches, list) else []
+    patches_typed: list[dict[str, Any]] = [p for p in patch_list if isinstance(p, dict)]
+
+    # Find patches newer than last applied
+    last_patch_date = await get_last_patch_date(sf) or "0000-00-00"
+    missing = [p for p in patches_typed if str(p.get("date", "")) > last_patch_date]
+
+    if missing:
+        console.print(f"[bold]Applying {len(missing)} new patch(es)...[/bold]")
+        for patch_info in sorted(missing, key=lambda x: x.get("date", "")):
+            patch_data = await download_patch(
+                str(patch_info["url"]),
+                str(patch_info["sha256"]),
+                token,
+            )
+            upserted, deleted = await apply_patch(patch_data, sf)
+            console.print(
+                f"  [dim]{patch_info['date']}[/dim]: {upserted} upserted, {deleted} removed"
+            )
+    else:
+        if not is_first_run:
+            console.print("[green]No new patches available.[/green]")
+
+    # Save remote checksum locally
+    await _set_metadata(sf, "index_checksum", remote_checksum)
+    await engine.dispose()
+    console.print(f"[green]CVE database updated at {db_path}[/green]")
+
+
 @app.command("update-db")
 def update_db(
     db_url: Optional[str] = typer.Option(
@@ -118,22 +231,22 @@ def update_db(
         None, "--token", envvar="GITHUB_TOKEN",
         help="GitHub token for higher rate limit on downloads",
     ),
+    force_full: bool = typer.Option(
+        False, "--force-full",
+        help="Force download of full.json even if patches are available",
+    ),
 ) -> None:
-    """Download the latest pre-built CVE database from GitHub releases."""
-    from plecost.database.downloader import download_latest_db
-
+    """Download and apply CVE database patches from GitHub releases."""
     if not db_url:
         db_path = Path.home() / ".plecost" / "db" / "plecost.db"
         db_path.parent.mkdir(parents=True, exist_ok=True)
-        dest = db_path
     else:
         if db_url.startswith("sqlite"):
-            dest = Path(db_url.replace("sqlite+aiosqlite:///", ""))
+            db_path = Path(db_url.replace("sqlite+aiosqlite:///", ""))
+            db_path.parent.mkdir(parents=True, exist_ok=True)
         else:
             console.print("[red]update-db only supports SQLite. For PostgreSQL use build-db and load manually.[/red]")
             raise typer.Exit(1)
-
-    console.print("[bold]Downloading latest CVE database from GitHub releases...[/bold]")
 
     try:
         uvloop = __import__("uvloop")
@@ -141,8 +254,7 @@ def update_db(
     except ImportError:
         pass
 
-    asyncio.run(download_latest_db(dest, token=github_token))
-    console.print(f"[green]Database saved to {dest}[/green]")
+    asyncio.run(_update_db_async(db_path, github_token, force_full))
 
 
 @app.command("build-db")
@@ -194,6 +306,10 @@ def sync_db(
         None, "--nvd-key", envvar="NVD_API_KEY",
         help="NVD API key for higher rate limit",
     ),
+    output_patch: Optional[str] = typer.Option(
+        None, "--output-patch",
+        help="Path to write the generated daily JSON patch file",
+    ),
 ) -> None:
     """Incremental sync: fetch only CVEs modified since last run. Used by CI."""
     from plecost.database.incremental import IncrementalUpdater
@@ -210,7 +326,7 @@ def sync_db(
     except ImportError:
         pass
 
-    count = asyncio.run(IncrementalUpdater(db_url, nvd_api_key=nvd_api_key).run())
+    count = asyncio.run(IncrementalUpdater(db_url, nvd_api_key=nvd_api_key, output_patch=output_patch).run())
     console.print(f"[green]Processed {count} CVEs[/green]")
 
 
