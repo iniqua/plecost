@@ -1,6 +1,9 @@
 from __future__ import annotations
 import asyncio
+import json
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
 
 import httpx
 from sqlalchemy import select
@@ -20,9 +23,15 @@ class IncrementalUpdater:
     Requires an existing DB with db_metadata.last_nvd_sync.
     """
 
-    def __init__(self, db_url: str, nvd_api_key: str | None = None) -> None:
+    def __init__(
+        self,
+        db_url: str,
+        nvd_api_key: str | None = None,
+        output_patch: str | None = None,
+    ) -> None:
         self._db_url = db_url
         self._api_key = nvd_api_key
+        self._output_patch = output_patch
 
     async def run(self) -> int:
         """Returns the number of CVEs processed."""
@@ -44,15 +53,35 @@ class IncrementalUpdater:
         # Get known slugs for fuzzy matching
         plugin_slugs, theme_slugs = await self._get_slugs(sf)
 
+        # Accumulator for the daily patch JSON
+        patch_records: list[dict[str, Any]] = []
+
         total = 0
         async with httpx.AsyncClient(timeout=60, headers=headers) as client:
             total = await self._fetch_modified(
-                client, sf, last_sync, now_str, plugin_slugs, theme_slugs
+                client, sf, last_sync, now_str, plugin_slugs, theme_slugs,
+                patch_records,
             )
 
         # Update last_sync
         await self._set_last_sync(sf, now_str)
         await engine.dispose()
+
+        # Write daily patch JSON if requested
+        if self._output_patch is not None:
+            patch: dict[str, Any] = {
+                "date": now.strftime("%Y-%m-%d"),
+                "source": "nvd",
+                "upsert": patch_records,
+                "delete": [],
+            }
+            output_path = Path(self._output_patch)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(
+                json.dumps(patch, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
         return total
 
     async def _get_last_sync(self, sf: async_sessionmaker) -> str:  # type: ignore[type-arg]
@@ -87,6 +116,7 @@ class IncrementalUpdater:
         end_date: str,
         plugin_slugs: list[str],
         theme_slugs: list[str],
+        collected: list[dict[str, Any]] | None = None,
     ) -> int:
         start_index = 0
         total_processed = 0
@@ -110,7 +140,7 @@ class IncrementalUpdater:
             if not vulns:
                 break
 
-            await process_nvd_batch(vulns, sf, plugin_slugs, theme_slugs)
+            await process_nvd_batch(vulns, sf, plugin_slugs, theme_slugs, collected)
             total_processed += len(vulns)
 
             total = data.get("totalResults", 0)

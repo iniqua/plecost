@@ -1,3 +1,11 @@
+## 2026-04-12 — incremental updater generates daily JSON patch file
+
+### Changed
+- `plecost/database/updater.py`: `process_nvd_batch()` now accepts an optional `collected: list[dict] | None = None` parameter; when provided, each processed vulnerability record (matching the daily-patch JSON schema) is appended to the list in addition to being persisted in the DB
+- `plecost/database/incremental.py`: `IncrementalUpdater.__init__()` now accepts `output_patch: str | None = None`; when set, `run()` writes a daily-patch JSON file (`date`, `source`, `upsert`, `delete`) to the given path after completing the sync
+
+---
+
 ## 2026-04-12 — JSON patch system: RejectedCve model, patch_applier module, store filtering
 
 ### Added

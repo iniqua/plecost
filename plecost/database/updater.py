@@ -134,9 +134,15 @@ async def _upsert_vuln_free(session: AsyncSession, vuln: NormalizedVuln) -> None
 
 async def process_nvd_batch(
     vulns: list[Any], sf: async_sessionmaker[AsyncSession],
-    plugin_slugs: list[str], theme_slugs: list[str]
+    plugin_slugs: list[str], theme_slugs: list[str],
+    collected: list[dict[str, Any]] | None = None,
 ) -> None:
-    """Free reusable function called from both updater and incremental."""
+    """Free reusable function called from both updater and incremental.
+
+    If *collected* is provided, each processed vulnerability record (as a dict
+    matching the daily-patch JSON schema) is appended to it in addition to
+    being persisted to the database.
+    """
     async with sf() as session:
         for item in vulns:
             cve = item.get("cve", {})
@@ -158,8 +164,11 @@ async def process_nvd_batch(
                 cvss_score = v30[0]["cvssData"]["baseScore"]
                 severity = v30[0]["cvssData"]["baseSeverity"]
 
-            refs = json.dumps([r2["url"] for r2 in cve.get("references", [])])
+            refs_list = [r2["url"] for r2 in cve.get("references", [])]
+            refs = json.dumps(refs_list)
             published = cve.get("published", "")
+            # Normalise published to a date-only string for the patch format
+            published_date = published[:10] if published else ""
 
             # Extraer CPEs de configurations
             found_any = False
@@ -181,7 +190,7 @@ async def process_nvd_batch(
 
                         # WordPress Core: CPE product="wordpress", vendor="wordpress" (unambiguous)
                         if vendor.lower() == "wordpress" and product.lower() == "wordpress":
-                            await _upsert_vuln_free(session, NormalizedVuln(
+                            vuln_obj = NormalizedVuln(
                                 cve_id=cve_id,
                                 software_type="core",
                                 slug="wordpress",
@@ -199,7 +208,29 @@ async def process_nvd_batch(
                                 remediation="Update WordPress to the latest version.",
                                 references_json=refs,
                                 published_at=published,
-                            ))
+                            )
+                            await _upsert_vuln_free(session, vuln_obj)
+                            if collected is not None:
+                                collected.append({
+                                    "cve_id": cve_id,
+                                    "software_type": "core",
+                                    "slug": "wordpress",
+                                    "cpe_vendor": vendor,
+                                    "cpe_product": product,
+                                    "match_confidence": 1.0,
+                                    "version_start_incl": v_start_i,
+                                    "version_start_excl": v_start_e,
+                                    "version_end_incl": v_end_i,
+                                    "version_end_excl": v_end_e,
+                                    "cvss_score": cvss_score,
+                                    "severity": severity,
+                                    "title": f"WordPress Core: {cve_id}",
+                                    "description": desc,
+                                    "remediation": "Update WordPress to the latest version.",
+                                    "references": refs_list,
+                                    "has_exploit": False,
+                                    "published_at": published_date,
+                                })
                             found_any = True
                             continue
 
@@ -218,7 +249,7 @@ async def process_nvd_batch(
                             conf = 0.5
                             sw_type = "plugin"
 
-                        await _upsert_vuln_free(session, NormalizedVuln(
+                        vuln_obj = NormalizedVuln(
                             cve_id=cve_id,
                             software_type=sw_type,
                             slug=slug,
@@ -236,7 +267,29 @@ async def process_nvd_batch(
                             remediation="Update the plugin/theme to the latest version.",
                             references_json=refs,
                             published_at=published,
-                        ))
+                        )
+                        await _upsert_vuln_free(session, vuln_obj)
+                        if collected is not None:
+                            collected.append({
+                                "cve_id": cve_id,
+                                "software_type": sw_type,
+                                "slug": slug,
+                                "cpe_vendor": vendor,
+                                "cpe_product": product,
+                                "match_confidence": conf,
+                                "version_start_incl": v_start_i,
+                                "version_start_excl": v_start_e,
+                                "version_end_incl": v_end_i,
+                                "version_end_excl": v_end_e,
+                                "cvss_score": cvss_score,
+                                "severity": severity,
+                                "title": f"{product}: {cve_id}",
+                                "description": desc,
+                                "remediation": "Update the plugin/theme to the latest version.",
+                                "references": refs_list,
+                                "has_exploit": False,
+                                "published_at": published_date,
+                            })
                         found_any = True
 
             # If there were no useful configurations, skip
