@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 from datetime import datetime, timezone
-from typing import cast
+from typing import Any
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
@@ -10,15 +10,15 @@ from plecost.database.models import NormalizedVuln, RejectedCve, DbMetadata
 METADATA_KEY_LAST_PATCH = "last_patch_date"
 
 
-async def apply_patch(patch_data: dict[str, object], sf: async_sessionmaker[AsyncSession]) -> tuple[int, int]:
+async def apply_patch(patch_data: dict[str, Any], sf: async_sessionmaker[AsyncSession]) -> tuple[int, int]:
     """
     Apply a single JSON patch to the local database.
     Returns (upserted_count, deleted_count).
     Two-phase: validate first, then single transaction.
     """
-    upserts = cast(list[dict[str, object]], patch_data.get("upsert", []))
-    deletes = cast(list[str], patch_data.get("delete", []))
-    patch_date = cast(str, patch_data.get("date", ""))
+    upserts: list[dict[str, Any]] = patch_data.get("upsert", [])
+    deletes: list[str] = patch_data.get("delete", [])
+    patch_date: str = patch_data.get("date", "")
 
     # Phase 1: validate (before touching DB)
     _validate_patch(upserts)
@@ -34,7 +34,7 @@ async def apply_patch(patch_data: dict[str, object], sf: async_sessionmaker[Asyn
     return upserted, deleted
 
 
-def _validate_patch(upserts: list[dict[str, object]]) -> None:
+def _validate_patch(upserts: list[dict[str, Any]]) -> None:
     """Validate upsert records have required fields. Raises ValueError on failure."""
     required = {"cve_id", "software_type", "slug"}
     for i, record in enumerate(upserts):
@@ -43,7 +43,7 @@ def _validate_patch(upserts: list[dict[str, object]]) -> None:
             raise ValueError(f"Patch record {i} missing fields: {missing}")
 
 
-async def _apply_upserts(session: AsyncSession, upserts: list[dict[str, object]]) -> int:
+async def _apply_upserts(session: AsyncSession, upserts: list[dict[str, Any]]) -> int:
     """Upsert CVE records. Remote is source of truth (overwrites local)."""
     count = 0
     for record in upserts:
