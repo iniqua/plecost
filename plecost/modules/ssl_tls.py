@@ -46,12 +46,12 @@ class SSLTLSModule(ScanModule):
         try:
             async with httpx.AsyncClient(timeout=10, verify=True) as client:
                 await client.get(ctx.url + "/")
-        except httpx.ConnectError as e:
-            if "ssl" in str(e).lower() or "certificate" in str(e).lower():
+        except (httpx.ConnectError, httpx.TransportError) as e:
+            if "ssl" in str(e).lower() or "certificate" in str(e).lower() or "tls" in str(e).lower():
                 ctx.add_finding(Finding(
                     id="PC-SSL-002", remediation_id="REM-SSL-002",
                     title="SSL certificate is invalid or expired",
-                    severity=Severity.MEDIUM,
+                    severity=Severity.HIGH,
                     description=f"SSL certificate validation failed: {e}",
                     evidence={"url": ctx.url, "error": str(e)},
                     remediation="Renew or replace the SSL certificate. Use Let's Encrypt for free certificates.",
