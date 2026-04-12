@@ -56,3 +56,12 @@ class DbMetadata(Base):
 
     key: Mapped[str] = mapped_column(String(100), primary_key=True)
     value: Mapped[str] = mapped_column(Text, default="")
+
+
+class RejectedCve(Base):
+    """CVEs rejected or deleted from NVD. Never physically delete - mark here instead."""
+    __tablename__ = "rejected_cves"
+
+    cve_id: Mapped[str] = mapped_column(String(30), primary_key=True)
+    reason: Mapped[str] = mapped_column(String(50), default="deleted")  # "deleted", "disputed", "false_positive"
+    rejected_at: Mapped[str] = mapped_column(String(30), default="")

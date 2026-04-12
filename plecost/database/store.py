@@ -6,7 +6,7 @@ from packaging.version import Version, InvalidVersion
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
-from plecost.database.models import NormalizedVuln, PluginsWordlist, ThemesWordlist
+from plecost.database.models import NormalizedVuln, PluginsWordlist, RejectedCve, ThemesWordlist
 
 
 @dataclass
@@ -51,6 +51,12 @@ class CVEStore:
         self, software_type: str, slug: str, installed_version: str
     ) -> list[VulnerabilityRecord]:
         async with self._sf() as session:
+            # Get rejected CVE IDs to filter them out
+            rejected_result = await session.execute(
+                select(RejectedCve.cve_id)
+            )
+            rejected_ids = set(rejected_result.scalars().all())
+
             result = await session.execute(
                 select(NormalizedVuln).where(
                     NormalizedVuln.software_type == software_type,
@@ -64,7 +70,10 @@ class CVEStore:
         except InvalidVersion:
             return []
 
-        return [self._to_record(row) for row in rows if self._is_affected(iv, row)]
+        return [
+            self._to_record(row) for row in rows
+            if self._is_affected(iv, row) and row.cve_id not in rejected_ids
+        ]
 
     def _is_affected(self, iv: Version, row: NormalizedVuln) -> bool:
         try:

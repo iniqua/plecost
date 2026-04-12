@@ -1,3 +1,13 @@
+## 2026-04-12 — Overhaul downloader.py for JSON patch system with SHA256 verification
+
+### Changed
+- `plecost/database/downloader.py`: replaced single-SQLite-download approach with a new JSON patch system:
+  - New constants: `PATCHES_RELEASE_TAG`, `BASE_URL`, `INDEX_URL`, `INDEX_CHECKSUM_URL`, `FULL_JSON_URL`, `FULL_CHECKSUM_URL`
+  - New async functions: `fetch_remote_index_checksum()`, `fetch_index()`, `download_full_json()`, `download_patch()`
+  - Internal helpers: `_sha256_file()`, `_sha256_bytes()`, `_fetch_bytes()`, `_stream_to_file()`, `_make_headers()`
+  - All downloads include SHA256 verification against checksums fetched from GitHub releases
+  - `download_latest_db()` kept as deprecated legacy function for backwards compatibility
+
 ## 2026-04-12 — Audit fixes: severity bug, silent failures, themes display, 43 new tests
 
 ### Fixed
