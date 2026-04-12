@@ -369,6 +369,19 @@ Plecost ships with a local SQLite CVE database covering WordPress core, plugins,
 
 3. **`sync-db`** — Reads the `last_nvd_sync` timestamp from the database, fetches only CVEs modified since that date via `lastModStartDate`, and upserts new or updated records. Runs daily via GitHub Actions.
 
+### How the patch system works
+
+Plecost uses an **incremental JSON patch system** instead of downloading a full SQLite database each day:
+
+| Run | What happens | Typical size |
+|-----|-------------|--------------|
+| First `update-db` | Downloads `full.json` with all historical CVEs | ~10–50 MB |
+| Subsequent `update-db` | Downloads only today's patch (new/modified CVEs) | <100 KB |
+| No changes | Compares checksum only, downloads nothing | 64 bytes |
+
+Each daily patch is a self-contained JSON file verified with SHA256 before being applied.
+For architecture details, see [`docs/cve-patch-system/`](docs/cve-patch-system/README.md).
+
 ### Using PostgreSQL
 
 Plecost supports PostgreSQL for production or team deployments:

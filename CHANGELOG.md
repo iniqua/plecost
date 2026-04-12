@@ -1,3 +1,10 @@
+## 2026-04-12 — README: document JSON patch system
+
+### Changed
+- `README.md`: added "How the patch system works" table explaining incremental update sizes and link to docs/cve-patch-system/
+
+---
+
 ## 2026-04-12 — update-db: improved error messages for first-run and network failures
 
 ### Changed
