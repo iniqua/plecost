@@ -80,6 +80,23 @@ class TerminalReporter:
                 plugins_table.add_row(p.slug, p.version or "unknown")
             self._console.print(plugins_table)
 
+        # Themes
+        if r.themes:
+            themes_table = Table(title="Detected Themes")
+            themes_table.add_column("Slug")
+            themes_table.add_column("Version")
+            themes_table.add_column("Latest Version")
+            themes_table.add_column("Outdated")
+            for t in r.themes:
+                outdated_marker = "[yellow]Yes[/yellow]" if t.outdated else "No"
+                themes_table.add_row(
+                    t.slug,
+                    t.version or "unknown",
+                    t.latest_version or "unknown",
+                    outdated_marker,
+                )
+            self._console.print(themes_table)
+
         # Users
         if r.users:
             users_table = Table(title="Detected Users")

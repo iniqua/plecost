@@ -74,7 +74,7 @@ class Scanner:
         start = time.monotonic()
         ctx = ScanContext(self._opts)
 
-        # Inicializar store y wordlists de forma async
+        # Initialize CVE store and wordlists asynchronously
         cve_mod: CVEsModule | None = None
         plugin_wl: list[str] = []
         theme_wl: list[str] = []
@@ -86,8 +86,13 @@ class Scanner:
             cve_mod = CVEsModule(store)
             plugin_wl = await store.get_plugins_wordlist()
             theme_wl = await store.get_themes_wordlist()
-        except Exception:
-            pass
+        except Exception as e:
+            import sys
+            print(
+                f"[plecost] Warning: CVE database unavailable ({e}). "
+                "Run 'plecost update-db' to download it.",
+                file=sys.stderr,
+            )
 
         modules: list[ScanModule] = [
             FingerprintModule(), WAFModule(),
