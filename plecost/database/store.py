@@ -35,7 +35,15 @@ class CVEStore:
 
     @classmethod
     def from_url(cls, db_url: str) -> "CVEStore":
+        import os
         from plecost.database.engine import make_engine, make_session_factory
+        if db_url.startswith("sqlite"):
+            # Extract path from sqlite+aiosqlite:///path or sqlite:///path
+            path = db_url.split("///", 1)[-1]
+            if path and not os.path.exists(path):
+                raise FileNotFoundError(
+                    f"CVE database not found at {path}. Run 'plecost update-db' to download it."
+                )
         engine = make_engine(db_url)
         return cls(make_session_factory(engine))
 

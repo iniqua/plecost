@@ -373,6 +373,3 @@ class DatabaseUpdater:
                 break
             # NVD rate limiting: 6 req/30s without API key, 0.6s with key
             await asyncio.sleep(6 if not self._api_key else 0.6)
-
-    async def _upsert_vuln(self, session: AsyncSession, vuln: NormalizedVuln) -> None:
-        await _upsert_vuln_free(session, vuln)

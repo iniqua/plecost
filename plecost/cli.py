@@ -24,12 +24,12 @@ def scan(
     password: Optional[str] = typer.Option(None, "--password", "-p", help="WordPress password"),
     proxy: Optional[str] = typer.Option(None, help="Proxy URL (http://host:port or socks5://host:port)"),
     concurrency: int = typer.Option(10, help="Number of concurrent requests"),
-    timeout: int = typer.Option(10, help="Request timeout in seconds"),
+    timeout: int = typer.Option(10, help="Request timeout in seconds", envvar="PLECOST_TIMEOUT"),
     modules: Optional[str] = typer.Option(None, help="Comma-separated list of modules to run"),
     skip_modules: Optional[str] = typer.Option(None, help="Comma-separated list of modules to skip"),
     stealth: bool = typer.Option(False, help="Stealth mode: random UA, slower"),
     aggressive: bool = typer.Option(False, help="Aggressive mode: max concurrency"),
-    output: Optional[str] = typer.Option(None, "-o", "--output", help="Save JSON report to file"),
+    output: Optional[str] = typer.Option(None, "-o", "--output", help="Save JSON report to file", envvar="PLECOST_OUTPUT"),
     random_user_agent: bool = typer.Option(False, "--random-user-agent", "--rua"),
     verify_ssl: bool = typer.Option(True, help="Verify SSL certificates"),
     force: bool = typer.Option(False, help="Continue even if WordPress not detected"),
@@ -109,6 +109,7 @@ def update_db(
     db_url: Optional[str] = typer.Option(
         None,
         "--db-url",
+        envvar="PLECOST_DB_URL",
         help="Database URL. Default: sqlite at ~/.plecost/db/plecost.db",
     ),
     github_token: Optional[str] = typer.Option(
@@ -147,6 +148,7 @@ def build_db(
     db_url: Optional[str] = typer.Option(
         None,
         "--db-url",
+        envvar="PLECOST_DB_URL",
         help="Database URL. Default: sqlite at ~/.plecost/db/plecost.db",
     ),
     years: int = typer.Option(5, "--years", help="Years of NVD history to download"),
@@ -183,6 +185,7 @@ def sync_db(
     db_url: Optional[str] = typer.Option(
         None,
         "--db-url",
+        envvar="PLECOST_DB_URL",
         help="Database URL. Default: sqlite at ~/.plecost/db/plecost.db",
     ),
     nvd_api_key: Optional[str] = typer.Option(
