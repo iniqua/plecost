@@ -5,6 +5,7 @@ from pathlib import Path
 import httpx
 
 GITHUB_REPO = "iniqua/plecost"
+RELEASE_ASSET_NAME = "plecost.db"  # Deprecated: kept for backwards compatibility
 PATCHES_RELEASE_TAG = "db-patches"
 BASE_URL = f"https://github.com/{GITHUB_REPO}/releases/download/{PATCHES_RELEASE_TAG}"
 
