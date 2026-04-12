@@ -1,3 +1,11 @@
+## 2026-04-12 — update-db: improved error messages for first-run and network failures
+
+### Changed
+- `plecost/cli.py`: `update-db` distinguishes 404/401/5xx/ConnectError with actionable messages
+- `plecost/cli.py`: first-run message explains that subsequent updates will be small
+
+---
+
 ## 2026-04-12 — Minor fixes: .gitignore and Dockerfile
 
 ### Fixed
