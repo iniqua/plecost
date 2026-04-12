@@ -1,3 +1,12 @@
+## 2026-04-12 — JSON patch system: RejectedCve model, patch_applier module, store filtering
+
+### Added
+- `plecost/database/models.py`: new `RejectedCve` model (`rejected_cves` table) — soft-delete table for CVEs removed/disputed from NVD; never physically deletes rows
+- `plecost/database/patch_applier.py`: new module implementing JSON patch application — `apply_patch()` validates then applies upserts and soft-deletes in a single transaction; `get_last_patch_date()` returns last patch timestamp; portable across SQLite and PostgreSQL via SQLAlchemy select/setattr pattern
+- `plecost/database/store.py`: `CVEStore.find()` now filters out any CVE IDs present in `rejected_cves` before returning vulnerability records
+
+---
+
 ## 2026-04-12 — Overhaul downloader.py for JSON patch system with SHA256 verification
 
 ### Changed
