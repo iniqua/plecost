@@ -1,3 +1,14 @@
+## 2026-04-12 — docs: detailed technical documentation for the CVE JSON patch system
+
+### Added
+- `docs/cve-patch-system/README.md`: overview, system diagram, quick-reference command table, index of all documents in the folder
+- `docs/cve-patch-system/architecture.md`: full technical architecture — motivation for JSON over SQLite, GitHub release artifact layout, step-by-step client and CI flows, database model reference (`NormalizedVuln`, `RejectedCve`, `DbMetadata`), CPE-to-slug mapping explanation, rejected CVE audit trail rationale
+- `docs/cve-patch-system/file-formats.md`: complete format specification for every artifact — `index.json`, `index.checksum`, `patch-YYYY-MM-DD.json`, `full.json`, `full.checksum` — with annotated examples derived from the actual code and field-level reference tables
+- `docs/cve-patch-system/operations.md`: operational guide covering first install, daily update, CI failure recovery, manual CVE rejection via SQL, PostgreSQL usage, and common troubleshooting scenarios
+- `docs/cve-patch-system/code-guide.md`: developer guide for extending the system — adding patch format fields, integrating new CVE sources (Wordfence/Patchstack), extension points in `patch_applier.py`, testing patterns, and common pitfalls
+
+---
+
 ## 2026-04-12 — update-db uses JSON patch system; sync-db supports --output-patch; new CI workflow
 
 ### Changed
