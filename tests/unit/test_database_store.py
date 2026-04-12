@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from plecost.database.models import Base, NormalizedVuln
 from plecost.database.store import CVEStore

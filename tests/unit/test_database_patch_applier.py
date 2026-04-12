@@ -197,6 +197,7 @@ async def test_apply_patch_delete_nonexistent_cve(
     }
     upserted, deleted = await apply_patch(delete_patch, sf)
 
+    assert upserted == 0
     assert deleted == 1
 
     async with sf() as session:

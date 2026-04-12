@@ -187,65 +187,66 @@ async def _update_db_async(db_path: Path, token: "str | None", force_full: bool)
         await engine.dispose()
         return
 
-    # Load local stored checksum from db_metadata
-    local_checksum = await _get_metadata(sf, "index_checksum")
+    try:
+        # Load local stored checksum from db_metadata
+        local_checksum = await _get_metadata(sf, "index_checksum")
 
-    if local_checksum == remote_checksum and not force_full:
-        console.print("[green]CVE database is already up to date.[/green]")
+        if local_checksum == remote_checksum and not force_full:
+            console.print("[green]CVE database is already up to date.[/green]")
+            return
+
+        # Check if DB has data or is first run
+        last_patch = await get_last_patch_date(sf)
+        is_first_run = (last_patch is None) or force_full
+
+        if is_first_run:
+            # Download full.json
+            console.print("[bold]First run: downloading full CVE database (~50 MB)...[/bold]")
+            console.print("[dim]Subsequent updates will only download daily patches (<100 KB).[/dim]")
+            with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
+                tmp_path = Path(tmp.name)
+            try:
+                await download_full_json(tmp_path, token)
+                patch_data = json.loads(tmp_path.read_text(encoding="utf-8"))
+                upserted, deleted = await apply_patch(patch_data, sf)
+                console.print(
+                    f"[green]Full database loaded: {upserted} CVEs upserted, {deleted} removed.[/green]"
+                )
+            finally:
+                if tmp_path.exists():
+                    tmp_path.unlink()
+
+        # Download and apply missing daily patches
+        index = await fetch_index(token)
+        raw_patches = index.get("patches")
+        patch_list: list[Any] = list(raw_patches) if isinstance(raw_patches, list) else []
+        patches_typed: list[dict[str, Any]] = [p for p in patch_list if isinstance(p, dict)]
+
+        # Find patches newer than last applied
+        last_patch_date = await get_last_patch_date(sf) or "0000-00-00"
+        missing = [p for p in patches_typed if str(p.get("date", "")) > last_patch_date]
+
+        if missing:
+            console.print(f"[bold]Applying {len(missing)} new patch(es)...[/bold]")
+            for patch_info in sorted(missing, key=lambda x: x.get("date", "")):
+                patch_data = await download_patch(
+                    str(patch_info["url"]),
+                    str(patch_info["sha256"]),
+                    token,
+                )
+                upserted, deleted = await apply_patch(patch_data, sf)
+                console.print(
+                    f"  [dim]{patch_info['date']}[/dim]: {upserted} upserted, {deleted} removed"
+                )
+        else:
+            if not is_first_run:
+                console.print("[green]No new patches available.[/green]")
+
+        # Save remote checksum locally
+        await _set_metadata(sf, "index_checksum", remote_checksum)
+        console.print(f"[green]CVE database updated at {db_path}[/green]")
+    finally:
         await engine.dispose()
-        return
-
-    # Check if DB has data or is first run
-    last_patch = await get_last_patch_date(sf)
-    is_first_run = (last_patch is None) or force_full
-
-    if is_first_run:
-        # Download full.json
-        console.print("[bold]First run: downloading full CVE database (~50 MB)...[/bold]")
-        console.print("[dim]Subsequent updates will only download daily patches (<100 KB).[/dim]")
-        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
-            tmp_path = Path(tmp.name)
-        try:
-            await download_full_json(tmp_path, token)
-            patch_data = json.loads(tmp_path.read_text(encoding="utf-8"))
-            upserted, deleted = await apply_patch(patch_data, sf)
-            console.print(
-                f"[green]Full database loaded: {upserted} CVEs upserted, {deleted} removed.[/green]"
-            )
-        finally:
-            if tmp_path.exists():
-                tmp_path.unlink()
-
-    # Download and apply missing daily patches
-    index = await fetch_index(token)
-    raw_patches = index.get("patches")
-    patch_list: list[Any] = list(raw_patches) if isinstance(raw_patches, list) else []
-    patches_typed: list[dict[str, Any]] = [p for p in patch_list if isinstance(p, dict)]
-
-    # Find patches newer than last applied
-    last_patch_date = await get_last_patch_date(sf) or "0000-00-00"
-    missing = [p for p in patches_typed if str(p.get("date", "")) > last_patch_date]
-
-    if missing:
-        console.print(f"[bold]Applying {len(missing)} new patch(es)...[/bold]")
-        for patch_info in sorted(missing, key=lambda x: x.get("date", "")):
-            patch_data = await download_patch(
-                str(patch_info["url"]),
-                str(patch_info["sha256"]),
-                token,
-            )
-            upserted, deleted = await apply_patch(patch_data, sf)
-            console.print(
-                f"  [dim]{patch_info['date']}[/dim]: {upserted} upserted, {deleted} removed"
-            )
-    else:
-        if not is_first_run:
-            console.print("[green]No new patches available.[/green]")
-
-    # Save remote checksum locally
-    await _set_metadata(sf, "index_checksum", remote_checksum)
-    await engine.dispose()
-    console.print(f"[green]CVE database updated at {db_path}[/green]")
 
 
 @app.command("update-db")

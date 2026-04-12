@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from plecost.database.engine import make_engine, make_session_factory
@@ -32,7 +31,7 @@ async def test_engine_creates_tables(tmp_path):
         await conn.run_sync(Base.metadata.create_all)
 
     # Verify the normalized_vulns table exists by inspecting metadata
-    from sqlalchemy import inspect, text
+    from sqlalchemy import text
 
     async with engine.connect() as conn:
         result = await conn.execute(

@@ -123,7 +123,6 @@ async def test_process_nvd_batch_skips_non_wordpress(db_sf):
 async def test_upsert_updates_on_higher_confidence(db_sf):
     """Upsert same CVE+slug with higher confidence → confidence updated."""
     # First insert with low confidence (simulate fuzzy match)
-    cve_low = _make_cve("CVE-2024-0004", vendor="acmecorp", product="woocomerce", target_sw="wordpress")
     # Manually insert with low confidence
     async with db_sf() as session:
         session.add(NormalizedVuln(

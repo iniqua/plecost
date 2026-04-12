@@ -3,9 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 import httpx
-import pytest
 import respx
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from plecost.database.incremental import IncrementalUpdater, NVD_CVE_API
