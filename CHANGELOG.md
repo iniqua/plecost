@@ -1,3 +1,10 @@
+## 2026-04-12 — Add tests for patch_applier (13 tests, 0% → coverage)
+
+### Added
+- `tests/unit/test_database_patch_applier.py`: 13 tests covering apply_patch, validation, deletes, idempotence, date tracking
+
+---
+
 ## 2026-04-12 — README: document JSON patch system
 
 ### Changed
