@@ -1,3 +1,11 @@
+## 2026-04-12 — Fix GitHub Actions workflow: consistent DB path + guaranteed patch file
+
+### Fixed
+- `.github/workflows/update-cve-db.yml`: use single `DB_PATH` env var for consistent DB path across all steps
+- `.github/workflows/update-cve-db.yml`: generate empty patch JSON if sync-db produces no output
+
+---
+
 ## 2026-04-12 — docs: detailed technical documentation for the CVE JSON patch system
 
 ### Added
