@@ -1,4 +1,0 @@
-# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/debug_exposure.py
-# hypothesis_version: 6.151.12
-
-[5.3, '/', 'PC-DBG-001', 'PC-DBG-003', 'PHP/(\\d+\\.\\d+\\.\\d+)', 'REM-DBG-001', 'REM-DBG-003', 'X-Powered-By', 'debug_exposure', 'fingerprint', 'header', 'match', 'php', 'url', 'value', 'x-powered-by']

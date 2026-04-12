@@ -1,4 +1,0 @@
-# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/fingerprint.py
-# hypothesis_version: 6.151.12
-
-[200, '/', '/feed/', '/readme.html', '/wp-login.php', 'PC-FP-001', 'PC-FP-002', 'REM-FP-001', 'REM-FP-002', '\\?ver=([\\d.]+)', 'fingerprint', 'generator', 'match', 'url', 'wp-login']

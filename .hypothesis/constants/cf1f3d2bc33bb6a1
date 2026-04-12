@@ -1,4 +1,0 @@
-# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/auth.py
-# hypothesis_version: 6.151.12
-
-[5.3, 200, 302, '/wp-admin/', '1', 'Log In', 'PC-AUTH-001', 'PC-AUTH-002', 'REM-AUTH-001', 'REM-AUTH-002', 'auth', 'fingerprint', 'location', 'log', 'login_url', 'pwd', 'redirect_to', 'testcookie', 'url', 'user_login', 'username', 'wp-admin', 'wp-submit']

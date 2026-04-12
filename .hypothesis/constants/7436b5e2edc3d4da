@@ -1,4 +1,0 @@
-# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/themes.py
-# hypothesis_version: 6.151.12
-
-[100, 200, 403, '/', 'PC-THM-001', 'REM-THM-001', 'Version:\\s*([\\d.]+)', '\\?ver=([\\d.]+)', 'fingerprint', 'slug', 'themes', 'version']

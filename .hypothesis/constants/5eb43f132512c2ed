@@ -1,4 +1,0 @@
-# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/rest_api.py
-# hypothesis_version: 6.151.12
-
-[5.3, 200, '*', '/', 'PC-REST-001', 'PC-REST-002', 'PC-REST-003', 'REM-REST-001', 'REM-REST-002', 'REM-REST-003', 'author_name', 'fingerprint', 'header', 'rest_api', 'url']

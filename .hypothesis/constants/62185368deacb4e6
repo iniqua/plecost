@@ -1,4 +1,0 @@
-# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/database/updater.py
-# hypothesis_version: 6.151.12
-
-[2000, '0.0.1', '99.99.99', 'MEDIUM', 'baseScore', 'baseSeverity', 'core', 'cve', 'cvssData', 'cvssMetricV31', 'descriptions', 'en', 'id', 'keywordSearch', 'lang', 'metrics', 'plugins', 'published', 'references', 'resultsPerPage', 'startIndex', 'url', 'value', 'vulnerabilities', 'wordpress']

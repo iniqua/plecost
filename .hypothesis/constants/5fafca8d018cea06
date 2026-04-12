@@ -1,4 +1,0 @@
-# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/database/store.py
-# hypothesis_version: 6.151.12
-
-['[]', 'cvss_score', 'description', 'has_exploit', 'id', 'published_at', 'references', 'remediation', 'severity', 'slug', 'software_slug', 'software_type', 'title', 'version_from', 'version_to']

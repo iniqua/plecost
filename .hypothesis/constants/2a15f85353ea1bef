@@ -1,4 +1,0 @@
-# file: /Users/cr0hn/Dropbox/Projects/plecost/src/plecost/modules/cves.py
-# hypothesis_version: 6.151.12
-
-['CRITICAL', 'HIGH', 'LOW', 'MEDIUM', 'core', 'cve_id', 'cves', 'installed_version', 'plugin', 'plugins', 'software', 'theme', 'themes', 'wordpress']
