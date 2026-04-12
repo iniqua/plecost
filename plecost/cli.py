@@ -34,6 +34,7 @@ def scan(
     verify_ssl: bool = typer.Option(True, help="Verify SSL certificates"),
     force: bool = typer.Option(False, help="Continue even if WordPress not detected"),
     quiet: bool = typer.Option(False, help="Only show HIGH and CRITICAL findings"),
+    db_url: Optional[str] = typer.Option(None, "--db-url", help="CVE database URL (sqlite+aiosqlite:/// or postgresql+asyncpg://)", envvar="PLECOST_DB_URL"),
 ) -> None:
     """Scan a WordPress site for security vulnerabilities."""
     # Resolve list of URLs to scan
@@ -82,6 +83,7 @@ def scan(
             verify_ssl=verify_ssl,
             force=force,
             output=output,
+            db_url=db_url,
         )
 
         result = asyncio.run(Scanner(opts).run())

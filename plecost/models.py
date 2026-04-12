@@ -107,3 +107,4 @@ class ScanOptions:
     verify_ssl: bool = True
     force: bool = False
     output: str | None = None
+    db_url: str | None = None  # None = default SQLite at ~/.plecost/db/plecost.db

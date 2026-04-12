@@ -81,7 +81,7 @@ class Scanner:
         try:
             from plecost.database.store import CVEStore
             from pathlib import Path
-            db_url = f"sqlite+aiosqlite:///{Path.home() / '.plecost' / 'db' / 'plecost.db'}"
+            db_url = self._opts.db_url or f"sqlite+aiosqlite:///{Path.home() / '.plecost' / 'db' / 'plecost.db'}"
             store = CVEStore.from_url(db_url)
             cve_mod = CVEsModule(store)
             plugin_wl = await store.get_plugins_wordlist()
