@@ -23,6 +23,7 @@ from plecost.modules.content_analysis import ContentAnalysisModule
 from plecost.modules.auth import AuthModule
 from plecost.modules.woocommerce import WooCommerceModule
 from plecost.modules.wp_ecommerce import WPECommerceModule
+from plecost.modules.magecart import MagecartModule
 from plecost.modules.cves import CVEsModule
 from plecost.modules.base import ScanModule
 from plecost.models import Finding
@@ -123,6 +124,7 @@ class Scanner:
             DebugExposureModule(), ContentAnalysisModule(), AuthModule(),
             WooCommerceModule(),
             WPECommerceModule(),
+            MagecartModule(store),  # store puede ser None si DB no disponible
         ]
         if cve_mod:
             modules.append(cve_mod)
@@ -146,6 +148,7 @@ class Scanner:
             summary=_build_summary(ctx.findings),
             woocommerce=ctx.woocommerce,
             wp_ecommerce=ctx.wp_ecommerce,
+            magecart=ctx.magecart,
         )
 
     async def _check_access(self, ctx: ScanContext, http: PlecostHTTPClient) -> bool:

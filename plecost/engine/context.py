@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections.abc import Callable
-from plecost.models import ScanOptions, Finding, Plugin, Theme, User, WooCommerceInfo, WPECommerceInfo
+from plecost.models import ScanOptions, Finding, Plugin, Theme, User, WooCommerceInfo, WPECommerceInfo, MagecartInfo
 
 
 class ScanContext:
@@ -20,6 +20,7 @@ class ScanContext:
         self.blocked: bool = False
         self.woocommerce: WooCommerceInfo | None = None
         self.wp_ecommerce: WPECommerceInfo | None = None
+        self.magecart: MagecartInfo | None = None
         self.plugins: list[Plugin] = []
         self.themes: list[Theme] = []
         self.users: list[User] = []

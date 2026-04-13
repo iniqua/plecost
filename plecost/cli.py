@@ -19,6 +19,7 @@ _ALL_MODULE_NAMES = [
     "ssl_tls", "debug_exposure", "content_analysis", "auth", "cves",
     "woocommerce",
     "wp_ecommerce",
+    "magecart",
 ]
 
 
@@ -361,6 +362,9 @@ def modules_list() -> None:
         "content_analysis": "Detect card skimming and hardcoded secrets",
         "auth": "Authenticated scan (requires --user --password)",
         "cves": "Correlate found software with CVE database",
+        "woocommerce": "Detect WooCommerce and its configuration",
+        "wp_ecommerce": "Detect WP eCommerce and check for vulnerabilities",
+        "magecart": "Detect Magecart/card-skimming scripts on checkout pages",
     }
     deps = {
         "fingerprint": "—", "waf": "—",
@@ -371,6 +375,9 @@ def modules_list() -> None:
         "ssl_tls": "fingerprint", "debug_exposure": "fingerprint",
         "content_analysis": "fingerprint", "auth": "fingerprint",
         "cves": "plugins, themes",
+        "woocommerce": "fingerprint",
+        "wp_ecommerce": "fingerprint",
+        "magecart": "fingerprint, woocommerce, wp_ecommerce",
     }
     for name in _ALL_MODULE_NAMES:
         table.add_row(name, deps.get(name, "—"), descriptions.get(name, ""))
@@ -641,6 +648,52 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
         "remediation_id": "REM-WPEC-021",
         "references": ["https://nvd.nist.gov/vuln/detail/CVE-2026-1235"],
         "cvss_score": 8.1,
+    },
+    "PC-MGC-000": {
+        "title": "Magecart scan summary",
+        "severity": "INFO",
+        "description": "The Magecart detection module ran on the eCommerce checkout pages. This finding summarizes what was scanned.",
+        "remediation": "No action required. Review other PC-MGC-* findings for actionable issues.",
+        "references": ["https://www.riskiq.com/what-is-magecart/"],
+        "remediation_id": "REM-MGC-000",
+    },
+    "PC-MGC-001": {
+        "title": "Known Magecart domain script on checkout page",
+        "severity": "CRITICAL",
+        "description": "A script from a known Magecart card-skimming domain was found loading on a checkout page. This is a strong indicator of a supply-chain compromise targeting payment card data.",
+        "remediation": "Immediately remove the malicious script. Audit your theme and plugin files for injected code. Reset all WordPress credentials and rotate payment API keys. Notify your payment processor.",
+        "references": [
+            "https://www.riskiq.com/what-is-magecart/",
+            "https://owasp.org/www-project-top-ten/",
+        ],
+        "remediation_id": "REM-MGC-001",
+    },
+    "PC-MGC-002": {
+        "title": "Known dropper domain script on checkout page",
+        "severity": "CRITICAL",
+        "description": "A script from a known dropper domain was found on a checkout page. Dropper scripts typically load secondary payloads, including card skimmers.",
+        "remediation": "Immediately remove the malicious script and audit all JavaScript on the checkout flow. Check for secondary payloads or additional injections.",
+        "references": ["https://www.riskiq.com/what-is-magecart/"],
+        "remediation_id": "REM-MGC-002",
+    },
+    "PC-MGC-003": {
+        "title": "Known exfiltrator domain script on checkout page",
+        "severity": "HIGH",
+        "description": "A script from a known data exfiltration domain was found on a checkout page. Exfiltrator scripts send captured data (including payment card details) to attacker-controlled servers.",
+        "remediation": "Remove the script immediately. Review all external script sources on the checkout page. Implement Content Security Policy (CSP) to restrict script origins.",
+        "references": [
+            "https://www.riskiq.com/what-is-magecart/",
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP",
+        ],
+        "remediation_id": "REM-MGC-003",
+    },
+    "PC-MGC-004": {
+        "title": "Known Magecart domain script on non-checkout page",
+        "severity": "MEDIUM",
+        "description": "A script from a known Magecart-related domain was found on a non-checkout page. While lower risk than checkout exposure, this may indicate site compromise.",
+        "remediation": "Investigate the script source. Remove if unauthorized. Check if the domain appears on checkout pages as well.",
+        "references": ["https://www.riskiq.com/what-is-magecart/"],
+        "remediation_id": "REM-MGC-004",
     },
 }
 

@@ -97,6 +97,14 @@ class WPECommerceInfo:
 
 
 @dataclass
+class MagecartInfo:
+    detected: bool
+    pages_scanned: list[str]
+    scripts_analyzed: int
+    malicious_domains: list[str]
+
+
+@dataclass
 class ScanResult:
     scan_id: str
     url: str
@@ -113,6 +121,7 @@ class ScanResult:
     blocked: bool = False
     woocommerce: WooCommerceInfo | None = None
     wp_ecommerce: WPECommerceInfo | None = None
+    magecart: MagecartInfo | None = None
 
     def to_json(self, path: str) -> None:
         def default(obj: Any) -> Any:
