@@ -19,6 +19,7 @@ python3 -m mypy plecost/ --ignore-missing-imports
 - `plecost/engine/` — `http_client.py` (httpx async), `context.py` (shared state), `scheduler.py` (async dependency graph)
 - `plecost/modules/` — 15 detection modules; each extends `ScanModule` with `name`, `depends_on`, `async run()`
 - `plecost/database/` — SQLAlchemy async; `updater.py` (NVD full build), `incremental.py` (delta sync), `downloader.py` (from release), `store.py` (queries)
+- `plecost/database/patch_applier.py` — applies JSON patches (upserts + soft-deletes); portable SQLite/PG
 - `plecost/reporters/` — `terminal.py` (Rich), `json_reporter.py` (JSON)
 - `plecost/models.py` — core data types: `Finding`, `Severity`, `ScanResult`, `Plugin`, `Theme`
 
@@ -36,6 +37,7 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 ## Python Environment
 - Always use `python3 -m pytest` (not bare `pytest`) — multiple Python versions on this system
 - Pyright reports false positive import errors (`plecost.database.engine`, etc.) — modules exist, it's an environment issue, not a code bug
+- `python3 -m plecost` does NOT work (no `__main__.py`) — use the installed `plecost` entrypoint only
 
 ## Repository
 - GitHub repo: `iniqua/plecost` (not `cr0hn/plecost`)
@@ -45,14 +47,17 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 ## CVE Database
 - Local DB: `~/.plecost/db/plecost.db` (SQLite, SQLAlchemy async)
 - `plecost build-db` — full build from NVD (maintainers, one-time)
-- `plecost update-db` — download pre-built DB from GitHub releases (end users)
+- `plecost update-db` — incremental JSON patch system: checks index.checksum first, downloads only missing daily patches; first run downloads full.json
 - `plecost sync-db` — incremental sync from `db_metadata.last_nvd_sync` (daily GitHub Action)
+- `plecost sync-db --output-patch patch-YYYY-MM-DD.json` — also writes daily JSON patch file (used by CI)
 - NVD API rate limit: 6s between requests without API key; use `NVD_API_KEY` env var for higher limit
-- Initial DB published at: `github.com/iniqua/plecost/releases/tag/db-base`
+- Patch files on GitHub: release tag `db-patches` — `index.json`, `full.json`, `patch-YYYY-MM-DD.json`
+- Architecture docs: `docs/cve-patch-system/`
 
 ## Tests
 - `asyncio_mode = "auto"` in pyproject.toml — do NOT add `@pytest.mark.asyncio` manually
 - respx: use `respx.get(url).mock(return_value=httpx.Response(...))` — NOT `respx.pattern(...)`
+- Coverage: use dots not slashes: `--cov=plecost.database.patch_applier` (not `plecost/database/patch_applier`)
 - Functional tests against real WordPress: `PLECOST_FUNCTIONAL_TESTS=1 pytest tests/functional/`
 - Test Docker WordPress: `docker-compose -f docker-compose.test.yml up -d` (port 8765)
 
@@ -70,6 +75,10 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 
 ## httpx Gotchas
 - `httpx.SSLError` does not exist — catch SSL errors with `(httpx.ConnectError, httpx.TransportError)` and check `"ssl"/"tls"/"certificate"` in `str(e)`
+
+## SQLAlchemy Async Gotchas
+- Always call `await engine.dispose()` in a `try/finally` block in CLI commands — exceptions skip it otherwise
+- `patch_applier._apply_upserts()` batches with `session.flush()` every 2000 records; `session.commit()` happens once at end
 
 ## Background Agents & Git
 - When running multiple background agents that commit, tell each to commit but NOT push; do a single `git push` from the main session after all agents finish
