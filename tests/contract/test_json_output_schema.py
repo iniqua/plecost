@@ -4,10 +4,9 @@ These tests ensure the JSON output structure doesn't change unexpectedly
 between versions (golden/snapshot testing for the output schema).
 """
 import json
-import pytest
 from datetime import datetime, timezone
 from plecost.models import (
-    ScanResult, ScanSummary, Finding, Severity, ScanOptions,
+    ScanResult, ScanSummary, Finding, Severity,
 )
 from plecost.reporters.json_reporter import JSONReporter
 
