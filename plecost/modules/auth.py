@@ -10,7 +10,7 @@ class AuthModule(ScanModule):
     depends_on = ["fingerprint"]
 
     async def run(self, ctx: ScanContext, http: PlecostHTTPClient) -> None:
-        if not ctx.is_wordpress or not ctx.opts.credentials:
+        if (not ctx.is_wordpress and not ctx.opts.force) or not ctx.opts.credentials:
             return
         username, password = ctx.opts.credentials
         await self._login(ctx, http, username, password)

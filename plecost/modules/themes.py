@@ -19,7 +19,7 @@ class ThemesModule(ScanModule):
         self._wordlist = wordlist or []
 
     async def run(self, ctx: ScanContext, http: PlecostHTTPClient) -> None:
-        if not ctx.is_wordpress:
+        if not ctx.is_wordpress and not ctx.opts.force:
             return
 
         # Passive: scan homepage for theme paths
@@ -39,14 +39,28 @@ class ThemesModule(ScanModule):
             pass
 
         # Active: brute-force wordlist via style.css
+        # Probe a nonexistent theme first to establish the 404 baseline.
+        # If the server returns non-404 for nonexistent paths (WAF blanket block),
+        # then 403 is not a reliable "theme exists" signal — only accept 200.
+        baseline_is_404 = True
+        try:
+            probe = await http.get(f"{ctx.url}/wp-content/themes/__plecost_probe__/style.css")
+            baseline_is_404 = probe.status_code == 404
+        except Exception:
+            pass
+
         sem = asyncio.Semaphore(ctx.opts.concurrency)
+        total = len(self._wordlist)
+        checked = 0
 
         async def check_theme(slug: str) -> None:
+            nonlocal checked
             async with sem:
                 url = f"{ctx.url}/wp-content/themes/{slug}/style.css"
                 try:
                     r = await http.get(url)
-                    if r.status_code in (200, 403):
+                    exists = r.status_code == 200 or (baseline_is_404 and r.status_code == 403)
+                    if exists:
                         ver = None
                         if r.status_code == 200:
                             if m := _CSS_VER_RE.search(r.text):
@@ -57,6 +71,9 @@ class ThemesModule(ScanModule):
                             found[slug] = ver
                 except Exception:
                     pass
+                finally:
+                    checked += 1
+                    ctx.report_progress("themes", checked, total)
 
         await asyncio.gather(*[check_theme(s) for s in self._wordlist])
 

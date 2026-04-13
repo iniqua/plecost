@@ -18,7 +18,7 @@ class DirectoryListingModule(ScanModule):
     depends_on = ["fingerprint"]
 
     async def run(self, ctx: ScanContext, http: PlecostHTTPClient) -> None:
-        if not ctx.is_wordpress:
+        if not ctx.is_wordpress and not ctx.opts.force:
             return
         await asyncio.gather(*[self._check(ctx, http, *args) for args in _DIRS])
 

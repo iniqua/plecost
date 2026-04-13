@@ -13,7 +13,7 @@ class RESTAPIModule(ScanModule):
     depends_on = ["fingerprint"]
 
     async def run(self, ctx: ScanContext, http: PlecostHTTPClient) -> None:
-        if not ctx.is_wordpress:
+        if not ctx.is_wordpress and not ctx.opts.force:
             return
 
         await self._check_rest_link(ctx, http)

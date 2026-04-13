@@ -21,7 +21,7 @@ class CVEsModule(ScanModule):
         self._store = store
 
     async def run(self, ctx: ScanContext, http: PlecostHTTPClient | None) -> None:
-        if not ctx.is_wordpress:
+        if not ctx.is_wordpress and not ctx.opts.force:
             return
         # Check core
         if ctx.wordpress_version:

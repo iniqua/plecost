@@ -14,7 +14,7 @@ class UsersModule(ScanModule):
     _MAX_AUTHOR_ID = 10
 
     async def run(self, ctx: ScanContext, http: PlecostHTTPClient) -> None:
-        if not ctx.is_wordpress:
+        if not ctx.is_wordpress and not ctx.opts.force:
             return
         await asyncio.gather(
             self._rest_api(ctx, http),

@@ -19,7 +19,7 @@ class PluginsModule(ScanModule):
         self._wordlist = wordlist or []
 
     async def run(self, ctx: ScanContext, http: PlecostHTTPClient) -> None:
-        if not ctx.is_wordpress:
+        if not ctx.is_wordpress and not ctx.opts.force:
             return
 
         # Passive: scan homepage for plugin paths
@@ -36,14 +36,28 @@ class PluginsModule(ScanModule):
             pass
 
         # Active: brute-force wordlist
+        # First probe a nonexistent slug to establish the 404 baseline.
+        # If the server returns non-404 for nonexistent paths (WAF blanket block),
+        # then 403 is not a reliable "plugin exists" signal — only accept 200.
+        baseline_is_404 = True
+        try:
+            probe = await http.get(f"{ctx.url}/wp-content/plugins/__plecost_probe__/readme.txt")
+            baseline_is_404 = probe.status_code == 404
+        except Exception:
+            pass
+
         sem = asyncio.Semaphore(ctx.opts.concurrency)
+        total = len(self._wordlist)
+        checked = 0
 
         async def check_plugin(slug: str) -> None:
+            nonlocal checked
             async with sem:
                 url = f"{ctx.url}/wp-content/plugins/{slug}/readme.txt"
                 try:
                     r = await http.get(url)
-                    if r.status_code in (200, 403):
+                    exists = r.status_code == 200 or (baseline_is_404 and r.status_code == 403)
+                    if exists:
                         ver = None
                         if r.status_code == 200:
                             if m := _VER_RE.search(r.text):
@@ -54,6 +68,9 @@ class PluginsModule(ScanModule):
                             found[slug] = ver
                 except Exception:
                     pass
+                finally:
+                    checked += 1
+                    ctx.report_progress("plugins", checked, total)
 
         await asyncio.gather(*[check_plugin(s) for s in self._wordlist])
 

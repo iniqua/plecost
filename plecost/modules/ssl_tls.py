@@ -11,7 +11,7 @@ class SSLTLSModule(ScanModule):
     depends_on = ["fingerprint"]
 
     async def run(self, ctx: ScanContext, http: PlecostHTTPClient) -> None:
-        if not ctx.is_wordpress:
+        if not ctx.is_wordpress and not ctx.opts.force:
             return
         await self._check_http_redirect(ctx, http)
         await self._check_ssl_cert(ctx, http)
