@@ -1,450 +1,248 @@
-```
-██████╗ ██╗     ███████╗ ██████╗ ██████╗ ███████╗████████╗
-██╔══██╗██║     ██╔════╝██╔════╝██╔═══██╗██╔════╝╚══██╔══╝
-██████╔╝██║     █████╗  ██║     ██║   ██║███████╗   ██║
-██╔═══╝ ██║     ██╔══╝  ██║     ██║   ██║╚════██║   ██║
-██║     ███████╗███████╗╚██████╗╚██████╔╝███████║   ██║
-╚═╝     ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚══════╝   ╚═╝
-                                                  v4.0.0
-```
+<div align="center">
+  <img src="https://avatars.githubusercontent.com/u/275428243?s=200&u=235faecc7c473dc147aa16990cbada030e4703c5&v=4" alt="Plecost" width="120" />
+  <h1>Plecost</h1>
+  <p><strong>Professional WordPress Security Scanner</strong></p>
+  <p>Async-first, library-friendly, no external API required.</p>
 
-# Plecost — Professional WordPress Security Scanner
+  [![CI](https://github.com/Plecost/plecost/actions/workflows/ci.yml/badge.svg)](https://github.com/Plecost/plecost/actions)
+  [![PyPI](https://img.shields.io/pypi/v/plecost.svg)](https://pypi.org/project/plecost/)
+  [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://python.org)
+  [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fplecost%2Fplecost-blue)](https://ghcr.io/plecost/plecost)
+  [![License: PolyForm NC](https://img.shields.io/badge/License-PolyForm%20NC%201.0-lightgrey)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
+</div>
 
-[![CI](https://github.com/Plecost/plecost/actions/workflows/ci.yml/badge.svg)](https://github.com/Plecost/plecost/actions)
-[![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fplecost%2Fplecost-blue)](https://ghcr.io/plecost/plecost)
-[![PyPI](https://img.shields.io/pypi/v/plecost.svg)](https://pypi.org/project/plecost/)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://python.org)
-[![License: PolyForm NC](https://img.shields.io/badge/License-PolyForm%20NC%201.0-blue)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
+## What is Plecost?
 
-**Fully async, zero-interaction WordPress security scanner built for professionals.**
+Plecost detects vulnerabilities in WordPress installations — core, plugins, and themes — and correlates findings against a daily-updated local CVE database. It runs as a CLI tool, a Python library, or inside task queues like Celery, with a consistent and automation-friendly output format.
 
-Plecost v4.0 detects vulnerabilities in WordPress core, plugins, and themes — enumerates users, identifies misconfigurations, and correlates everything against a daily-updated CVE database. Built on Python 3.11+ with `httpx` and `asyncio`, it runs as a CLI tool, a Python library, or inside Celery workers with a consistent, automation-friendly output format.
+**Where Plecost differs from alternatives like WPScan:**
 
----
+- **No Ruby, no API key, no subscription.** Pure Python, ships with its own CVE database updated daily via GitHub Actions.
+- **Library-first design.** `from plecost import Scanner` works the same as the CLI — no subprocess wrapping needed.
+- **Fully async.** Built on `httpx` and `asyncio`; modules run in parallel across a dependency graph for maximum speed.
+- **Stable finding IDs.** Every finding has a permanent ID (`PC-CVE-CVE-2023-28121`, `PC-MCFG-009`) safe to track in ticketing systems and dashboards.
+- **SQLite or PostgreSQL.** Local SQLite by default; swap to PostgreSQL for shared team deployments.
 
-## Table of Contents
-
-- [Demo](#demo)
-- [Quick Start](#quick-start)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Basic Examples](#basic-examples)
-  - [Multi-Target Workflow](#multi-target-workflow)
-  - [All Flags](#all-flags)
-- [Environment Variables](#environment-variables)
-- [CLI Commands Reference](#cli-commands-reference)
-  - [plecost scan](#plecost-scan)
-  - [plecost update-db](#plecost-update-db)
-  - [plecost modules list](#plecost-modules-list)
-  - [plecost explain](#plecost-explain)
-- [CVE Database Management](#cve-database-management)
-  - [How the patch system works](#how-the-patch-system-works)
-- [Detection Modules](#detection-modules)
-- [Finding IDs](#finding-ids)
-- [Output Formats](#output-formats)
-- [Library Usage](#library-usage)
-- [Architecture](#architecture)
-- [Performance](#performance)
-- [Troubleshooting](#troubleshooting)
-- [Comparison](#comparison)
-- [License](#license)
-
----
-
-## Demo
-
-```
-$ plecost scan https://example.com
-
-  Plecost v4.0 — WordPress Security Scanner
-  Target: https://example.com
-  Started: 2026-04-12 09:00:00
-
-  [+] WordPress detected: 6.4.2
-  [+] WAF detected: Cloudflare
-
-  Plugins discovered (3)
-  ┌─────────────────────┬─────────┬──────────────────┐
-  │ Plugin              │ Version │ Status           │
-  ├─────────────────────┼─────────┼──────────────────┤
-  │ woocommerce         │ 8.2.1   │ Vulnerable       │
-  │ contact-form-7      │ 5.8     │ OK               │
-  │ elementor           │ 3.17.0  │ OK               │
-  └─────────────────────┴─────────┴──────────────────┘
-
-  Themes discovered (1)
-  ┌──────────────────┬─────────┬────────────┐
-  │ Theme            │ Version │ Status     │
-  ├──────────────────┼─────────┼────────────┤
-  │ twentytwentyfour │ 1.2     │ OK         │
-  └──────────────────┴─────────┴────────────┘
-
-  Findings (7)
-  ┌────────────────┬──────────────────────────────────────────┬──────────┐
-  │ ID             │ Title                                    │ Severity │
-  ├────────────────┼──────────────────────────────────────────┼──────────┤
-  │ PC-CVE-001     │ WooCommerce SQLi (CVE-2023-28121)        │ CRITICAL │
-  │ PC-MCFG-009    │ readme.html discloses WordPress version  │ LOW      │
-  │ PC-HDR-001     │ Missing Strict-Transport-Security        │ MEDIUM   │
-  │ PC-USR-001     │ User enumeration via REST API            │ MEDIUM   │
-  │ PC-XMLRPC-001  │ XML-RPC interface accessible             │ MEDIUM   │
-  │ PC-SSL-001     │ HTTP does not redirect to HTTPS          │ HIGH     │
-  │ PC-REST-001    │ REST API user data exposed               │ LOW      │
-  └────────────────┴──────────────────────────────────────────┴──────────┘
-
-  Summary: 1 Critical  1 High  3 Medium  2 Low
-  Duration: 4.2s
-```
-
----
 
 ## Quick Start
 
 ```bash
-# Install
 pip install plecost
 
-# Download the CVE database (first time)
+# Download the CVE database (first time only — takes a few seconds)
 plecost update-db
 
-# Run a scan
-plecost scan https://target.com
-
-# Authenticated scan with JSON output
-plecost scan https://target.com --user admin --password secret --output report.json
-
-# Stealth mode (random UA, passive checks only)
-plecost scan https://target.com --stealth
+# Scan a target
+plecost scan https://target.wordpress.com
 ```
 
----
+That's it. No account, no API key, no daemon running in the background.
 
-## Requirements
-
-- **Python 3.11 or later**
-- **pip** (or Docker, see [Installation](#installation))
-- SQLite3 (included in Python's standard library)
-- Internet access for CVE database updates (NVD API)
-
----
 
 ## Installation
 
-### pip
+**pip**
 
 ```bash
 pip install plecost
-pip install plecost[fast]    # includes uvloop for higher throughput
+pip install plecost[fast]      # adds uvloop for higher throughput
+pip install plecost[postgres]  # adds asyncpg for PostgreSQL support
 ```
 
-### From source
+**Docker**
+
+```bash
+docker run --rm ghcr.io/plecost/plecost scan https://target.com
+
+# Save JSON report to local directory
+docker run --rm -v $(pwd):/data ghcr.io/plecost/plecost scan https://target.com \
+  --output /data/report.json
+```
+
+**From source**
 
 ```bash
 git clone https://github.com/Plecost/plecost.git
 cd plecost
-pip install -e .
-pip install -e ".[dev]"      # include dev/test dependencies
+pip install -e ".[dev]"
 ```
 
-### Docker
+
+## CVE Database
+
+Plecost ships with a **local SQLite database** covering WordPress core, plugins, and themes. It lives at `~/.plecost/db/plecost.db` and is never sent to any external service during scans.
+
+**The database needs to be downloaded once before the first scan, and kept up to date thereafter.**
+
+### First-time setup
 
 ```bash
-docker run --rm ghcr.io/Plecost/plecost scan https://target.com
-
-# With proxy and JSON output saved locally
-docker run --rm -v $(pwd):/data ghcr.io/Plecost/plecost scan https://target.com \
-  --proxy http://host.docker.internal:8080 \
-  --output /data/report.json
+plecost update-db
 ```
 
----
+This downloads a pre-built snapshot from [plecost-db releases](https://github.com/Plecost/plecost-db/releases) (~10–50 MB). Subsequent runs only download the daily diff — typically under 100 KB.
 
-## Usage
+### Keeping it current
 
-### Basic Examples
+Run `update-db` regularly (weekly is fine for most use cases):
 
 ```bash
-# Scan with authentication
+plecost update-db
+```
+
+Plecost checks a SHA256 checksum before downloading anything. If nothing changed since your last run, no data is transferred.
+
+### How the update mechanism works
+
+The [plecost-db](https://github.com/Plecost/plecost-db) repository runs a GitHub Actions workflow daily at 02:00 UTC. It queries the [NVD API v2.0](https://nvd.nist.gov/developers/vulnerabilities) for all WordPress-related CVEs modified in the last 24 hours, applies Jaro-Winkler fuzzy matching to correlate CVE product names against ~50,000 known plugin/theme slugs, and publishes a small JSON patch file as a release asset.
+
+When you run `plecost update-db`, it:
+1. Downloads `index.json` from the `plecost-db` releases (64 bytes)
+2. Compares its SHA256 against the local copy
+3. Downloads only the missing patch files and applies them in order
+4. On first run, downloads `full.json` instead (complete history)
+
+| Run | What's downloaded | Typical size |
+|-----|-------------------|--------------|
+| First time | `full.json` (all CVEs) | 10–50 MB |
+| Daily update | today's patch | < 100 KB |
+| Already up to date | nothing (checksum match) | 64 bytes |
+
+### Custom database location
+
+```bash
+# SQLite at a custom path
+export PLECOST_DB_URL=sqlite:////data/plecost.db
+plecost update-db
+plecost scan https://target.com
+
+# PostgreSQL (shared team setup)
+pip install plecost[postgres]
+export PLECOST_DB_URL=postgresql+asyncpg://user:pass@host/plecost
+plecost update-db
+plecost scan https://target.com
+```
+
+
+## Scanning
+
+### Basic scan
+
+```
+$ plecost scan https://target.com
+
+  Plecost v4.0 — WordPress Security Scanner
+  Target: https://target.com
+
+  WordPress 6.4.2 detected  |  WAF: Cloudflare
+
+  Plugins (3)
+    woocommerce        8.2.1    VULNERABLE
+    contact-form-7     5.8      OK
+    elementor          3.17.0   OK
+
+  Findings (7)
+    PC-CVE-CVE-2023-28121   WooCommerce SQLi                       CRITICAL
+    PC-SSL-001              HTTP does not redirect to HTTPS         HIGH
+    PC-HDR-001              Missing Strict-Transport-Security       MEDIUM
+    PC-USR-001              User enumeration via REST API           MEDIUM
+    PC-XMLRPC-001           XML-RPC interface accessible            MEDIUM
+    PC-REST-001             REST API user data exposed              LOW
+    PC-MCFG-009             readme.html discloses WP version        LOW
+
+  Summary: 1 Critical  1 High  3 Medium  2 Low  |  Duration: 4.2s
+```
+
+### Common options
+
+```bash
+# Authenticated scan
 plecost scan https://target.com --user admin --password secret
 
-# Route through a proxy (Burp Suite, OWASP ZAP, SOCKS5)
+# Route traffic through Burp Suite or OWASP ZAP
 plecost scan https://target.com --proxy http://127.0.0.1:8080
-plecost scan https://target.com --proxy socks5://127.0.0.1:1080
 
-# Run only specific modules
+# Run only specific detection modules
 plecost scan https://target.com --modules fingerprint,plugins,cves
 
-# Skip modules you don't need
-plecost scan https://target.com --skip-modules content_analysis,waf
-
-# Aggressive mode (max concurrency: 50 parallel requests)
+# Aggressive mode — 50 parallel requests (use on internal targets)
 plecost scan https://target.com --aggressive
 
-# Stealth mode (random User-Agent, passive detection only, slower)
+# Stealth mode — random UA, passive detection only, slower
 plecost scan https://target.com --stealth
 
 # Save results as JSON
 plecost scan https://target.com --output report.json
 
-# Suppress low-severity findings (show HIGH and CRITICAL only)
-plecost scan https://target.com --quiet
-
-# Scan without verifying SSL certificate
-plecost scan https://target.com --no-verify-ssl
-
-# Force scan even if WordPress is not detected
-plecost scan https://target.com --force
-```
-
-### Multi-Target Workflow
-
-```bash
-# Scan a list of targets and save individual JSON reports
-while read url; do
-  plecost scan "$url" --output "reports/$(echo $url | tr '/:' '_').json" --quiet
-done < targets.txt
-```
-
-### All Flags
-
-| Flag | Description | Default | Env Var |
-|------|-------------|---------|---------|
-| `--concurrency N` | Number of parallel requests | 10 | — |
-| `--timeout N` | Request timeout in seconds | 10 | `PLECOST_TIMEOUT` |
-| `--proxy URL` | HTTP or SOCKS5 proxy URL | None | — |
-| `--user / -u` | WordPress username for authenticated scan | None | — |
-| `--password / -p` | WordPress password for authenticated scan | None | — |
-| `--modules` | Comma-separated list of modules to run | all | — |
-| `--skip-modules` | Comma-separated list of modules to skip | none | — |
-| `--stealth` | Random UA, slower pacing, passive checks only | False | — |
-| `--aggressive` | Max concurrency (50 parallel requests) | False | — |
-| `--output / -o` | Save JSON report to file | None | `PLECOST_OUTPUT` |
-| `--random-user-agent` | Rotate User-Agent on each request | False | — |
-| `--no-verify-ssl` | Skip SSL certificate verification | False | — |
-| `--force` | Continue scan even if WordPress is not detected | False | — |
-| `--quiet` | Show only HIGH and CRITICAL findings | False | — |
-
----
-
-## Environment Variables
-
-All key settings can be configured via environment variables, making Plecost easy to use in CI/CD pipelines, Docker Compose, and automation scripts.
-
-| Variable | Purpose | Used by | Default |
-|----------|---------|---------|---------|
-| `PLECOST_TIMEOUT` | Request timeout in seconds | `scan` | 10 |
-| `PLECOST_OUTPUT` | Output file path for JSON report | `scan` | — |
-| `PLECOST_DB_URL` | Database URL (SQLite or PostgreSQL) | `update-db` | `sqlite:///$HOME/.plecost/db/plecost.db` |
-| `GITHUB_TOKEN` | GitHub token to avoid download rate limiting | `update-db` | — |
-
-### Example: CI/CD pipeline
-
-```bash
-export NVD_API_KEY=your-nvd-api-key
-export PLECOST_DB_URL=sqlite:////data/plecost.db
-export PLECOST_OUTPUT=/reports/scan.json
-export PLECOST_TIMEOUT=30
-
-plecost update-db
+# Show only HIGH and CRITICAL findings
 plecost scan https://target.com --quiet
 ```
 
-### Example: Docker Compose
+### All scan flags
 
-```yaml
-services:
-  scanner:
-    image: ghcr.io/Plecost/plecost
-    environment:
-      - PLECOST_TIMEOUT=30
-      - PLECOST_OUTPUT=/reports/scan.json
-      - NVD_API_KEY=${NVD_API_KEY}
-    volumes:
-      - ./reports:/reports
-    command: scan https://target.com
-```
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--concurrency N` | Parallel requests | 10 |
+| `--timeout N` | Request timeout (seconds) | 10 |
+| `--proxy URL` | HTTP or SOCKS5 proxy | — |
+| `--user / -u` | WordPress username | — |
+| `--password / -p` | WordPress password | — |
+| `--modules` | Modules to run (comma-separated) | all |
+| `--skip-modules` | Modules to skip | — |
+| `--stealth` | Passive mode, random UA, slower pacing | off |
+| `--aggressive` | Max concurrency (50 requests) | off |
+| `--output / -o` | JSON output file | — |
+| `--no-verify-ssl` | Skip certificate verification | off |
+| `--force` | Scan even if WordPress not detected | off |
+| `--quiet` | Show only HIGH and CRITICAL findings | off |
 
----
-
-## CLI Commands Reference
-
-### plecost scan
-
-Scans a WordPress target and reports findings.
-
-```bash
-plecost scan https://target.com [OPTIONS]
-```
-
-See [All Flags](#all-flags) for the full option list.
-
-### plecost update-db
-
-Downloads the latest pre-built CVE database from GitHub releases. This is the recommended command for **end users** — fast, no NVD API access required.
-
-```bash
-plecost update-db [--db-url sqlite:///path/to/plecost.db] [--token GITHUB_TOKEN]
-```
-
-| Option | Description | Env Var |
-|--------|-------------|---------|
-| `--db-url` | Database destination URL | `PLECOST_DB_URL` |
-| `--token` | GitHub token (optional, avoids rate limiting) | `GITHUB_TOKEN` |
-
-### plecost modules list
-
-Lists all available detection modules with their names and dependency graph.
-
-```bash
-plecost modules list
-```
-
-### plecost explain
-
-Prints the full technical description, impact, and remediation steps for any finding ID.
-
-```bash
-plecost explain PC-XMLRPC-002
-plecost explain PC-CVE-CVE-2023-28121
-plecost explain PC-MCFG-009
-```
-
----
-
-## CVE Database Management
-
-Plecost ships with a local SQLite CVE database covering WordPress core, plugins, and themes. The database is stored at:
-
-```
-~/.plecost/db/plecost.db      (Linux / macOS)
-%USERPROFILE%\.plecost\db\plecost.db    (Windows)
-```
-
-### Which command to use?
-
-| Scenario | Command |
-|----------|---------|
-| First install / update as end user | `plecost update-db` |
-| Self-hosted or custom DB generation | [`plecost-db build-db`](https://github.com/Plecost/plecost-db) |
-| Daily CI/CD incremental update | [`plecost-db sync-db`](https://github.com/Plecost/plecost-db) |
-
-### How it works
-
-1. **`update-db`** — Downloads a pre-built, compressed database from the [latest GitHub release](https://github.com/Plecost/plecost-db/releases). Fast (~1 MB download, seconds to complete).
-
-2. **`plecost-db build-db`** — Queries the [NVD API v2.0](https://nvd.nist.gov/developers/vulnerabilities) for all `keywordSearch=wordpress` CVEs from the past N years. Parses CPE 2.3 entries, applies Jaro-Winkler fuzzy matching to correlate CVE product names against ~50,000 known plugin/theme slugs, and stores results in SQLite. Slow (30–60 min without API key). See [plecost-db](https://github.com/Plecost/plecost-db).
-
-3. **`plecost-db sync-db`** — Reads the `last_nvd_sync` timestamp from the database, fetches only CVEs modified since that date via `lastModStartDate`, and upserts new or updated records. Runs daily via GitHub Actions. See [plecost-db](https://github.com/Plecost/plecost-db).
-
-### How the patch system works
-
-Plecost uses an **incremental JSON patch system** instead of downloading a full SQLite database each day:
-
-| Run | What happens | Typical size |
-|-----|-------------|--------------|
-| First `update-db` | Downloads `full.json` with all historical CVEs | ~10–50 MB |
-| Subsequent `update-db` | Downloads only today's patch (new/modified CVEs) | <100 KB |
-| No changes | Compares checksum only, downloads nothing | 64 bytes |
-
-Each daily patch is a self-contained JSON file verified with SHA256 before being applied.
-For architecture details, see [`plecost-db/docs/cve-patch-system/`](https://github.com/Plecost/plecost-db/tree/main/docs/cve-patch-system).
-
-### Using PostgreSQL
-
-Plecost supports PostgreSQL for production or team deployments:
-
-```bash
-pip install plecost[postgres]
-
-plecost scan https://target.com --db-url postgresql+asyncpg://user:pass@host/plecost
-# or via env var:
-export PLECOST_DB_URL=postgresql+asyncpg://user:pass@host/plecost
-```
-
-To build the database into PostgreSQL, use [`plecost-db`](https://github.com/Plecost/plecost-db):
-
-```bash
-plecost-db build-db --db-url postgresql+asyncpg://user:pass@host/plecost
-```
-
----
 
 ## Detection Modules
 
-Plecost ships **15 independent detection modules** that run in parallel, with an explicit dependency graph for maximum throughput.
+Plecost runs **15 async modules** in parallel, wired through an explicit dependency graph. Modules without interdependencies run concurrently from the start; `cves` waits for `plugins` and `themes` to complete before correlating results against the local database.
 
-| Module | Description | Finding IDs |
-|--------|-------------|-------------|
-| `fingerprint` | WordPress version detection via meta tag, readme, RSS, feed, wp-login | PC-FP-001, PC-FP-002 |
-| `waf` | WAF/CDN detection: Cloudflare, Sucuri, Wordfence, Imperva, AWS WAF, Akamai, Fastly | PC-WAF-001 |
-| `plugins` | Plugin enumeration: passive HTML scan + brute-force against `readme.txt` | PC-PLG-NNN |
-| `themes` | Theme enumeration: passive + brute-force via `style.css` | PC-THM-001 |
-| `users` | User enumeration via REST API and author archive pages | PC-USR-001, PC-USR-002 |
-| `xmlrpc` | XML-RPC checks: access, `pingback.ping` (DoS vector), `system.listMethods` | PC-XMLRPC-001/002/003 |
-| `rest_api` | REST API exposure: link disclosure, oEmbed, CORS misconfiguration | PC-REST-001/002/003 |
-| `misconfigs` | 12 misconfiguration checks: `wp-config.php`, `.env`, `.git`, `debug.log`, etc. | PC-MCFG-001 to 012 |
-| `directory_listing` | Open directory listing in `wp-content/` subdirectories | PC-DIR-001 to 004 |
-| `http_headers` | Missing security headers: HSTS, CSP, X-Frame-Options, X-Content-Type, etc. | PC-HDR-001 to 008 |
-| `ssl_tls` | SSL/TLS hygiene: HTTP→HTTPS redirect, certificate validity, HSTS preload | PC-SSL-001/002/003 |
-| `debug_exposure` | `WP_DEBUG` active, PHP version disclosure via headers | PC-DBG-001, PC-DBG-003 |
-| `content_analysis` | Card skimming scripts, suspicious iframes, hardcoded API keys/secrets | PC-CNT-001/002/003 |
+| Module | What it checks | Finding IDs |
+|--------|----------------|-------------|
+| `fingerprint` | WordPress version (meta, readme, RSS, wp-login) | PC-FP-001/002 |
+| `waf` | WAF/CDN detection (Cloudflare, Sucuri, Wordfence, Imperva, AWS, Akamai, Fastly) | PC-WAF-001 |
+| `plugins` | Plugin enumeration — passive HTML + brute-force against `readme.txt` | PC-PLG-NNN |
+| `themes` | Theme detection via passive scan + `style.css` brute-force | PC-THM-001 |
+| `users` | User enumeration via REST API and author archive pages | PC-USR-001/002 |
+| `xmlrpc` | XML-RPC access, `pingback.ping` DoS vector, `system.listMethods` | PC-XMLRPC-001/002/003 |
+| `rest_api` | REST API link disclosure, oEmbed, CORS misconfiguration | PC-REST-001/002/003 |
+| `misconfigs` | 12 checks: `wp-config.php`, `.env`, `.git`, `debug.log`, directory traversal... | PC-MCFG-001–012 |
+| `directory_listing` | Open directory listing in `wp-content/` subdirs | PC-DIR-001–004 |
+| `http_headers` | Missing HSTS, CSP, X-Frame-Options, X-Content-Type, Referrer-Policy... | PC-HDR-001–008 |
+| `ssl_tls` | HTTP→HTTPS redirect, certificate validity, HSTS preload | PC-SSL-001/002/003 |
+| `debug_exposure` | Active `WP_DEBUG`, PHP version disclosure via response headers | PC-DBG-001/003 |
+| `content_analysis` | Card skimming scripts, suspicious iframes, hardcoded API keys | PC-CNT-001/002/003 |
 | `auth` | Authenticated checks: login verification, open user registration | PC-AUTH-001/002 |
-| `cves` | CVE correlation for core + plugins + themes against daily-updated local DB | PC-CVE-{CVE-ID} |
+| `cves` | CVE correlation for core + plugins + themes against local DB | PC-CVE-{CVE-ID} |
 
----
+Use `plecost explain <ID>` for full technical detail and remediation steps on any finding ID.
 
-## Finding IDs
-
-All finding IDs follow a stable, permanent naming convention. IDs will never be renamed or reassigned — safe to reference in dashboards, ticketing systems, and automation rules.
-
-| Prefix | Category | Examples |
-|--------|----------|---------|
-| `PC-FP-NNN` | Fingerprint / version disclosure | PC-FP-001 (meta tag), PC-FP-002 (readme.html) |
-| `PC-USR-NNN` | User enumeration | PC-USR-001 (REST API), PC-USR-002 (author archives) |
-| `PC-AUTH-NNN` | Authentication issues | PC-AUTH-001 (login verified), PC-AUTH-002 (open registration) |
-| `PC-XMLRPC-NNN` | XML-RPC exposure | PC-XMLRPC-001 (accessible), PC-XMLRPC-002 (pingback DoS) |
-| `PC-REST-NNN` | REST API exposure | PC-REST-001 to 003 |
-| `PC-CVE-{ID}` | CVE correlations | PC-CVE-CVE-2024-1234 |
-| `PC-MCFG-NNN` | Misconfigurations | PC-MCFG-001 (wp-config.php exposed) to PC-MCFG-012 |
-| `PC-DIR-NNN` | Directory listing | PC-DIR-001 to PC-DIR-004 |
-| `PC-HDR-NNN` | HTTP security headers | PC-HDR-001 (HSTS missing) to PC-HDR-008 (X-Powered-By) |
-| `PC-SSL-NNN` | SSL/TLS hygiene | PC-SSL-001 to PC-SSL-003 |
-| `PC-DBG-NNN` | Debug exposure | PC-DBG-001 (WP_DEBUG active), PC-DBG-003 (PHP version leak) |
-| `PC-CNT-NNN` | Malicious content | PC-CNT-001 (card skimmer), PC-CNT-002 (iframe), PC-CNT-003 (secrets) |
-| `PC-WAF-NNN` | WAF detection | PC-WAF-001 |
-
-Use `plecost explain <ID>` for full technical description and remediation steps for any finding.
-
----
 
 ## Output Formats
 
-### Terminal output (default)
+### Terminal (default)
 
 Rich-formatted tables with color-coded severities. Use `--quiet` to suppress LOW/MEDIUM findings.
 
-### JSON output
+### JSON
 
 ```bash
 plecost scan https://target.com --output report.json
 ```
 
-The JSON report follows this schema:
-
 ```json
 {
   "url": "https://target.com",
-  "scanned_at": "2026-04-12T09:00:00Z",
+  "scanned_at": "2026-04-13T09:00:00Z",
   "is_wordpress": true,
   "wordpress_version": "6.4.2",
   "waf_detected": "Cloudflare",
-  "plugins": [
-    { "slug": "woocommerce", "version": "8.2.1" }
-  ],
-  "themes": [
-    { "slug": "twentytwentyfour", "version": "1.2" }
-  ],
+  "plugins": [{ "slug": "woocommerce", "version": "8.2.1" }],
+  "themes": [{ "slug": "twentytwentyfour", "version": "1.2" }],
   "users": ["admin", "editor"],
   "findings": [
     {
@@ -460,60 +258,39 @@ The JSON report follows this schema:
       "module": "cves"
     }
   ],
-  "summary": {
-    "critical": 1,
-    "high": 1,
-    "medium": 3,
-    "low": 2
-  },
+  "summary": { "critical": 1, "high": 1, "medium": 3, "low": 2 },
   "duration_seconds": 4.2
 }
 ```
 
----
 
 ## Library Usage
 
-Plecost is designed as a first-class Python library for use in security automation pipelines, CI/CD gates, and vulnerability management platforms.
+Plecost is a first-class Python library. The same logic that powers the CLI is available as an importable API — no subprocess, no parsing CLI output.
 
-### Standalone Script
+### Standalone script
 
 ```python
 import asyncio
 from plecost import Scanner, ScanOptions
 
-async def scan():
+async def main():
     options = ScanOptions(
         url="https://target.com",
         concurrency=10,
         timeout=10,
-        proxy="http://127.0.0.1:8080",               # optional
-        modules=["fingerprint", "plugins", "cves"],   # None = all modules
-        skip_modules=[],
-        credentials=("admin", "secret"),              # optional
-        stealth=False,
-        aggressive=False,
+        modules=["fingerprint", "plugins", "cves"],  # None = all modules
     )
+    result = await Scanner(options).run()
 
-    scanner = Scanner(options)
-    result = await scanner.run()
-
-    print(f"WordPress: {result.is_wordpress}")
-    print(f"Version:   {result.wordpress_version}")
-    print(f"WAF:       {result.waf_detected}")
-    print(f"Plugins:   {len(result.plugins)}")
-    print(f"Users:     {len(result.users)}")
-
+    print(f"WordPress {result.wordpress_version}  |  WAF: {result.waf_detected}")
     for finding in result.findings:
         print(f"[{finding.severity.value}] {finding.id}: {finding.title}")
-        print(f"  Remediation: {finding.remediation}")
 
-    result.to_json("report.json")
-
-asyncio.run(scan())
+asyncio.run(main())
 ```
 
-### Celery Workers
+### Celery workers
 
 ```python
 from celery import Celery
@@ -528,153 +305,110 @@ def scan_wordpress(url: str) -> dict:
     result = asyncio.run(Scanner(opts).run())
     return {
         "url": result.url,
-        "is_wordpress": result.is_wordpress,
         "critical": result.summary.critical,
-        "high": result.summary.high,
         "findings": [f.id for f in result.findings],
     }
 ```
 
----
+
+## Environment Variables
+
+| Variable | Description | Used by |
+|----------|-------------|---------|
+| `PLECOST_DB_URL` | Database URL (SQLite or PostgreSQL) | `update-db`, `scan` |
+| `PLECOST_TIMEOUT` | Request timeout in seconds | `scan` |
+| `PLECOST_OUTPUT` | JSON output file path | `scan` |
+| `GITHUB_TOKEN` | GitHub token to avoid download rate limiting | `update-db` |
+
 
 ## Architecture
 
 ```
-CLI / Python API
+CLI  /  Python API
+        │
+        ▼
+   ScanOptions → ScanContext
+                     │
+                     ▼
+              Scheduler (async dependency graph)
+                     │
+      ┌──────────────┼──────────────────────────┐
+      ▼              ▼                           ▼
+ [fingerprint]    [waf]         [misconfigs, http_headers, ssl_tls ...]
       │
-      ▼
- ScanOptions → ScanContext
-                    │
-                    ▼
-               Scheduler (async task graph)
-                    │
-      ┌─────────────┼──────────────────────────┐
-      ▼             ▼                           ▼
-[fingerprint]    [waf]              (runs in parallel from start)
-      │
-      ├──────────┬──────────┬──────────┬──────────┬────────────┐
-      ▼          ▼          ▼          ▼          ▼            ▼
- [plugins]  [themes]   [users]   [xmlrpc]  [misconfigs]  [http_headers]
-      │          │          │          │          │            │
-      └────┬─────┘          └──────────┴──────────┴────────────┘
+      ├──────────┬──────────┬──────────┐
+      ▼          ▼          ▼          ▼
+ [plugins]  [themes]   [users]   [xmlrpc]
+      │          │
+      └────┬─────┘
            ▼
-        [cves]  (depends on plugins + themes results)
+        [cves]   ← correlates against local SQLite DB
            │
            ▼
-  [Terminal Reporter] / [JSON Reporter]
+  Terminal Reporter  /  JSON Reporter
 ```
 
-Each module is an independent async coroutine. The scheduler resolves dependencies and runs tasks at maximum parallelism — modules without interdependencies execute concurrently from the start.
+Modules without interdependencies run concurrently from the start. `cves` waits for `plugins` and `themes` to complete so it has a full list of installed software to match against the CVE database.
 
----
-
-## Performance
-
-Plecost is designed for speed. All network I/O is non-blocking, and the task graph runs modules at maximum concurrency.
-
-| Scenario | Concurrency | Avg. Duration |
-|----------|-------------|---------------|
-| Full scan, no WAF | 10 (default) | ~4–8s |
-| Full scan, Cloudflare CDN | 10 (default) | ~8–15s |
-| Aggressive mode | 50 | ~2–4s |
-| Stealth mode | 3 | ~20–40s |
-| Plugin brute-force (10k list) | 10 | ~90s |
-
-Throughput scales linearly with `--concurrency` up to the target's rate limits. Use `--aggressive` for internal targets or lab environments. If you encounter 429 responses, reduce concurrency with `--concurrency 3`.
-
----
 
 ## Troubleshooting
 
-### "CVE database not found"
+**"CVE database not found"**
 
-The local CVE database has not been downloaded yet. Run:
+The local database hasn't been downloaded yet:
 
 ```bash
 plecost update-db
 ```
 
-If you want to store the database in a custom location:
+**Target returns 429 (rate limiting)**
 
 ```bash
-plecost update-db --db-url sqlite:////path/to/custom/plecost.db
-# or:
-export PLECOST_DB_URL=sqlite:////path/to/custom/plecost.db
-plecost update-db
-```
-
-### Target returns 429 (rate limiting)
-
-Reduce concurrency:
-
-```bash
+# Reduce concurrency
 plecost scan https://target.com --concurrency 3
-```
 
-Or use stealth mode, which includes automatic pacing:
-
-```bash
+# Or use stealth mode (includes automatic pacing)
 plecost scan https://target.com --stealth
 ```
 
-### SSL certificate errors
-
-For testing environments with self-signed certificates:
+**SSL certificate errors**
 
 ```bash
 plecost scan https://target.com --no-verify-ssl
 ```
 
-> **Warning:** Only use `--no-verify-ssl` in controlled environments. Disabling certificate verification exposes you to man-in-the-middle attacks.
+> Only use `--no-verify-ssl` in controlled environments.
 
-### WordPress not detected
-
-If you know the target is WordPress but it's behind a WAF or custom setup:
+**WordPress not detected**
 
 ```bash
 plecost scan https://target.com --force
 ```
 
----
 
 ## Comparison
 
-| Feature | Plecost v4 | WPScan | Wordfence | ScanTower |
-|---------|-----------|--------|-----------|-----------|
-| Python library API | Yes | No | No | No |
-| Async (httpx) | Yes | No | No | No |
-| WAF detection (7 providers) | Yes | Yes | No | Yes |
-| Plugin brute-force | Yes | Yes | No | Yes |
-| CVE correlation (daily updates) | Yes | Yes (API key) | Yes | Yes |
-| Content / skimmer analysis | Yes | No | Yes | No |
-| Stable finding IDs | Yes | No | No | No |
-| Docker native | Yes | Yes | No | No |
-| Celery / library compatible | Yes | No | No | No |
-| No external API dependency | Yes | No | No | No |
-| PostgreSQL support | Yes | No | No | No |
+| Feature | Plecost v4 | WPScan | Wordfence |
+|---------|-----------|--------|-----------|
+| Python library API | Yes | No | No |
+| Async (httpx) | Yes | No | No |
+| No API key required | Yes | No (CVEs need API) | No |
+| WAF detection (7 providers) | Yes | Yes | No |
+| Plugin brute-force | Yes | Yes | No |
+| CVE correlation (daily updates) | Yes | Yes | Yes |
+| Content / skimmer analysis | Yes | No | Yes |
+| Stable finding IDs | Yes | No | No |
+| Docker native | Yes | Yes | No |
+| Celery / library compatible | Yes | No | No |
+| PostgreSQL support | Yes | No | No |
 
----
 
 ## License
 
-Plecost is distributed under the **[PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/)** — a standard, lawyer-drafted noncommercial license.
+Plecost is distributed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).
 
-**Free for:**
-- Personal security research and penetration testing
-- Internal corporate security audits (not resold)
-- Academic, educational, and public research use
-- Charitable and government organizations
-- Open source projects
+**Free for:** personal security research, internal corporate audits, academic and educational use, open source projects, charitable and government organizations.
 
-**Requires a commercial license for:**
-- Offering scanning as a service (SaaS, API)
-- Including Plecost in a commercial product or paid offering
-- Any use generating direct or indirect revenue
+**Requires a commercial license for:** scanning-as-a-service, inclusion in a commercial product, or any use generating direct or indirect revenue.
 
-For commercial licensing inquiries: **cr0hn@cr0hn.com**
-
-See [LICENSE](LICENSE) for full terms.
-
----
-
-**Author:** Dani (cr0hn) — [cr0hn@cr0hn.com](mailto:cr0hn@cr0hn.com)
+For commercial licensing: **cr0hn@cr0hn.com** (Dani) · **ffranz@mrlooquer.com** (Fran)
