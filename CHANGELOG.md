@@ -1,6 +1,19 @@
 ## [Unreleased] - 2026-04-14
 
 ### Added
+- `magecart` module: detects Magecart/card-skimming JavaScript on WooCommerce and WP eCommerce checkout pages via blocklist lookup (`PC-MGC-000` through `PC-MGC-004`)
+- `MagecartDomain` ORM model and `get_magecart_domains()` store query in `plecost/database/`
+- `MagecartInfo` dataclass in `plecost/models.py`; added `magecart` field to `ScanResult` and `ScanContext`
+- `download_magecart_domains()` in `plecost/database/downloader.py` for fetching blocklist from GitHub releases
+- `apply_magecart_patch()` in `plecost/database/patch_applier.py` for applying domain blocklist updates
+- 5 new finding IDs: `PC-MGC-000` (INFO), `PC-MGC-001` (CRITICAL), `PC-MGC-002` (CRITICAL), `PC-MGC-003` (HIGH), `PC-MGC-004` (MEDIUM)
+- Unit tests for `MagecartModule` (`tests/unit/test_module_magecart.py`): 14 tests covering `_should_run`, URL generation, detection per category, summary emission, graceful 404 handling, inline/same-domain script filtering, and store call verification
+- DB-layer tests for `MagecartDomain` store queries (`tests/unit/test_database_magecart.py`): active domain matching, empty-list guard, soft-delete exclusion
+- Contract test update: `PC-MGC-000` through `PC-MGC-004` added to `KNOWN_FINDING_IDS` in `tests/contract/test_finding_ids.py`
+
+## [Unreleased] - 2026-04-14 (magecart module implementation)
+
+### Added
 - New `magecart` security module (`plecost/modules/magecart.py`) detecting Magecart / card-skimming JavaScript on WooCommerce and WP eCommerce checkout pages
 - Scans `/checkout`, `/cart`, `/?pagename=checkout`, `/?pagename=cart` via passive GET requests
 - Extracts external script `src` attributes and checks domains against the local CVE database blocklist
