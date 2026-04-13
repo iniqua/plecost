@@ -56,3 +56,13 @@ plecost.egg-info/
 
 # Hypothesis testing framework
 .hypothesis/
+
+# Test and type checking caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Superpowers / Claude Code planning files
+docs/superpowers/
