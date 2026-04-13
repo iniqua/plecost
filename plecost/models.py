@@ -89,6 +89,14 @@ class WooCommerceInfo:
 
 
 @dataclass
+class WPECommerceInfo:
+    detected: bool
+    version: str | None
+    active_gateways: list[str]   # e.g. ["chronopay"]
+    checks_run: list[str]        # e.g. ["readme", "dir_listing", "cve_sqli"]
+
+
+@dataclass
 class ScanResult:
     scan_id: str
     url: str
@@ -104,6 +112,7 @@ class ScanResult:
     summary: ScanSummary
     blocked: bool = False
     woocommerce: WooCommerceInfo | None = None
+    wp_ecommerce: WPECommerceInfo | None = None
 
     def to_json(self, path: str) -> None:
         def default(obj: Any) -> Any:

@@ -22,6 +22,7 @@ from plecost.modules.debug_exposure import DebugExposureModule
 from plecost.modules.content_analysis import ContentAnalysisModule
 from plecost.modules.auth import AuthModule
 from plecost.modules.woocommerce import WooCommerceModule
+from plecost.modules.wp_ecommerce import WPECommerceModule
 from plecost.modules.cves import CVEsModule
 from plecost.modules.base import ScanModule
 from plecost.models import Finding
@@ -121,6 +122,7 @@ class Scanner:
             HTTPHeadersModule(), SSLTLSModule(),
             DebugExposureModule(), ContentAnalysisModule(), AuthModule(),
             WooCommerceModule(),
+            WPECommerceModule(),
         ]
         if cve_mod:
             modules.append(cve_mod)
@@ -143,6 +145,7 @@ class Scanner:
             waf_detected=ctx.waf_detected, findings=ctx.findings,
             summary=_build_summary(ctx.findings),
             woocommerce=ctx.woocommerce,
+            wp_ecommerce=ctx.wp_ecommerce,
         )
 
     async def _check_access(self, ctx: ScanContext, http: PlecostHTTPClient) -> bool:

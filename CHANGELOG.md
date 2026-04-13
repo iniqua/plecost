@@ -1,3 +1,15 @@
+## [4.2.0] - 2026-04-13
+
+### Added
+- New `wp_ecommerce` security module detecting misconfigurations and vulnerabilities in WP eCommerce (wp-e-commerce) plugin
+- 13 new finding IDs: PC-WPEC-000 through PC-WPEC-010, PC-WPEC-020, PC-WPEC-021
+- Passive checks: plugin directory listing, uploads directory exposure, digital downloads directory exposure, admin script exposure (db-backup.php, display-log.php), ChronoPay gateway detection and callback endpoint check
+- Semi-active checks (--module-option wpec:mode=semi-active): CVE-2024-1514 (ChronoPay SQL Injection) and CVE-2026-1235 (PHP Object Injection) detection
+- PC-WPEC-003: always-emitted finding flagging WP eCommerce as abandoned since 2020 with unpatched CVEs
+- `wp_ecommerce` JSON section in scan output with version, active_gateways, and checks_run
+
+---
+
 ## [4.1.0] — 2026-04-13
 
 ### Added

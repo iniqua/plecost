@@ -25,6 +25,10 @@ KNOWN_FINDING_IDS = [
     "PC-WC-008", "PC-WC-009", "PC-WC-010", "PC-WC-011",
     "PC-WC-012", "PC-WC-013",
     "PC-WC-020", "PC-WC-021",
+    "PC-WPEC-000", "PC-WPEC-001", "PC-WPEC-002", "PC-WPEC-003",
+    "PC-WPEC-004", "PC-WPEC-005", "PC-WPEC-006", "PC-WPEC-007",
+    "PC-WPEC-008", "PC-WPEC-009", "PC-WPEC-010",
+    "PC-WPEC-020", "PC-WPEC-021",
 ]
 
 _ID_PATTERN = re.compile(r'^PC-[A-Z]+-\d{3}$')
