@@ -6,7 +6,7 @@ from packaging.version import Version, InvalidVersion
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
 
-from plecost.database.models import NormalizedVuln, PluginsWordlist, RejectedCve, ThemesWordlist
+from plecost.database.models import NormalizedVuln, PluginsWordlist, RejectedCve, ThemesWordlist, MagecartDomain
 
 
 @dataclass
@@ -157,4 +157,17 @@ class CVEStore:
             if top_n is not None:
                 q = q.limit(top_n)
             result = await session.execute(q)
+            return list(result.scalars().all())
+
+    async def get_magecart_domains(self, domains: list[str]) -> list["MagecartDomain"]:
+        """Return MagecartDomain rows matching the given domains (active only)."""
+        if not domains:
+            return []
+        async with self._sf() as session:
+            result = await session.execute(
+                select(MagecartDomain).where(
+                    MagecartDomain.domain.in_(domains),
+                    MagecartDomain.is_active == True,  # noqa: E712
+                )
+            )
             return list(result.scalars().all())

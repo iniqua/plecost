@@ -6,12 +6,57 @@ from typing import Any
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
-from plecost.database.models import NormalizedVuln, RejectedCve, DbMetadata
+from plecost.database.models import NormalizedVuln, RejectedCve, DbMetadata, MagecartDomain
 
 METADATA_KEY_LAST_PATCH = "last_patch_date"
 UPSERT_BATCH_SIZE = 2_000
 
 logger = logging.getLogger(__name__)
+
+
+async def apply_magecart_patch(
+    patch_data: dict[str, Any], sf: async_sessionmaker[AsyncSession]
+) -> tuple[int, int]:
+    """
+    Apply a magecart-domains.json patch to the local database.
+    Returns (upserted_count, deleted_count).
+    Patch format: {"upserts": [...], "deletes": []}
+    """
+    upserts: list[dict[str, Any]] = patch_data.get("upserts", [])
+    deletes: list[str] = patch_data.get("deletes", [])
+
+    async with sf() as session:
+        # Upserts
+        upserted = 0
+        for record in upserts:
+            existing = await session.get(MagecartDomain, record["domain"])
+            if existing:
+                existing.category = record.get("category", existing.category)
+                existing.source = record.get("source", existing.source)
+                existing.added_date = record.get("added_date", existing.added_date)
+                existing.is_active = record.get("is_active", existing.is_active)
+            else:
+                session.add(MagecartDomain(
+                    domain=record["domain"],
+                    category=record.get("category", "magecart"),
+                    source=record.get("source", ""),
+                    added_date=record.get("added_date", ""),
+                    is_active=record.get("is_active", True),
+                ))
+            upserted += 1
+
+        # Soft-deletes: set is_active=False
+        deleted = 0
+        for domain in deletes:
+            row = await session.get(MagecartDomain, domain)
+            if row:
+                row.is_active = False
+                deleted += 1
+
+        await session.commit()
+
+    logger.info("Magecart patch applied: %d upserted, %d soft-deleted", upserted, deleted)
+    return upserted, deleted
 
 
 async def apply_patch(patch_data: dict[str, Any], sf: async_sessionmaker[AsyncSession]) -> tuple[int, int]:

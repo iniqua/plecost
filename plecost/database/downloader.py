@@ -13,6 +13,8 @@ INDEX_URL = f"{BASE_URL}/index.json"
 INDEX_CHECKSUM_URL = f"{BASE_URL}/index.checksum"
 FULL_JSON_URL = f"{BASE_URL}/full.json"
 FULL_CHECKSUM_URL = f"{BASE_URL}/full.checksum"
+MAGECART_DOMAINS_URL = f"{BASE_URL}/magecart-domains.json"
+MAGECART_DOMAINS_CHECKSUM_URL = f"{BASE_URL}/magecart-domains.checksum"
 
 
 def _sha256_file(path: Path) -> str:
@@ -99,6 +101,27 @@ def _make_headers(token: str | None) -> dict[str, str]:
     if token:
         headers["Authorization"] = f"Bearer {token}"
     return headers
+
+
+async def download_magecart_domains(token: str | None = None) -> dict[str, object]:
+    """Download magecart-domains.json and verify its SHA256. Returns parsed JSON."""
+    headers = _make_headers(token)
+    async with httpx.AsyncClient(timeout=60, follow_redirects=True, headers=headers) as client:
+        # Fetch checksum first
+        checksum_data = await _fetch_bytes(client, MAGECART_DOMAINS_CHECKSUM_URL)
+        expected_sha256 = checksum_data.decode().strip().split()[0]
+
+        # Fetch JSON
+        data = await _fetch_bytes(client, MAGECART_DOMAINS_URL)
+
+    actual = _sha256_bytes(data)
+    if actual != expected_sha256:
+        raise ValueError(
+            f"SHA256 mismatch for magecart-domains.json: expected {expected_sha256}, got {actual}"
+        )
+
+    result: dict[str, object] = json.loads(data)
+    return result
 
 
 # Legacy function kept for backwards compatibility

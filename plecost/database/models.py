@@ -66,3 +66,14 @@ class RejectedCve(Base):
     cve_id: Mapped[str] = mapped_column(String(30), primary_key=True)
     reason: Mapped[str] = mapped_column(String(50), default="deleted")  # "deleted", "disputed", "false_positive"
     rejected_at: Mapped[str] = mapped_column(String(30), default="")
+
+
+class MagecartDomain(Base):
+    """Known Magecart/skimming domains for eCommerce scan detection."""
+    __tablename__ = "magecart_domains"
+
+    domain: Mapped[str] = mapped_column(String(255), primary_key=True)
+    category: Mapped[str] = mapped_column(String(50), default="magecart")  # "magecart" | "dropper" | "exfiltrator"
+    source: Mapped[str] = mapped_column(String(255), default="")   # Origin of the IOC
+    added_date: Mapped[str] = mapped_column(String(30), default="")  # ISO date string
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
