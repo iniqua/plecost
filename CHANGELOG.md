@@ -1,3 +1,8 @@
+## [Unreleased] - 2026-04-13
+
+### Added
+- 8 new unit tests for `FingerprintModule` covering `_try_feed()`, `_try_rest_api()`, and `_try_wp_paths()` (normal server and WAF blanket scenarios)
+
 ## [4.2.0] - 2026-04-13
 
 ### Added
