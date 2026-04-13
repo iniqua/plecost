@@ -5,6 +5,9 @@ on:
     branches: [main]
     tags: ['v*.*.*']
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   push_to_registry:
     name: Push Docker image to GHCR

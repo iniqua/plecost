@@ -36,8 +36,6 @@ Plecost v4.0 detects vulnerabilities in WordPress core, plugins, and themes — 
 - [CLI Commands Reference](#cli-commands-reference)
   - [plecost scan](#plecost-scan)
   - [plecost update-db](#plecost-update-db)
-  - [plecost build-db](#plecost-build-db)
-  - [plecost sync-db](#plecost-sync-db)
   - [plecost modules list](#plecost-modules-list)
   - [plecost explain](#plecost-explain)
 - [CVE Database Management](#cve-database-management)
@@ -144,7 +142,7 @@ pip install plecost[fast]    # includes uvloop for higher throughput
 
 ```bash
 git clone https://github.com/Plecost/plecost.git
-cd plecost/src
+cd plecost
 pip install -e .
 pip install -e ".[dev]"      # include dev/test dependencies
 ```
@@ -237,8 +235,7 @@ All key settings can be configured via environment variables, making Plecost eas
 |----------|---------|---------|---------|
 | `PLECOST_TIMEOUT` | Request timeout in seconds | `scan` | 10 |
 | `PLECOST_OUTPUT` | Output file path for JSON report | `scan` | — |
-| `PLECOST_DB_URL` | Database URL (SQLite or PostgreSQL) | `update-db`, `build-db`, `sync-db` | `sqlite:///$HOME/.plecost/db/plecost.db` |
-| `NVD_API_KEY` | NVD API key for higher rate limits (free at nvd.nist.gov) | `build-db`, `sync-db` | — |
+| `PLECOST_DB_URL` | Database URL (SQLite or PostgreSQL) | `update-db` | `sqlite:///$HOME/.plecost/db/plecost.db` |
 | `GITHUB_TOKEN` | GitHub token to avoid download rate limiting | `update-db` | — |
 
 ### Example: CI/CD pipeline
@@ -295,35 +292,6 @@ plecost update-db [--db-url sqlite:///path/to/plecost.db] [--token GITHUB_TOKEN]
 | `--db-url` | Database destination URL | `PLECOST_DB_URL` |
 | `--token` | GitHub token (optional, avoids rate limiting) | `GITHUB_TOKEN` |
 
-### plecost build-db
-
-Builds the CVE database from scratch by querying the NVD API. Downloads up to 5 years of vulnerability history. Intended for **maintainers** and self-hosted setups.
-
-```bash
-plecost build-db [--db-url sqlite:///path/to/plecost.db] [--years 5] [--nvd-key API_KEY]
-```
-
-| Option | Description | Env Var | Default |
-|--------|-------------|---------|---------|
-| `--db-url` | Database destination URL | `PLECOST_DB_URL` | `~/.plecost/db/plecost.db` |
-| `--years` | Years of NVD history to download | — | 5 |
-| `--nvd-key` | NVD API key for higher rate limits | `NVD_API_KEY` | — |
-
-> **Note:** Without an NVD API key, requests are rate-limited to 1 per 6 seconds. A full 5-year build takes 30–60 minutes. Get a free key at [nvd.nist.gov/developers/request-an-api-key](https://nvd.nist.gov/developers/request-an-api-key).
-
-### plecost sync-db
-
-Applies an incremental NVD update — fetches only CVEs published or modified since the last sync. Used by the **daily GitHub Actions workflow** to keep the distributed database current.
-
-```bash
-plecost sync-db [--db-url sqlite:///path/to/plecost.db] [--nvd-key API_KEY]
-```
-
-| Option | Description | Env Var |
-|--------|-------------|---------|
-| `--db-url` | Database to update | `PLECOST_DB_URL` |
-| `--nvd-key` | NVD API key | `NVD_API_KEY` |
-
 ### plecost modules list
 
 Lists all available detection modules with their names and dependency graph.
@@ -358,16 +326,16 @@ Plecost ships with a local SQLite CVE database covering WordPress core, plugins,
 | Scenario | Command |
 |----------|---------|
 | First install / update as end user | `plecost update-db` |
-| Self-hosted or custom DB location | `plecost build-db` |
-| Daily CI/CD incremental update | `plecost sync-db` |
+| Self-hosted or custom DB generation | [`plecost-db build-db`](https://github.com/Plecost/plecost-db) |
+| Daily CI/CD incremental update | [`plecost-db sync-db`](https://github.com/Plecost/plecost-db) |
 
 ### How it works
 
-1. **`update-db`** — Downloads a pre-built, compressed database from the [latest GitHub release](https://github.com/Plecost/plecost/releases). Fast (~1 MB download, seconds to complete).
+1. **`update-db`** — Downloads a pre-built, compressed database from the [latest GitHub release](https://github.com/Plecost/plecost-db/releases). Fast (~1 MB download, seconds to complete).
 
-2. **`build-db`** — Queries the [NVD API v2.0](https://nvd.nist.gov/developers/vulnerabilities) for all `keywordSearch=wordpress` CVEs from the past N years. Parses CPE 2.3 entries, applies Jaro-Winkler fuzzy matching to correlate CVE product names against ~50,000 known plugin/theme slugs, and stores results in SQLite. Slow (30–60 min without API key).
+2. **`plecost-db build-db`** — Queries the [NVD API v2.0](https://nvd.nist.gov/developers/vulnerabilities) for all `keywordSearch=wordpress` CVEs from the past N years. Parses CPE 2.3 entries, applies Jaro-Winkler fuzzy matching to correlate CVE product names against ~50,000 known plugin/theme slugs, and stores results in SQLite. Slow (30–60 min without API key). See [plecost-db](https://github.com/Plecost/plecost-db).
 
-3. **`sync-db`** — Reads the `last_nvd_sync` timestamp from the database, fetches only CVEs modified since that date via `lastModStartDate`, and upserts new or updated records. Runs daily via GitHub Actions.
+3. **`plecost-db sync-db`** — Reads the `last_nvd_sync` timestamp from the database, fetches only CVEs modified since that date via `lastModStartDate`, and upserts new or updated records. Runs daily via GitHub Actions. See [plecost-db](https://github.com/Plecost/plecost-db).
 
 ### How the patch system works
 
@@ -380,7 +348,7 @@ Plecost uses an **incremental JSON patch system** instead of downloading a full 
 | No changes | Compares checksum only, downloads nothing | 64 bytes |
 
 Each daily patch is a self-contained JSON file verified with SHA256 before being applied.
-For architecture details, see [`docs/cve-patch-system/`](docs/cve-patch-system/README.md).
+For architecture details, see [`plecost-db/docs/cve-patch-system/`](https://github.com/Plecost/plecost-db/tree/main/docs/cve-patch-system).
 
 ### Using PostgreSQL
 
@@ -389,10 +357,15 @@ Plecost supports PostgreSQL for production or team deployments:
 ```bash
 pip install plecost[postgres]
 
-plecost build-db --db-url postgresql+asyncpg://user:pass@host/plecost
 plecost scan https://target.com --db-url postgresql+asyncpg://user:pass@host/plecost
 # or via env var:
 export PLECOST_DB_URL=postgresql+asyncpg://user:pass@host/plecost
+```
+
+To build the database into PostgreSQL, use [`plecost-db`](https://github.com/Plecost/plecost-db):
+
+```bash
+plecost-db build-db --db-url postgresql+asyncpg://user:pass@host/plecost
 ```
 
 ---
@@ -660,17 +633,6 @@ If you know the target is WordPress but it's behind a WAF or custom setup:
 
 ```bash
 plecost scan https://target.com --force
-```
-
-### NVD API rate limiting during `build-db`
-
-Without an API key, NVD allows 1 request per 6 seconds. Get a free key at [nvd.nist.gov/developers/request-an-api-key](https://nvd.nist.gov/developers/request-an-api-key) to increase the limit to ~50 req/30s:
-
-```bash
-plecost build-db --nvd-key YOUR_API_KEY
-# or:
-export NVD_API_KEY=YOUR_API_KEY
-plecost build-db
 ```
 
 ---
