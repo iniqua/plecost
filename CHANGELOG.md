@@ -1,3 +1,21 @@
+## 2026-04-13 — README: remove build-db/sync-db sections, fix CVE DB refs, update workflows
+
+### Changed
+- `README.md`: removed `build-db` and `sync-db` entries from Table of Contents
+- `README.md`: updated Environment Variables table — dropped `NVD_API_KEY` row, narrowed `PLECOST_DB_URL` scope to `update-db`
+- `README.md`: removed CLI Reference sections for `plecost build-db` and `plecost sync-db`
+- `README.md`: updated "Which command to use?" table to reference `plecost-db` repo
+- `README.md`: updated "How it works" — `update-db` release URL points to `Plecost/plecost-db`, items 2/3 reference `plecost-db` commands with repo links
+- `README.md`: updated `docs/cve-patch-system/` link to `https://github.com/Plecost/plecost-db/tree/main/docs/cve-patch-system`
+- `README.md`: updated "Using PostgreSQL" section — removed `build-db` command, added `plecost-db build-db` block
+- `README.md`: removed "NVD API rate limiting during build-db" troubleshooting section
+- `README.md`: fixed from-source install path (`cd plecost` instead of `cd plecost/src`)
+- `.github/workflows/ci.yml`: removed `v3.0.0` from push branch triggers; added `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`
+- `.github/workflows/docker-publish.yml`: added `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`
+- `.github/workflows/pypi-publish.yml`: added `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`
+
+---
+
 ## 2026-04-13 — Eliminar build-db/sync-db, mover módulos/workflows/docs a plecost-db
 
 ### Removed
