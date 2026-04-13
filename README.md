@@ -225,6 +225,7 @@ Plecost runs **16 async modules** in parallel, wired through an explicit depende
 | `auth` | Authenticated checks: login verification, open user registration | PC-AUTH-001/002 |
 | `cves` | CVE correlation for core + plugins + themes against local DB | PC-CVE-{CVE-ID} |
 | `woocommerce` | WooCommerce-specific security checks (see below) | PC-WC-000–021 |
+| `wp_ecommerce` | WP eCommerce-specific security checks (see below) | PC-WPEC-000–021 |
 
 Use `plecost explain <ID>` for full technical detail and remediation steps on any finding ID.
 
@@ -278,6 +279,50 @@ When WooCommerce is detected, the scan result includes a dedicated `woocommerce`
 ```
 
 
+## WP eCommerce Security
+
+The `wp_ecommerce` module performs dedicated security checks for the **WP eCommerce** (wp-e-commerce) plugin. It runs automatically when WP eCommerce is detected.
+
+> **Important:** WP eCommerce has been abandoned since 2020 (last version: 3.15.1). All current installations are vulnerable to unpatched CVEs. PC-WPEC-003 is always emitted when the plugin is detected.
+
+### Passive checks (always on)
+
+- **Fingerprinting** — detects version via `readme.txt`, active payment gateways (ChronoPay)
+- **Directory exposure** — plugin directory listing, `uploads/wpsc/`, `uploads/wpsc/digital/` (digital downloads)
+- **Admin scripts** — direct access to `wpsc-admin/db-backup.php` and `wpsc-admin/display-log.php`
+- **ChronoPay endpoint** — callback endpoint accessibility check
+
+### Semi-active checks (opt-in)
+
+Enable explicitly:
+
+```bash
+plecost scan https://target.com --module-option wpec:mode=semi-active
+```
+
+| Check | CVE | CVSS |
+|-------|-----|------|
+| ChronoPay SQL Injection | CVE-2024-1514 | 9.8 Critical |
+| PHP Object Injection via AJAX | CVE-2026-1235 | 8.1 High |
+
+Detection is **boolean-only** (SQL error strings, deserialization patterns) — no time-based probes.
+
+### WP eCommerce JSON output
+
+When WP eCommerce is detected, the scan result includes a dedicated `wp_ecommerce` section:
+
+```json
+{
+  "wp_ecommerce": {
+    "detected": true,
+    "version": "3.15.1",
+    "active_gateways": ["chronopay"],
+    "checks_run": ["readme", "directories", "sensitive_files", "chronopay_endpoint"]
+  }
+}
+```
+
+
 ## Output Formats
 
 ### Terminal (default)
@@ -322,7 +367,8 @@ plecost scan https://target.com --output report.json
     "version": "8.2.1",
     "active_plugins": ["core", "payments", "blocks"],
     "api_namespaces": ["wc/store/v1", "wc/v3"]
-  }
+  },
+  "wp_ecommerce": null
 }
 ```
 
