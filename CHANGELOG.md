@@ -1,3 +1,14 @@
+## [Unreleased] - 2026-04-14
+
+### Added
+- New `magecart` security module (`plecost/modules/magecart.py`) detecting Magecart / card-skimming JavaScript on WooCommerce and WP eCommerce checkout pages
+- Scans `/checkout`, `/cart`, `/?pagename=checkout`, `/?pagename=cart` via passive GET requests
+- Extracts external script `src` attributes and checks domains against the local CVE database blocklist
+- Finding IDs: PC-MGC-000 (INFO summary), PC-MGC-001 (CRITICAL, Magecart domain on checkout), PC-MGC-002 (CRITICAL, dropper on checkout), PC-MGC-003 (HIGH, exfiltrator on checkout), PC-MGC-004 (MEDIUM, known domain on non-checkout page)
+- Severity mapping supports three domain categories: `magecart`, `dropper`, `exfiltrator`
+- `ctx.magecart` populated with `MagecartInfo` (detected, pages_scanned, scripts_analyzed, malicious_domains)
+- Module only runs when WooCommerce or WP eCommerce is detected (`depends_on: fingerprint, woocommerce, wp_ecommerce`)
+
 ## [Unreleased] - 2026-04-13
 
 ### Added
