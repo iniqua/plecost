@@ -1,3 +1,19 @@
+## 2026-04-13 — Eliminar build-db/sync-db, mover módulos/workflows/docs a plecost-db
+
+### Removed
+- `plecost/cli.py`: eliminados comandos `build-db` y `sync-db` del CLI
+- `plecost/database/updater.py`: módulo de generación inicial de BD (movido a plecost-db)
+- `plecost/database/incremental.py`: módulo de sincronización incremental (movido a plecost-db)
+- `tests/unit/test_database_updater.py`, `tests/unit/test_database_incremental.py`, `tests/integration/test_database_updater.py`
+- `.github/workflows/update-cve-db.yml`, `.github/workflows/update-databases.yml` (movidos a plecost-db)
+- `docs/cve-patch-system/` y `docs/cve-database-architecture-decision.md` (movidos a plecost-db)
+
+### Changed
+- `plecost/database/downloader.py`: `GITHUB_REPO` apunta ahora a `Plecost/plecost-db`
+- `tests/unit/test_database_downloader.py`: URLs actualizadas a `Plecost/plecost-db`
+
+---
+
 ## 2026-04-12 — Add tests for patch_applier (13 tests, 0% → coverage)
 
 ### Added
