@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 570" width="780" height="570">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#8b949e"/>
+    </marker>
+    <style>
+      .orch  { fill:#ddf4ff; stroke:#0969da; stroke-width:1.5 }
+      .mod   { fill:#f6f8fa; stroke:#d0d7de; stroke-width:1.5 }
+      .cve   { fill:#fff8c5; stroke:#9a6700; stroke-width:1.5 }
+      .rep   { fill:#dafbe1; stroke:#1a7f37; stroke-width:1.5 }
+      .edge  { stroke:#8b949e; stroke-width:1.5; fill:none }
+      .arr   { stroke:#8b949e; stroke-width:1.5; fill:none; marker-end:url(#arr) }
+      .t1    { font:600 13px system-ui,sans-serif; fill:#0550ae }
+      .t1s   { font:11px system-ui,sans-serif; fill:#57606a }
+      .t2    { font:12px ui-monospace,monospace; fill:#1f2328 }
+      .t2b   { font:600 12px ui-monospace,monospace; fill:#1f2328 }
+      .tcve  { font:600 12px ui-monospace,monospace; fill:#633500 }
+      .trep  { font:600 12px system-ui,sans-serif; fill:#1a7f37 }
+      .tnote { font:italic 11px system-ui,sans-serif; fill:#57606a }
+    </style>
+  </defs>
+
+  <rect width="780" height="570" fill="#ffffff" rx="10"/>
+
+  <!-- ─── Row 1: CLI / Python API ─── -->
+  <rect class="orch" x="260" y="20" width="260" height="36" rx="6"/>
+  <text class="t1" x="390" y="42" text-anchor="middle">CLI  /  Python API</text>
+
+  <line class="arr" x1="390" y1="56" x2="390" y2="90"/>
+
+  <!-- ─── Row 2: ScanOptions ─── -->
+  <rect class="orch" x="225" y="92" width="330" height="36" rx="6"/>
+  <text class="t1" x="390" y="114" text-anchor="middle">ScanOptions  →  ScanContext</text>
+
+  <line class="arr" x1="390" y1="128" x2="390" y2="162"/>
+
+  <!-- ─── Row 3: Scheduler ─── -->
+  <rect class="orch" x="165" y="164" width="450" height="44" rx="6"/>
+  <text class="t1" x="390" y="184" text-anchor="middle">Scheduler</text>
+  <text class="t1s" x="390" y="200" text-anchor="middle">async dependency graph — modules run at max parallelism</text>
+
+  <!-- Branch lines from Scheduler to Row 4 -->
+  <!-- Left branch → fingerprint (center x=135) -->
+  <polyline class="edge" points="255,208 255,232 135,232"/>
+  <line class="arr" x1="135" y1="232" x2="135" y2="258"/>
+
+  <!-- Center branch → waf (center x=390) -->
+  <line class="arr" x1="390" y1="208" x2="390" y2="258"/>
+
+  <!-- Right branch → misc group (center x=628) -->
+  <polyline class="edge" points="525,208 525,232 628,232"/>
+  <line class="arr" x1="628" y1="232" x2="628" y2="258"/>
+
+  <!-- ─── Row 4: Parallel top-level modules ─── -->
+
+  <!-- [fingerprint] center x=135 -->
+  <rect class="mod" x="68" y="258" width="134" height="34" rx="5"/>
+  <text class="t2b" x="135" y="279" text-anchor="middle">fingerprint</text>
+
+  <!-- [waf] center x=390 -->
+  <rect class="mod" x="345" y="258" width="90" height="34" rx="5"/>
+  <text class="t2" x="390" y="279" text-anchor="middle">waf</text>
+
+  <!-- [misconfigs · http_headers · ssl_tls · debug_exposure · content_analysis · auth] center x=628 -->
+  <rect class="mod" x="448" y="246" width="304" height="58" rx="5"/>
+  <text class="t2" x="600" y="268" text-anchor="middle">misconfigs  ·  http_headers</text>
+  <text class="t2" x="600" y="284" text-anchor="middle">ssl_tls  ·  debug_exposure</text>
+  <text class="t2" x="600" y="300" text-anchor="middle">content_analysis  ·  auth</text>
+
+  <!-- Branch lines from fingerprint to Row 5 -->
+  <!-- fingerprint bottom center: (135, 292) -->
+  <!-- Horizontal bar at y=316 connecting all four children -->
+  <line class="edge" x1="135" y1="292" x2="135" y2="316"/>
+  <line class="edge" x1="42"  y1="316" x2="330" y2="316"/>
+  <!-- Drops to each child -->
+  <line class="arr" x1="42"  y1="316" x2="42"  y2="346"/>
+  <line class="arr" x1="140" y1="316" x2="140" y2="346"/>
+  <line class="arr" x1="235" y1="316" x2="235" y2="346"/>
+  <line class="arr" x1="330" y1="316" x2="330" y2="346"/>
+
+  <!-- ─── Row 5: fingerprint sub-modules ─── -->
+
+  <!-- [plugins] center x=42 -->
+  <rect class="mod" x="0"   y="346" width="84"  height="34" rx="5"/>
+  <text class="t2" x="42"  y="367" text-anchor="middle">plugins</text>
+
+  <!-- [themes] center x=140 -->
+  <rect class="mod" x="98"  y="346" width="84"  height="34" rx="5"/>
+  <text class="t2" x="140" y="367" text-anchor="middle">themes</text>
+
+  <!-- [users] center x=235 -->
+  <rect class="mod" x="193" y="346" width="84"  height="34" rx="5"/>
+  <text class="t2" x="235" y="367" text-anchor="middle">users</text>
+
+  <!-- [xmlrpc] center x=330 -->
+  <rect class="mod" x="288" y="346" width="84"  height="34" rx="5"/>
+  <text class="t2" x="330" y="367" text-anchor="middle">xmlrpc</text>
+
+  <!-- Merge plugins + themes → cves (center x=91) -->
+  <line class="edge" x1="42"  y1="380" x2="42"  y2="408"/>
+  <line class="edge" x1="140" y1="380" x2="140" y2="408"/>
+  <line class="edge" x1="42"  y1="408" x2="140" y2="408"/>
+  <line class="arr"  x1="91"  y1="408" x2="91"  y2="434"/>
+
+  <!-- ─── Row 6: cves ─── -->
+  <rect class="cve" x="50" y="434" width="82" height="34" rx="5"/>
+  <text class="tcve" x="91" y="455" text-anchor="middle">cves</text>
+
+  <!-- SQLite annotation -->
+  <text class="tnote" x="142" y="455">← correlates against</text>
+  <text class="tnote" x="142" y="468">   local SQLite DB</text>
+
+  <!-- cves → reporters -->
+  <line class="edge" x1="91" y1="468" x2="91"  y2="498"/>
+  <line class="edge" x1="91" y1="498" x2="310" y2="498"/>
+  <line class="arr"  x1="310" y1="498" x2="310" y2="524"/>
+
+  <!-- ─── Row 7: Reporters ─── -->
+  <rect class="rep" x="155" y="524" width="310" height="36" rx="6"/>
+  <text class="trep" x="310" y="546" text-anchor="middle">Terminal Reporter  /  JSON Reporter</text>
+
+</svg>

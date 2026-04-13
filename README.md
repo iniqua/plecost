@@ -323,30 +323,7 @@ def scan_wordpress(url: str) -> dict:
 
 ## Architecture
 
-```
-CLI  /  Python API
-        │
-        ▼
-   ScanOptions → ScanContext
-                     │
-                     ▼
-              Scheduler (async dependency graph)
-                     │
-      ┌──────────────┼──────────────────────────┐
-      ▼              ▼                           ▼
- [fingerprint]    [waf]         [misconfigs, http_headers, ssl_tls ...]
-      │
-      ├──────────┬──────────┬──────────┐
-      ▼          ▼          ▼          ▼
- [plugins]  [themes]   [users]   [xmlrpc]
-      │          │
-      └────┬─────┘
-           ▼
-        [cves]   ← correlates against local SQLite DB
-           │
-           ▼
-  Terminal Reporter  /  JSON Reporter
-```
+<img src="docs/architecture.svg" alt="Plecost architecture diagram" width="780"/>
 
 Modules without interdependencies run concurrently from the start. `cves` waits for `plugins` and `themes` to complete so it has a full list of installed software to match against the CVE database.
 
