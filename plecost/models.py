@@ -29,6 +29,16 @@ class Finding:
 
 
 @dataclass
+class PluginVuln:
+    cve_id: str
+    title: str
+    severity: str          # "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"
+    cvss_score: float | None
+    has_exploit: bool
+    version_range: str     # e.g. "1.0.0–2.3.4" or "*–*"
+
+
+@dataclass
 class Plugin:
     slug: str
     version: str | None
@@ -36,7 +46,11 @@ class Plugin:
     url: str
     outdated: bool = False
     abandoned: bool = False
-    vuln_count: int = 0
+    vulns: list[PluginVuln] = field(default_factory=list)
+
+    @property
+    def vuln_count(self) -> int:
+        return len(self.vulns)
 
 
 @dataclass

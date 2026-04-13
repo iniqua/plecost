@@ -14,6 +14,14 @@ _SEVERITY_COLORS = {
     Severity.INFO: "white",
 }
 
+_SEVERITY_ORDER = {
+    "CRITICAL": 0,
+    "HIGH": 1,
+    "MEDIUM": 2,
+    "LOW": 3,
+    "INFO": 4,
+}
+
 
 class TerminalReporter:
     def __init__(self, result: ScanResult, console: Console | None = None, quiet: bool = False) -> None:
@@ -86,6 +94,42 @@ class TerminalReporter:
                     cve_cell = "[green]0[/green]"
                 plugins_table.add_row(p.slug, p.version or "unknown", cve_cell)
             self._console.print(plugins_table)
+
+            for p in r.plugins:
+                if not p.vulns:
+                    continue
+                cve_table = Table(
+                    title=f"[bold]{p.slug}[/bold] — Known Vulnerabilities",
+                    show_lines=True,
+                )
+                cve_table.add_column("CVE ID", style="bold", no_wrap=True)
+                cve_table.add_column("Severity", width=10)
+                cve_table.add_column("CVSS", justify="right", width=5)
+                cve_table.add_column("Exploit", width=7, justify="center")
+                cve_table.add_column("Affects versions", no_wrap=True)
+                cve_table.add_column("Title")
+
+                sorted_vulns = sorted(
+                    p.vulns,
+                    key=lambda v: _SEVERITY_ORDER.get(v.severity, 99),
+                )
+                for v in sorted_vulns:
+                    try:
+                        sev_enum = Severity(v.severity)
+                    except ValueError:
+                        sev_enum = Severity.INFO
+                    color = _SEVERITY_COLORS.get(sev_enum, "white")
+                    cvss = f"{v.cvss_score:.1f}" if v.cvss_score else "N/A"
+                    exploit = "[bold red]YES[/bold red]" if v.has_exploit else "no"
+                    cve_table.add_row(
+                        v.cve_id,
+                        f"[{color}]{v.severity}[/{color}]",
+                        cvss,
+                        exploit,
+                        v.version_range,
+                        v.title,
+                    )
+                self._console.print(cve_table)
 
         # Themes
         if r.themes:

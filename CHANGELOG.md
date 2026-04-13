@@ -1,12 +1,15 @@
-## 2026-04-13 — Show known CVE count per plugin in scan results
+## 2026-04-13 — Per-plugin CVE detail tables in scan output
 
 ### Added
-- `Plugin.vuln_count` field: total number of known CVEs for the plugin slug, regardless of installed version
-- `CVEStore.count_by_slug()`: queries the local CVE DB to count all non-rejected CVEs for a given slug
-- Terminal reporter: new "Known CVEs" column in the Detected Plugins table (red if > 0, green if 0)
+- `PluginVuln` dataclass in `models.py`: lightweight CVE record for display (cve_id, title, severity, cvss_score, has_exploit, version_range)
+- `Plugin.vulns: list[PluginVuln]` field: all known CVEs for the plugin slug regardless of installed version
+- `Plugin.vuln_count` property: derived from `len(vulns)`
+- `CVEStore.find_all_by_slug()`: returns all non-rejected CVEs for a slug without version filtering
+- Terminal reporter: per-plugin CVE tables after the summary table, sorted by severity (CRITICAL first), with color-coded severity and exploit indicator
 
 ### Changed
-- `CVEsModule.run()`: now populates `plugin.vuln_count` for every detected plugin, even those without a detected version
+- `CVEsModule.run()`: populates `plugin.vulns` for every detected plugin via `find_all_by_slug()`
+- `CVEStore.count_by_slug()` replaced by `find_all_by_slug()` (count derived from result length)
 
 ---
 

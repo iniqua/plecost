@@ -1,7 +1,7 @@
 from __future__ import annotations
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
-from plecost.models import Finding, Severity
+from plecost.models import Finding, PluginVuln, Severity
 from plecost.modules.base import ScanModule
 from plecost.database.store import CVEStore, VulnerabilityRecord
 
@@ -29,7 +29,8 @@ class CVEsModule(ScanModule):
                 ctx.add_finding(self._make_finding(vuln))
         # Check plugins
         for plugin in ctx.plugins:
-            plugin.vuln_count = await self._store.count_by_slug("plugin", plugin.slug)
+            all_vulns = await self._store.find_all_by_slug("plugin", plugin.slug)
+            plugin.vulns = [self._to_plugin_vuln(v) for v in all_vulns]
             if plugin.version:
                 for vuln in await self._store.find("plugin", plugin.slug, plugin.version):
                     ctx.add_finding(self._make_finding(vuln))
@@ -38,6 +39,20 @@ class CVEsModule(ScanModule):
             if theme.version:
                 for vuln in await self._store.find("theme", theme.slug, theme.version):
                     ctx.add_finding(self._make_finding(vuln))
+
+    def _to_plugin_vuln(self, vuln: VulnerabilityRecord) -> PluginVuln:
+        version_range = (
+            f"{vuln.version_start_incl or vuln.version_start_excl or '*'}"
+            f"–{vuln.version_end_incl or vuln.version_end_excl or '*'}"
+        )
+        return PluginVuln(
+            cve_id=vuln.cve_id,
+            title=vuln.title,
+            severity=vuln.severity,
+            cvss_score=vuln.cvss_score,
+            has_exploit=vuln.has_exploit,
+            version_range=version_range,
+        )
 
     def _make_finding(self, vuln: VulnerabilityRecord) -> Finding:
         sev = _SEVERITY_MAP.get(vuln.severity, Severity.MEDIUM)
