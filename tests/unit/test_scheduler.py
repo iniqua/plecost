@@ -37,6 +37,30 @@ async def test_scheduler_respects_dependencies():
 
 
 @pytest.mark.asyncio
+async def test_scheduler_calls_callbacks():
+    """on_module_start and on_module_done are called with the module name."""
+    started = []
+    done = []
+    opts = ScanOptions(url="https://example.com")
+    ctx = ScanContext(opts)
+
+    class SimpleModule(ScanModule):
+        name = "simple"
+        depends_on: list[str] = []
+        async def run(self, ctx, http):
+            pass
+
+    scheduler = Scheduler(
+        [SimpleModule()],
+        on_module_start=started.append,
+        on_module_done=done.append,
+    )
+    await scheduler.run(ctx, http=None)
+    assert started == ["simple"]
+    assert done == ["simple"]
+
+
+@pytest.mark.asyncio
 async def test_scheduler_skips_excluded_modules():
     opts = ScanOptions(url="https://example.com", skip_modules=["module_b"])
     ctx = ScanContext(opts)

@@ -1,12 +1,13 @@
 from __future__ import annotations
 import threading
+from collections.abc import Callable
 from plecost.models import ScanOptions, Finding, Plugin, Theme, User
 
 
 class ScanContext:
     """Shared state for all scan modules. Thread-safe."""
 
-    def __init__(self, opts: ScanOptions) -> None:
+    def __init__(self, opts: ScanOptions, on_finding: Callable[[Finding], None] | None = None) -> None:
         self.opts = opts
         self.url = opts.url.rstrip("/")
         self.is_wordpress: bool = False
@@ -17,10 +18,13 @@ class ScanContext:
         self.users: list[User] = []
         self.findings: list[Finding] = []
         self._lock = threading.Lock()
+        self._on_finding = on_finding
 
     def add_finding(self, finding: Finding) -> None:
         with self._lock:
             self.findings.append(finding)
+        if self._on_finding:
+            self._on_finding(finding)
 
     def add_plugin(self, plugin: Plugin) -> None:
         with self._lock:

@@ -38,6 +38,7 @@ def scan(
     verify_ssl: bool = typer.Option(True, help="Verify SSL certificates"),
     force: bool = typer.Option(False, help="Continue even if WordPress not detected"),
     quiet: bool = typer.Option(False, help="Only show HIGH and CRITICAL findings"),
+    verbose: bool = typer.Option(False, "-v", "--verbose", help="Show real-time module progress and findings during scan"),
     db_url: Optional[str] = typer.Option(None, "--db-url", help="CVE database URL (sqlite+aiosqlite:/// or postgresql+asyncpg://)", envvar="PLECOST_DB_URL"),
 ) -> None:
     """Scan a WordPress site for security vulnerabilities."""
@@ -65,7 +66,7 @@ def scan(
         pass
 
     from plecost.scanner import Scanner
-    from plecost.reporters.terminal import TerminalReporter
+    from plecost.reporters.terminal import TerminalReporter, VerboseDisplay
     from plecost.reporters.json_reporter import JSONReporter
 
     has_critical = False
@@ -90,7 +91,21 @@ def scan(
             db_url=db_url,
         )
 
-        result = asyncio.run(Scanner(opts).run())
+        display = None
+        if verbose:
+            display = VerboseDisplay(console, module_names=_ALL_MODULE_NAMES)
+            display.start()
+
+        result = asyncio.run(Scanner(
+            opts,
+            on_module_start=display.on_module_start if display else None,
+            on_module_done=display.on_module_done if display else None,
+            on_finding=display.on_finding if display else None,
+        ).run())
+
+        if display:
+            display.stop()
+
         TerminalReporter(result, console=console, quiet=quiet).print()
 
         if output and len(urls) == 1:

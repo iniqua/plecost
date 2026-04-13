@@ -1,8 +1,10 @@
 from __future__ import annotations
-from rich.console import Console
+from rich import box
+from rich.console import Console, Group
+from rich.live import Live
 from rich.table import Table
 from rich.panel import Panel
-from plecost.models import ScanResult, Severity
+from plecost.models import Finding, ScanResult, Severity
 
 _SEVERITY_COLORS = {
     Severity.CRITICAL: "bold red",
@@ -76,8 +78,13 @@ class TerminalReporter:
             plugins_table = Table(title="Detected Plugins")
             plugins_table.add_column("Slug")
             plugins_table.add_column("Version")
+            plugins_table.add_column("Known CVEs", justify="right")
             for p in r.plugins:
-                plugins_table.add_row(p.slug, p.version or "unknown")
+                if p.vuln_count > 0:
+                    cve_cell = f"[bold red]{p.vuln_count}[/bold red]"
+                else:
+                    cve_cell = "[green]0[/green]"
+                plugins_table.add_row(p.slug, p.version or "unknown", cve_cell)
             self._console.print(plugins_table)
 
         # Themes
@@ -105,3 +112,56 @@ class TerminalReporter:
             for u in r.users:
                 users_table.add_row(u.username, u.source)
             self._console.print(users_table)
+
+
+class VerboseDisplay:
+    """Rich Live display for verbose scan progress: modules + real-time findings."""
+
+    _STATUS_ICON = {"pending": " ", "running": "[cyan]⠹[/cyan]", "done": "[green]✓[/green]"}
+
+    def __init__(self, console: Console, module_names: list[str]) -> None:
+        self._modules: dict[str, str] = {name: "pending" for name in module_names}
+        self._findings: list[Finding] = []
+        self._console = console
+        self._live: Live | None = None
+
+    def start(self) -> None:
+        self._live = Live(self._render(), console=self._console, refresh_per_second=4)
+        self._live.start()
+
+    def stop(self) -> None:
+        if self._live:
+            self._live.stop()
+
+    def on_module_start(self, name: str) -> None:
+        self._modules[name] = "running"
+        self._refresh()
+
+    def on_module_done(self, name: str) -> None:
+        self._modules[name] = "done"
+        self._refresh()
+
+    def on_finding(self, finding: Finding) -> None:
+        self._findings.append(finding)
+        self._refresh()
+
+    def _refresh(self) -> None:
+        if self._live:
+            self._live.update(self._render())
+
+    def _render(self) -> Group:
+        mod_table = Table(title="Módulos", box=box.SIMPLE)
+        mod_table.add_column("", width=3)
+        mod_table.add_column("Módulo")
+        for name, state in self._modules.items():
+            mod_table.add_row(self._STATUS_ICON[state], name)
+
+        find_table = Table(title=f"Findings ({len(self._findings)})", box=box.SIMPLE)
+        find_table.add_column("Severidad", width=10)
+        find_table.add_column("ID")
+        find_table.add_column("Título")
+        for f in self._findings[-20:]:
+            color = _SEVERITY_COLORS.get(f.severity, "white")
+            find_table.add_row(f"[{color}]{f.severity.value}[/{color}]", f.id, f.title)
+
+        return Group(mod_table, find_table)

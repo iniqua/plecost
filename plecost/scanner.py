@@ -1,6 +1,7 @@
 from __future__ import annotations
 import time
 import uuid
+from collections.abc import Callable
 from datetime import datetime
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
@@ -42,8 +43,17 @@ def _build_summary(findings: list[Finding]) -> ScanSummary:
 
 
 class Scanner:
-    def __init__(self, opts: ScanOptions) -> None:
+    def __init__(
+        self,
+        opts: ScanOptions,
+        on_module_start: Callable[[str], None] | None = None,
+        on_module_done: Callable[[str], None] | None = None,
+        on_finding: Callable[[Finding], None] | None = None,
+    ) -> None:
         self._opts = opts
+        self._on_module_start = on_module_start
+        self._on_module_done = on_module_done
+        self._on_finding = on_finding
 
     async def run_many(self, urls: list[str]) -> list[ScanResult]:
         """Scan multiple targets sequentially and return a list of ScanResults."""
@@ -72,7 +82,7 @@ class Scanner:
 
     async def run(self) -> ScanResult:
         start = time.monotonic()
-        ctx = ScanContext(self._opts)
+        ctx = ScanContext(self._opts, on_finding=self._on_finding)
 
         # Initialize CVE store and wordlists asynchronously
         cve_mod: CVEsModule | None = None
@@ -106,7 +116,7 @@ class Scanner:
         if cve_mod:
             modules.append(cve_mod)
 
-        scheduler = Scheduler(modules)
+        scheduler = Scheduler(modules, on_module_start=self._on_module_start, on_module_done=self._on_module_done)
         async with PlecostHTTPClient(self._opts) as http:
             await scheduler.run(ctx, http)
         duration = time.monotonic() - start

@@ -26,6 +26,34 @@ def test_context_is_wordpress_default_false():
     assert ctx.is_wordpress is False
 
 
+def test_context_on_finding_callback():
+    """on_finding callback is called when a finding is added."""
+    calls = []
+    ctx = ScanContext(ScanOptions(url="https://example.com"), on_finding=calls.append)
+    finding = Finding(
+        id="PC-FP-001", remediation_id="REM-FP-001",
+        title="Test", severity=Severity.HIGH, description="d",
+        evidence={}, remediation="r", references=[], cvss_score=None,
+        module="fingerprint"
+    )
+    ctx.add_finding(finding)
+    assert len(calls) == 1
+    assert calls[0].id == "PC-FP-001"
+
+
+def test_context_no_callback_does_not_fail():
+    """ScanContext works normally without callback."""
+    ctx = ScanContext(ScanOptions(url="https://example.com"))
+    finding = Finding(
+        id="PC-FP-002", remediation_id="REM-FP-002",
+        title="Test2", severity=Severity.LOW, description="d",
+        evidence={}, remediation="r", references=[], cvss_score=None,
+        module="fingerprint"
+    )
+    ctx.add_finding(finding)
+    assert len(ctx.findings) == 1
+
+
 def test_context_thread_safe_findings():
     """Multiple modules can add findings concurrently."""
     import asyncio

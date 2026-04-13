@@ -26,6 +26,14 @@ def test_cli_scan_not_wordpress():
     assert result.exit_code == 0
 
 
+def test_cli_scan_verbose_flag_accepted():
+    """The -v flag is accepted without error."""
+    with respx.mock:
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        result = runner.invoke(app, ["scan", "https://example.com", "--modules", "fingerprint", "-v"])
+    assert result.exit_code != 2  # 2 = typer usage error (unrecognized option)
+
+
 def test_cli_scan_outputs_json(tmp_path):
     out = tmp_path / "report.json"
     with respx.mock:
