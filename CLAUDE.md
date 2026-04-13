@@ -13,6 +13,14 @@ python3 -m ruff check plecost/ --fix
 python3 -m mypy plecost/ --ignore-missing-imports
 ```
 
+## Quick Scan Examples
+```bash
+plecost scan https://target.com -v             # fast mode (default): top 150 plugins, top 50 themes
+plecost scan https://target.com --deep -v      # full wordlist scan (4750+ plugins, 900+ themes)
+plecost scan https://target.com --force        # scan even if WordPress not detected
+plecost scan -T urls.txt -o report.json        # bulk scan, save JSON
+```
+
 ## Concurrency Model
 - The project is **pure asyncio** — do NOT introduce `threading`, `ThreadPoolExecutor`, or `concurrent.futures`
 - `Rich.Live` creates an internal background thread; always wrap `asyncio.run()` in `try/finally` to call `display.stop()` on `KeyboardInterrupt`
@@ -33,10 +41,13 @@ python3 -m mypy plecost/ --ignore-missing-imports
 - Associated remediation ID: `REM-{MODULE}-{NNN}`
 - Full registry of 44 IDs in `plecost/cli.py` → `plecost explain <ID>`
 
-## Library Usage (Celery/scripts)
+## Public API
+- `from plecost import Scanner, ScanOptions, ScanResult` — only these three are exported (`__all__`)
+- Library usage example:
 ```python
 from plecost import Scanner, ScanOptions
 result = await Scanner(ScanOptions(url="https://target.com")).run()
+# result.blocked → True if target returned 403 on pre-flight probe
 ```
 
 ## Python Environment
@@ -45,10 +56,11 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - `python3 -m plecost` works via `plecost/__main__.py` → `plecost.cli:app`
 
 ## Scanner Extensibility (Callbacks)
-- `Scanner(opts, on_module_start, on_module_done, on_finding)` — optional callbacks for real-time progress
-- `ScanContext(opts, on_finding=cb)` — called outside the lock after each `add_finding()`
+- `Scanner(opts, on_module_start, on_module_done, on_finding, on_module_progress)` — optional callbacks for real-time progress
+- `on_module_progress(name: str, current: int, total: int)` — fired during wordlist scans (plugins, themes) with per-slug progress
+- `ScanContext(opts, on_finding=cb, on_progress=cb)` — called after each `add_finding()` / `report_progress()`
 - `Scheduler(modules, on_module_start=cb, on_module_done=cb)` — called before/after each module runs
-- `VerboseDisplay` in `reporters/terminal.py` — Rich Live display wired to these callbacks; used by `-v` CLI flag
+- `VerboseDisplay` in `reporters/terminal.py` — Rich Live display wired to all four callbacks; used by `-v` CLI flag
 - Library usage stays silent: don't pass callbacks → no output
 
 ## Repository
@@ -58,6 +70,7 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 
 ## CVE Database
 - Local DB: `~/.plecost/db/plecost.db` (SQLite, SQLAlchemy async)
+- `PluginsWordlist.active_installs` + `ThemesWordlist.active_installs` — populated from WordPress.org API; existing DBs older than the `ThemesWordlist` schema change need `plecost update-db`
 - `plecost build-db` — full build from NVD (maintainers, one-time)
 - `plecost update-db` — incremental JSON patch system: checks index.checksum first, downloads only missing daily patches; first run downloads full.json
 - `plecost sync-db` — incremental sync from `db_metadata.last_nvd_sync` (daily GitHub Action)
@@ -89,10 +102,6 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - `ScanOptions.deep = True` (CLI: `--deep`) — full wordlist (4750+ plugins, 900+ themes)
 - `CVEStore.get_plugins_wordlist(top_n)` / `get_themes_wordlist(top_n)` accept optional limit
 - `ThemesWordlist` has `active_installs` column (added recently; existing DBs need rebuild with `plecost build-db`)
-
-## DB Schema Notes
-- `PluginsWordlist.active_installs` — populated by `build-db`/`update-db` from WordPress.org API
-- `ThemesWordlist.active_installs` — added; existing local DBs at `~/.plecost/db/plecost.db` need `plecost update-db` or `plecost build-db` to get this column
 
 ## Adding a New Module
 - Create `plecost/modules/your_name.py` extending `ScanModule` with `name`, `depends_on`, `async run(ctx, http)`

@@ -168,6 +168,9 @@ plecost scan https://target.com --modules fingerprint,plugins,cves
 # Aggressive mode — 50 parallel requests (use on internal targets)
 plecost scan https://target.com --aggressive
 
+# Deep mode — full wordlist (4750+ plugins, 900+ themes); default scans top 150/50
+plecost scan https://target.com --deep
+
 # Stealth mode — random UA, passive detection only, slower
 plecost scan https://target.com --stealth
 
@@ -194,6 +197,8 @@ plecost scan https://target.com --quiet
 | `--output / -o` | JSON output file | — |
 | `--no-verify-ssl` | Skip certificate verification | off |
 | `--force` | Scan even if WordPress not detected | off |
+| `--deep` | Full wordlist scan (4750+ plugins, 900+ themes); default is top 150/50 | off |
+| `--verbose / -v` | Real-time module progress and findings during scan | off |
 | `--quiet` | Show only HIGH and CRITICAL findings | off |
 
 
@@ -259,7 +264,8 @@ plecost scan https://target.com --output report.json
     }
   ],
   "summary": { "critical": 1, "high": 1, "medium": 3, "low": 2 },
-  "duration_seconds": 4.2
+  "duration_seconds": 4.2,
+  "blocked": false
 }
 ```
 
@@ -355,6 +361,15 @@ plecost scan https://target.com --no-verify-ssl
 ```
 
 > Only use `--no-verify-ssl` in controlled environments.
+
+**Target returns 403 (scanner blocked)**
+
+Plecost detects this automatically on the pre-flight probe and aborts cleanly with finding `PC-PRE-001`. Try a different IP, a proxy, or a different User-Agent:
+
+```bash
+plecost scan https://target.com --proxy http://127.0.0.1:8080
+plecost scan https://target.com --random-user-agent
+```
 
 **WordPress not detected**
 
