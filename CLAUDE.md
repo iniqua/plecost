@@ -36,8 +36,15 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 
 ## Python Environment
 - Always use `python3 -m pytest` (not bare `pytest`) — multiple Python versions on this system
-- Pyright reports false positive import errors (`plecost.database.engine`, etc.) — modules exist, it's an environment issue, not a code bug
+- Pyright reports false positives everywhere (unused imports, undefined variables in local imports, unused params in test mocks) — ignore them, ruff is the authoritative linter
 - `python3 -m plecost` does NOT work (no `__main__.py`) — use the installed `plecost` entrypoint only
+
+## Scanner Extensibility (Callbacks)
+- `Scanner(opts, on_module_start, on_module_done, on_finding)` — optional callbacks for real-time progress
+- `ScanContext(opts, on_finding=cb)` — called outside the lock after each `add_finding()`
+- `Scheduler(modules, on_module_start=cb, on_module_done=cb)` — called before/after each module runs
+- `VerboseDisplay` in `reporters/terminal.py` — Rich Live display wired to these callbacks; used by `-v` CLI flag
+- Library usage stays silent: don't pass callbacks → no output
 
 ## Repository
 - GitHub repo: `Plecost/plecost`
