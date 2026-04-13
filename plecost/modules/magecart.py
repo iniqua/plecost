@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import re
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, MagecartInfo, Severity
 from plecost.modules.base import ScanModule
+
+if TYPE_CHECKING:
+    from plecost.database.store import CVEStore
 
 # Matches <script src="https://EXTERNAL_DOMAIN/...">
 _SCRIPT_SRC_RE = re.compile(
@@ -42,7 +46,7 @@ class MagecartModule(ScanModule):
     name = "magecart"
     depends_on = ["fingerprint", "woocommerce", "wp_ecommerce"]
 
-    def __init__(self, store: object | None = None) -> None:
+    def __init__(self, store: CVEStore | None = None) -> None:
         # store is a CVEStore instance or None (when DB is unavailable)
         self._store = store
 
