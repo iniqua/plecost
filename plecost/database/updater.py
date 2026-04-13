@@ -311,7 +311,7 @@ class DatabaseUpdater:
             await conn.run_sync(Base.metadata.create_all)
         sf = make_session_factory(engine)
 
-        headers: dict[str, str] = {"User-Agent": "Plecost/4.0 (security research; github.com/iniqua/plecost)"}
+        headers: dict[str, str] = {"User-Agent": "Plecost/4.0 (security research; github.com/Plecost/plecost)"}
         if self._api_key:
             headers["apiKey"] = self._api_key
 

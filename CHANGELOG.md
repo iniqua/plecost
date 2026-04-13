@@ -251,7 +251,7 @@
 ## 2026-04-10 — CI/CD workflows
 
 ### Added
-- `.github/workflows/docker-publish.yml`: publica imagen multi-arch (amd64/arm64) en `ghcr.io/iniqua/plecost` al hacer push a master (tag `latest`) o push de tags `v*.*.*`
+- `.github/workflows/docker-publish.yml`: publica imagen multi-arch (amd64/arm64) en `ghcr.io/Plecost/plecost` al hacer push a main (tag `latest`) o push de tags `v*.*.*`
 - `.github/workflows/pypi-publish.yml`: publica paquete en PyPI con trusted publishing (OIDC) al hacer push de tags `v*.*.*`
 - `Dockerfile`: added standard OCI labels (`source`, `description`, `licenses`) and `uvloop` installation
 
@@ -287,12 +287,12 @@ Version 1.1.2
 Improvements and fixes
 ----------------------
 
-- Fixed issue: #18 (https://github.com/iniqua/plecost/issues/18)
+- Fixed issue: #18 (https://github.com/Plecost/plecost/issues/18)
 
 New features
 ------------
 
-- Added option to set custom hostname. Issue #20 (https://github.com/iniqua/plecost/issues/20)
+- Added option to set custom hostname. Issue #20 (https://github.com/Plecost/plecost/issues/20)
 
 
 Version 1.1.1

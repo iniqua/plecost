@@ -45,7 +45,7 @@ class IncrementalUpdater:
         now_str = now.strftime("%Y-%m-%dT%H:%M:%S.000")
 
         headers: dict[str, str] = {
-            "User-Agent": "Plecost/4.0 (security research; github.com/iniqua/plecost)"
+            "User-Agent": "Plecost/4.0 (security research; github.com/Plecost/plecost)"
         }
         if self._api_key:
             headers["apiKey"] = self._api_key

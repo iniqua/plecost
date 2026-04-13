@@ -22,7 +22,7 @@ from plecost.database.downloader import (
 )
 
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
-ASSET_DOWNLOAD_URL = "https://github.com/iniqua/plecost/releases/download/db-base/plecost.db"
+ASSET_DOWNLOAD_URL = "https://github.com/Plecost/plecost/releases/download/db-base/plecost.db"
 
 FAKE_RELEASE_WITH_ASSET = {
     "tag_name": "db-base",
@@ -55,7 +55,7 @@ FAKE_INDEX = {
     "patches": [
         {
             "date": "2026-04-11",
-            "url": "https://github.com/iniqua/plecost/releases/download/db-patches/patch-2026-04-11.json",
+            "url": "https://github.com/Plecost/plecost/releases/download/db-patches/patch-2026-04-11.json",
             "sha256": "def456",
         }
     ],
@@ -187,7 +187,7 @@ async def test_download_full_json_sha256_mismatch_raises(tmp_path):
 async def test_download_patch_verifies_sha256():
     content = json.dumps(FAKE_PATCH).encode()
     sha256 = hashlib.sha256(content).hexdigest()
-    patch_url = "https://github.com/iniqua/plecost/releases/download/db-patches/patch-2026-04-11.json"
+    patch_url = "https://github.com/Plecost/plecost/releases/download/db-patches/patch-2026-04-11.json"
 
     respx.get(patch_url).mock(
         return_value=httpx.Response(200, content=content)
@@ -202,7 +202,7 @@ async def test_download_patch_verifies_sha256():
 @respx.mock
 async def test_download_patch_sha256_mismatch_raises():
     content = json.dumps(FAKE_PATCH).encode()
-    patch_url = "https://github.com/iniqua/plecost/releases/download/db-patches/patch-2026-04-11.json"
+    patch_url = "https://github.com/Plecost/plecost/releases/download/db-patches/patch-2026-04-11.json"
 
     respx.get(patch_url).mock(
         return_value=httpx.Response(200, content=content)

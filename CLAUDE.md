@@ -40,8 +40,8 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - `python3 -m plecost` does NOT work (no `__main__.py`) — use the installed `plecost` entrypoint only
 
 ## Repository
-- GitHub repo: `iniqua/plecost` (not `cr0hn/plecost`)
-- Main branch: `master`
+- GitHub repo: `Plecost/plecost`
+- Main branch: `main`
 - CI minimum coverage: 75% (`--cov-fail-under=75`)
 
 ## CVE Database

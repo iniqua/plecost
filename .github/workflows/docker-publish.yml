@@ -2,7 +2,7 @@ name: Publish Docker image
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     tags: ['v*.*.*']
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/iniqua/plecost
+          images: ghcr.io/plecost/plecost
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}

@@ -10,8 +10,8 @@
 
 # Plecost — Professional WordPress Security Scanner
 
-[![CI](https://github.com/iniqua/plecost/actions/workflows/ci.yml/badge.svg)](https://github.com/iniqua/plecost/actions)
-[![Docker](https://img.shields.io/badge/docker-ghcr.io%2Finiqua%2Fplecost-blue)](https://ghcr.io/iniqua/plecost)
+[![CI](https://github.com/Plecost/plecost/actions/workflows/ci.yml/badge.svg)](https://github.com/Plecost/plecost/actions)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fplecost%2Fplecost-blue)](https://ghcr.io/plecost/plecost)
 [![PyPI](https://img.shields.io/pypi/v/plecost.svg)](https://pypi.org/project/plecost/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://python.org)
 [![License: PolyForm NC](https://img.shields.io/badge/License-PolyForm%20NC%201.0-blue)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
@@ -143,7 +143,7 @@ pip install plecost[fast]    # includes uvloop for higher throughput
 ### From source
 
 ```bash
-git clone https://github.com/iniqua/plecost.git
+git clone https://github.com/Plecost/plecost.git
 cd plecost/src
 pip install -e .
 pip install -e ".[dev]"      # include dev/test dependencies
@@ -152,10 +152,10 @@ pip install -e ".[dev]"      # include dev/test dependencies
 ### Docker
 
 ```bash
-docker run --rm ghcr.io/iniqua/plecost scan https://target.com
+docker run --rm ghcr.io/Plecost/plecost scan https://target.com
 
 # With proxy and JSON output saved locally
-docker run --rm -v $(pwd):/data ghcr.io/iniqua/plecost scan https://target.com \
+docker run --rm -v $(pwd):/data ghcr.io/Plecost/plecost scan https://target.com \
   --proxy http://host.docker.internal:8080 \
   --output /data/report.json
 ```
@@ -258,7 +258,7 @@ plecost scan https://target.com --quiet
 ```yaml
 services:
   scanner:
-    image: ghcr.io/iniqua/plecost
+    image: ghcr.io/Plecost/plecost
     environment:
       - PLECOST_TIMEOUT=30
       - PLECOST_OUTPUT=/reports/scan.json
@@ -363,7 +363,7 @@ Plecost ships with a local SQLite CVE database covering WordPress core, plugins,
 
 ### How it works
 
-1. **`update-db`** — Downloads a pre-built, compressed database from the [latest GitHub release](https://github.com/iniqua/plecost/releases). Fast (~1 MB download, seconds to complete).
+1. **`update-db`** — Downloads a pre-built, compressed database from the [latest GitHub release](https://github.com/Plecost/plecost/releases). Fast (~1 MB download, seconds to complete).
 
 2. **`build-db`** — Queries the [NVD API v2.0](https://nvd.nist.gov/developers/vulnerabilities) for all `keywordSearch=wordpress` CVEs from the past N years. Parses CPE 2.3 entries, applies Jaro-Winkler fuzzy matching to correlate CVE product names against ~50,000 known plugin/theme slugs, and stores results in SQLite. Slow (30–60 min without API key).
 
