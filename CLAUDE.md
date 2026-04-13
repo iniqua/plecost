@@ -30,7 +30,7 @@ plecost scan -T urls.txt -o report.json        # bulk scan, save JSON
 - `plecost/cli.py` — Typer entrypoint; commands: `scan`, `explain`, `update-db`, `build-db`, `sync-db`, `modules`
 - `plecost/scanner.py` — `Scanner.run()` and `Scanner.run_many()` (public API for use as a library)
 - `plecost/engine/` — `http_client.py` (httpx async), `context.py` (shared state), `scheduler.py` (async dependency graph)
-- `plecost/modules/` — 15 detection modules; each extends `ScanModule` with `name`, `depends_on`, `async run()`
+- `plecost/modules/` — 16 detection modules; each extends `ScanModule` with `name`, `depends_on`, `async run()`
 - `plecost/database/` — SQLAlchemy async; `updater.py` (NVD full build), `incremental.py` (delta sync), `downloader.py` (from release), `store.py` (queries)
 - `plecost/database/patch_applier.py` — applies JSON patches (upserts + soft-deletes); portable SQLite/PG
 - `plecost/reporters/` — `terminal.py` (Rich), `json_reporter.py` (JSON)
@@ -39,7 +39,7 @@ plecost scan -T urls.txt -o report.json        # bulk scan, save JSON
 ## Finding IDs
 - Permanent format: `PC-{MODULE}-{NNN}` (e.g. `PC-MCFG-001`, `PC-CVE-CVE-2023-28121`)
 - Associated remediation ID: `REM-{MODULE}-{NNN}`
-- Full registry of 44 IDs in `plecost/cli.py` → `plecost explain <ID>`
+- Full registry of 60 IDs in `plecost/cli.py` → `plecost explain <ID>`
 
 ## Public API
 - `from plecost import Scanner, ScanOptions, ScanResult` — only these three are exported (`__all__`)
@@ -106,7 +106,13 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 ## Adding a New Module
 - Create `plecost/modules/your_name.py` extending `ScanModule` with `name`, `depends_on`, `async run(ctx, http)`
 - Register it in `plecost/scanner.py` (instantiate and add to module list)
-- Add finding IDs to the registry in `plecost/cli.py` (`explain` command)
+- Add finding IDs to `_FINDINGS_REGISTRY` in `plecost/cli.py` (`explain` command)
+- Add module name to `_ALL_MODULE_NAMES` in `plecost/cli.py` (verbose progress display)
+- Add new IDs to `KNOWN_FINDING_IDS` in `tests/contract/test_finding_ids.py`
+
+## Typer Gotchas
+- `tuple[str, ...]` NOT supported as parameter type — use `List[str]` from `typing` for multi-value CLI options; causes `RuntimeError: Type not yet supported: Ellipsis` at runtime
+- Default for `List[str]` Typer options must be `[]` not `()`
 
 ## httpx Gotchas
 - `httpx.SSLError` does not exist — catch SSL errors with `(httpx.ConnectError, httpx.TransportError)` and check `"ssl"/"tls"/"certificate"` in `str(e)`
