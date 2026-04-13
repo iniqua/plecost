@@ -21,6 +21,7 @@ from plecost.modules.ssl_tls import SSLTLSModule
 from plecost.modules.debug_exposure import DebugExposureModule
 from plecost.modules.content_analysis import ContentAnalysisModule
 from plecost.modules.auth import AuthModule
+from plecost.modules.woocommerce import WooCommerceModule
 from plecost.modules.cves import CVEsModule
 from plecost.modules.base import ScanModule
 from plecost.models import Finding
@@ -77,6 +78,7 @@ class Scanner:
                 force=self._opts.force,
                 deep=self._opts.deep,
                 output=self._opts.output,
+                module_options=self._opts.module_options,
             )
             scanner = Scanner(opts)
             result = await scanner.run()
@@ -118,6 +120,7 @@ class Scanner:
             MisconfigsModule(), DirectoryListingModule(),
             HTTPHeadersModule(), SSLTLSModule(),
             DebugExposureModule(), ContentAnalysisModule(), AuthModule(),
+            WooCommerceModule(),
         ]
         if cve_mod:
             modules.append(cve_mod)
@@ -138,7 +141,8 @@ class Scanner:
             is_wordpress=ctx.is_wordpress, wordpress_version=ctx.wordpress_version,
             plugins=ctx.plugins, themes=ctx.themes, users=ctx.users,
             waf_detected=ctx.waf_detected, findings=ctx.findings,
-            summary=_build_summary(ctx.findings)
+            summary=_build_summary(ctx.findings),
+            woocommerce=ctx.woocommerce,
         )
 
     async def _check_access(self, ctx: ScanContext, http: PlecostHTTPClient) -> bool:

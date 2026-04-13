@@ -1,3 +1,20 @@
+## [2026-04-13]
+
+### Added
+- New `woocommerce` module for detecting vulnerabilities and misconfigurations in WooCommerce and its official plugins (Payments, Blocks, Stripe Gateway)
+- Generic per-module options system: `--module-option MODULE:KEY=VALUE` in CLI and `ScanOptions.module_options` in library API
+- 16 new finding IDs: PC-WC-000 to PC-WC-021
+- `WooCommerceInfo` dataclass in `ScanResult` with dedicated section in JSON output
+- Passive checks: WooCommerce fingerprinting, sub-plugin detection (Payments, Blocks, Stripe), REST API open without auth, wc-logs directory listing, uploads directory exposure
+- Semi-active checks (require `--module-option woocommerce:mode=semi-active`): CVE-2023-28121 (WooCommerce Payments auth bypass, CVSS 9.8) and CVE-2023-34000 (Stripe Gateway IDOR, CVSS 7.5)
+- Authenticated checks (require consumer key/secret in module_options): system-status and payment-gateways
+- 25 unit tests with respx
+
+### Fixed
+- `Scanner.run_many()` now propagates `module_options` to all targets in multi-target scans
+
+---
+
 ## 2026-04-13 — Per-plugin CVE detail tables in scan output
 
 ### Added

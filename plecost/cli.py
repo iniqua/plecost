@@ -1,7 +1,7 @@
 from __future__ import annotations
 import asyncio
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 import httpx
 import typer
 from rich.console import Console
@@ -17,7 +17,22 @@ _ALL_MODULE_NAMES = [
     "fingerprint", "waf", "plugins", "themes", "users", "xmlrpc",
     "rest_api", "misconfigs", "directory_listing", "http_headers",
     "ssl_tls", "debug_exposure", "content_analysis", "auth", "cves",
+    "woocommerce",
 ]
+
+
+def _parse_module_options(raw: List[str]) -> dict[str, dict[str, str]]:
+    """Parse --module-option values like 'woocommerce:mode=semi-active' into a nested dict."""
+    result: dict[str, dict[str, str]] = {}
+    for item in raw:
+        if ":" not in item:
+            continue
+        module_name, rest = item.split(":", 1)
+        if "=" not in rest:
+            continue
+        key, value = rest.split("=", 1)
+        result.setdefault(module_name.strip(), {})[key.strip()] = value.strip()
+    return result
 
 
 @app.command()
@@ -41,6 +56,14 @@ def scan(
     quiet: bool = typer.Option(False, help="Only show HIGH and CRITICAL findings"),
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Show real-time module progress and findings during scan"),
     db_url: Optional[str] = typer.Option(None, "--db-url", help="CVE database URL (sqlite+aiosqlite:/// or postgresql+asyncpg://)", envvar="PLECOST_DB_URL"),
+    module_option: List[str] = typer.Option(
+        [],
+        "--module-option",
+        help=(
+            "Module-specific option: MODULE:KEY=VALUE. Can be repeated. "
+            "Example: --module-option woocommerce:mode=semi-active"
+        ),
+    ),
 ) -> None:
     """Scan a WordPress site for security vulnerabilities."""
     # Resolve list of URLs to scan
@@ -91,6 +114,7 @@ def scan(
             deep=deep,
             output=output,
             db_url=db_url,
+            module_options=_parse_module_options(module_option),
         )
 
         display = None
@@ -468,6 +492,22 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
     "PC-WAF-001": {"title": "WAF/CDN detected", "severity": "INFO", "description": "A WAF or CDN was detected. Some findings may be incomplete.", "remediation": "No action needed. WAF is a positive security control.", "references": [], "remediation_id": "REM-WAF-001"},
     "PC-AUTH-001": {"title": "Successful authentication", "severity": "INFO", "description": "Successfully authenticated with provided credentials.", "remediation": "Change default credentials. Use a strong unique password.", "references": [], "remediation_id": "REM-AUTH-001"},
     "PC-AUTH-002": {"title": "Open user registration enabled", "severity": "MEDIUM", "description": "Anyone can register an account.", "remediation": "Disable in Settings > General > Membership.", "references": [], "remediation_id": "REM-AUTH-002"},
+    "PC-WC-000": {"title": "WooCommerce installation summary", "severity": "INFO", "description": "A summary of the WooCommerce installation was collected.", "remediation": "Review WooCommerce configuration and harden as needed.", "references": ["https://woocommerce.com/document/woocommerce-security/"], "remediation_id": "REM-WC-000"},
+    "PC-WC-001": {"title": "WooCommerce detected via Store API", "severity": "INFO", "description": "WooCommerce was detected on this site via the Store API endpoint.", "remediation": "No action required unless WooCommerce is not intentionally installed.", "references": [], "remediation_id": "REM-WC-001"},
+    "PC-WC-002": {"title": "WooCommerce version disclosed via readme.txt", "severity": "LOW", "description": "The WooCommerce plugin readme.txt file is publicly accessible and discloses the WooCommerce version.", "remediation": "Delete or restrict access to wp-content/plugins/woocommerce/readme.txt.", "references": [], "remediation_id": "REM-WC-002"},
+    "PC-WC-003": {"title": "WooCommerce REST API namespaces exposed", "severity": "LOW", "description": "The WooCommerce REST API namespaces are publicly listed, confirming WooCommerce installation and revealing available API versions.", "remediation": "Restrict the REST API namespace discovery endpoint or require authentication.", "references": [], "remediation_id": "REM-WC-003"},
+    "PC-WC-004": {"title": "WooCommerce REST API: customer list exposed without authentication", "severity": "CRITICAL", "description": "The WooCommerce REST API /wc/v3/customers endpoint returns customer data without requiring authentication, exposing PII.", "remediation": "Require authentication for the WooCommerce REST API. Review WooCommerce > Settings > Advanced > REST API.", "references": ["https://woocommerce.com/document/woocommerce-rest-api/"], "remediation_id": "REM-WC-004"},
+    "PC-WC-005": {"title": "WooCommerce REST API: order list exposed without authentication", "severity": "CRITICAL", "description": "The WooCommerce REST API /wc/v3/orders endpoint returns order data without requiring authentication.", "remediation": "Require authentication for the WooCommerce REST API.", "references": [], "remediation_id": "REM-WC-005"},
+    "PC-WC-006": {"title": "WooCommerce REST API: coupon list exposed without authentication", "severity": "HIGH", "description": "The WooCommerce REST API /wc/v3/coupons endpoint returns coupon codes without requiring authentication.", "remediation": "Require authentication for the WooCommerce REST API.", "references": [], "remediation_id": "REM-WC-006"},
+    "PC-WC-007": {"title": "WooCommerce REST API: system status exposed without authentication", "severity": "HIGH", "description": "The WooCommerce REST API /wc/v3/system_status endpoint returns detailed system information without authentication.", "remediation": "Require authentication for the WooCommerce REST API.", "references": [], "remediation_id": "REM-WC-007"},
+    "PC-WC-008": {"title": "WooCommerce logs directory listing enabled", "severity": "HIGH", "description": "Directory listing is enabled in /wp-content/uploads/wc-logs/, exposing WooCommerce log files.", "remediation": "Disable directory listing and restrict access to the wc-logs directory.", "references": [], "remediation_id": "REM-WC-008"},
+    "PC-WC-009": {"title": "WooCommerce uploads directory accessible", "severity": "HIGH", "description": "The WooCommerce uploads directory is publicly accessible and may expose sensitive files.", "remediation": "Add an .htaccess or nginx rule to restrict direct file access in the uploads directory.", "references": [], "remediation_id": "REM-WC-009"},
+    "PC-WC-010": {"title": "WooCommerce Payments plugin detected", "severity": "INFO", "description": "The WooCommerce Payments plugin was detected on this site.", "remediation": "Keep WooCommerce Payments updated to the latest version.", "references": [], "remediation_id": "REM-WC-010"},
+    "PC-WC-011": {"title": "WooCommerce Stripe Gateway plugin detected", "severity": "INFO", "description": "The WooCommerce Stripe Gateway plugin was detected on this site.", "remediation": "Keep the Stripe Gateway plugin updated to the latest version.", "references": [], "remediation_id": "REM-WC-011"},
+    "PC-WC-012": {"title": "WooCommerce system status retrieved (authenticated)", "severity": "INFO", "description": "WooCommerce system status was successfully retrieved using authenticated API credentials.", "remediation": "No action required. Review system status for any misconfigurations.", "references": [], "remediation_id": "REM-WC-012"},
+    "PC-WC-013": {"title": "WooCommerce payment gateway configuration exposed (authenticated)", "severity": "HIGH", "description": "WooCommerce payment gateway configuration was retrieved via authenticated API, potentially exposing API keys and secrets.", "remediation": "Restrict API key permissions and rotate any exposed credentials.", "references": [], "remediation_id": "REM-WC-013"},
+    "PC-WC-020": {"title": "CVE-2023-28121: WooCommerce Payments authentication bypass", "severity": "CRITICAL", "description": "CVE-2023-28121 (CVSS 9.8): A critical authentication bypass vulnerability in WooCommerce Payments allows unauthenticated attackers to impersonate any user, including administrators.", "remediation": "Update WooCommerce Payments to version 5.6.2 or later immediately.", "references": ["https://nvd.nist.gov/vuln/detail/CVE-2023-28121", "https://woocommerce.com/posts/critical-vulnerability-detected-july-2023/"], "remediation_id": "REM-WC-020"},
+    "PC-WC-021": {"title": "CVE-2023-34000: WooCommerce Stripe Gateway IDOR (PII disclosure)", "severity": "HIGH", "description": "CVE-2023-34000 (CVSS 7.5): An Insecure Direct Object Reference (IDOR) vulnerability in the WooCommerce Stripe Gateway plugin allows unauthenticated attackers to access other users' PII.", "remediation": "Update the WooCommerce Stripe Gateway plugin to version 7.4.1 or later.", "references": ["https://nvd.nist.gov/vuln/detail/CVE-2023-34000"], "remediation_id": "REM-WC-021"},
 }
 
 

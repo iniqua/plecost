@@ -81,6 +81,14 @@ class ScanSummary:
 
 
 @dataclass
+class WooCommerceInfo:
+    detected: bool
+    version: str | None
+    active_plugins: list[str]   # e.g. ["core", "payments", "blocks", "stripe-gateway"]
+    api_namespaces: list[str]   # e.g. ["wc/v3", "wc/store/v1"]
+
+
+@dataclass
 class ScanResult:
     scan_id: str
     url: str
@@ -95,6 +103,7 @@ class ScanResult:
     findings: list[Finding]
     summary: ScanSummary
     blocked: bool = False
+    woocommerce: WooCommerceInfo | None = None
 
     def to_json(self, path: str) -> None:
         def default(obj: Any) -> Any:
@@ -125,3 +134,4 @@ class ScanOptions:
     deep: bool = False  # False = fast mode (top 150 plugins, top 50 themes); True = full wordlist
     output: str | None = None
     db_url: str | None = None  # None = default SQLite at ~/.plecost/db/plecost.db
+    module_options: dict[str, dict[str, str]] = field(default_factory=dict)
