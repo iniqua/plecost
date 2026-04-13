@@ -1,3 +1,15 @@
+## 2026-04-13 — Show known CVE count per plugin in scan results
+
+### Added
+- `Plugin.vuln_count` field: total number of known CVEs for the plugin slug, regardless of installed version
+- `CVEStore.count_by_slug()`: queries the local CVE DB to count all non-rejected CVEs for a given slug
+- Terminal reporter: new "Known CVEs" column in the Detected Plugins table (red if > 0, green if 0)
+
+### Changed
+- `CVEsModule.run()`: now populates `plugin.vuln_count` for every detected plugin, even those without a detected version
+
+---
+
 ## 2026-04-13 — README: remove build-db/sync-db sections, fix CVE DB refs, update workflows
 
 ### Changed

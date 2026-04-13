@@ -29,6 +29,7 @@ class CVEsModule(ScanModule):
                 ctx.add_finding(self._make_finding(vuln))
         # Check plugins
         for plugin in ctx.plugins:
+            plugin.vuln_count = await self._store.count_by_slug("plugin", plugin.slug)
             if plugin.version:
                 for vuln in await self._store.find("plugin", plugin.slug, plugin.version):
                     ctx.add_finding(self._make_finding(vuln))

@@ -115,6 +115,25 @@ class CVEStore:
             match_confidence=row.match_confidence,
         )
 
+    async def count_by_slug(self, software_type: str, slug: str) -> int:
+        """Return total number of known CVEs for a slug, regardless of version."""
+        from sqlalchemy import func
+        async with self._sf() as session:
+            rejected_result = await session.execute(select(RejectedCve.cve_id))
+            rejected_ids = set(rejected_result.scalars().all())
+
+            conditions = [
+                NormalizedVuln.software_type == software_type,
+                NormalizedVuln.slug == slug,
+            ]
+            if rejected_ids:
+                conditions.append(NormalizedVuln.cve_id.not_in(rejected_ids))
+
+            result = await session.execute(
+                select(func.count()).where(*conditions)
+            )
+            return result.scalar_one() or 0
+
     async def get_plugins_wordlist(self) -> list[str]:
         async with self._sf() as session:
             result = await session.execute(select(PluginsWordlist.slug))

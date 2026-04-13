@@ -36,6 +36,7 @@ class Plugin:
     url: str
     outdated: bool = False
     abandoned: bool = False
+    vuln_count: int = 0
 
 
 @dataclass
