@@ -13,6 +13,11 @@ python3 -m ruff check plecost/ --fix
 python3 -m mypy plecost/ --ignore-missing-imports
 ```
 
+## Concurrency Model
+- The project is **pure asyncio** — do NOT introduce `threading`, `ThreadPoolExecutor`, or `concurrent.futures`
+- `Rich.Live` creates an internal background thread; always wrap `asyncio.run()` in `try/finally` to call `display.stop()` on `KeyboardInterrupt`
+- `ScanContext` has no locks — asyncio is single-threaded; list `.append()` is safe without synchronization
+
 ## Architecture
 - `plecost/cli.py` — Typer entrypoint; commands: `scan`, `explain`, `update-db`, `build-db`, `sync-db`, `modules`
 - `plecost/scanner.py` — `Scanner.run()` and `Scanner.run_many()` (public API for use as a library)
@@ -37,7 +42,7 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 ## Python Environment
 - Always use `python3 -m pytest` (not bare `pytest`) — multiple Python versions on this system
 - Pyright reports false positives everywhere (unused imports, undefined variables in local imports, unused params in test mocks) — ignore them, ruff is the authoritative linter
-- `python3 -m plecost` does NOT work (no `__main__.py`) — use the installed `plecost` entrypoint only
+- `python3 -m plecost` works via `plecost/__main__.py` → `plecost.cli:app`
 
 ## Scanner Extensibility (Callbacks)
 - `Scanner(opts, on_module_start, on_module_done, on_finding)` — optional callbacks for real-time progress
@@ -75,6 +80,20 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - `NVD_API_KEY` — NVD API key (higher rate limit for `build-db`/`sync-db`)
 - `GITHUB_TOKEN` — GitHub token for `update-db` downloads (avoids rate limiting)
 
+## Pre-flight Check
+- `Scanner._check_access()` probes the root URL before running any module — if it returns 403, `ScanResult.blocked=True` and the scheduler is skipped entirely
+- Finding `PC-PRE-001` (module `pre-flight`) is emitted on block detection
+
+## Scan Modes (Fast vs Deep)
+- `ScanOptions.deep = False` by default — queries top 150 plugins + top 50 themes ordered by `active_installs DESC`
+- `ScanOptions.deep = True` (CLI: `--deep`) — full wordlist (4750+ plugins, 900+ themes)
+- `CVEStore.get_plugins_wordlist(top_n)` / `get_themes_wordlist(top_n)` accept optional limit
+- `ThemesWordlist` has `active_installs` column (added recently; existing DBs need rebuild with `plecost build-db`)
+
+## DB Schema Notes
+- `PluginsWordlist.active_installs` — populated by `build-db`/`update-db` from WordPress.org API
+- `ThemesWordlist.active_installs` — added; existing local DBs at `~/.plecost/db/plecost.db` need `plecost update-db` or `plecost build-db` to get this column
+
 ## Adding a New Module
 - Create `plecost/modules/your_name.py` extending `ScanModule` with `name`, `depends_on`, `async run(ctx, http)`
 - Register it in `plecost/scanner.py` (instantiate and add to module list)
@@ -86,6 +105,7 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 ## SQLAlchemy Async Gotchas
 - Always call `await engine.dispose()` in a `try/finally` block in CLI commands — exceptions skip it otherwise
 - `patch_applier._apply_upserts()` batches with `session.flush()` every 2000 records; `session.commit()` happens once at end
+- `.where()` does NOT accept Python `True`/`False` as fallback conditions — build a `conditions: list` and append conditionally, then unpack with `*conditions`
 
 ## Background Agents & Git
 - When running multiple background agents that commit, tell each to commit but NOT push; do a single `git push` from the main session after all agents finish
