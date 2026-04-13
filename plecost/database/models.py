@@ -48,6 +48,7 @@ class ThemesWordlist(Base):
     __tablename__ = "themes_wordlist"
     slug: Mapped[str] = mapped_column(String(255), primary_key=True)
     last_updated: Mapped[str] = mapped_column(String(30), default="")
+    active_installs: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class DbMetadata(Base):

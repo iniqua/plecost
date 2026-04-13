@@ -75,6 +75,7 @@ class Scanner:
                 random_user_agent=self._opts.random_user_agent,
                 verify_ssl=self._opts.verify_ssl,
                 force=self._opts.force,
+                deep=self._opts.deep,
                 output=self._opts.output,
             )
             scanner = Scanner(opts)
@@ -97,8 +98,10 @@ class Scanner:
             db_url = self._opts.db_url or f"sqlite+aiosqlite:///{Path.home() / '.plecost' / 'db' / 'plecost.db'}"
             store = CVEStore.from_url(db_url)
             cve_mod = CVEsModule(store)
-            plugin_wl = await store.get_plugins_wordlist()
-            theme_wl = await store.get_themes_wordlist()
+            plugin_top_n = None if self._opts.deep else 150
+            theme_top_n = None if self._opts.deep else 50
+            plugin_wl = await store.get_plugins_wordlist(top_n=plugin_top_n)
+            theme_wl = await store.get_themes_wordlist(top_n=theme_top_n)
         except Exception as e:
             import sys
             print(

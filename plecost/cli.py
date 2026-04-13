@@ -37,6 +37,7 @@ def scan(
     random_user_agent: bool = typer.Option(False, "--random-user-agent", "--rua"),
     verify_ssl: bool = typer.Option(True, help="Verify SSL certificates"),
     force: bool = typer.Option(False, help="Continue even if WordPress not detected"),
+    deep: bool = typer.Option(False, "--deep", help="Deep mode: scan full plugin/theme wordlist (default: top 150 plugins, top 50 themes)"),
     quiet: bool = typer.Option(False, help="Only show HIGH and CRITICAL findings"),
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Show real-time module progress and findings during scan"),
     db_url: Optional[str] = typer.Option(None, "--db-url", help="CVE database URL (sqlite+aiosqlite:/// or postgresql+asyncpg://)", envvar="PLECOST_DB_URL"),
@@ -87,6 +88,7 @@ def scan(
             random_user_agent=random_user_agent,
             verify_ssl=verify_ssl,
             force=force,
+            deep=deep,
             output=output,
             db_url=db_url,
         )
@@ -96,15 +98,19 @@ def scan(
             display = VerboseDisplay(console, module_names=_ALL_MODULE_NAMES)
             display.start()
 
-        result = asyncio.run(Scanner(
-            opts,
-            on_module_start=display.on_module_start if display else None,
-            on_module_done=display.on_module_done if display else None,
-            on_finding=display.on_finding if display else None,
-        ).run())
-
-        if display:
-            display.stop()
+        try:
+            result = asyncio.run(Scanner(
+                opts,
+                on_module_start=display.on_module_start if display else None,
+                on_module_done=display.on_module_done if display else None,
+                on_finding=display.on_finding if display else None,
+                on_module_progress=display.on_module_progress if display else None,
+            ).run())
+        except KeyboardInterrupt:
+            raise typer.Exit(0)
+        finally:
+            if display:
+                display.stop()
 
         TerminalReporter(result, console=console, quiet=quiet).print()
 

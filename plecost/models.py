@@ -122,5 +122,6 @@ class ScanOptions:
     random_user_agent: bool = False
     verify_ssl: bool = True
     force: bool = False
+    deep: bool = False  # False = fast mode (top 150 plugins, top 50 themes); True = full wordlist
     output: str | None = None
     db_url: str | None = None  # None = default SQLite at ~/.plecost/db/plecost.db

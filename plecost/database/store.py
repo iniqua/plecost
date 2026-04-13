@@ -3,8 +3,8 @@ import json
 from dataclasses import dataclass
 
 from packaging.version import Version, InvalidVersion
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy import select, desc
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
 
 from plecost.database.models import NormalizedVuln, PluginsWordlist, RejectedCve, ThemesWordlist
 
@@ -30,8 +30,9 @@ class VulnerabilityRecord:
 
 
 class CVEStore:
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession], engine: AsyncEngine | None = None) -> None:
         self._sf = session_factory
+        self._engine = engine
 
     @classmethod
     def from_url(cls, db_url: str) -> "CVEStore":
@@ -45,7 +46,12 @@ class CVEStore:
                     f"CVE database not found at {path}. Run 'plecost update-db' to download it."
                 )
         engine = make_engine(db_url)
-        return cls(make_session_factory(engine))
+        return cls(make_session_factory(engine), engine=engine)
+
+    async def dispose(self) -> None:
+        """Dispose the underlying engine, releasing all connections and background threads."""
+        if self._engine is not None:
+            await self._engine.dispose()
 
     async def find(
         self, software_type: str, slug: str, installed_version: str
@@ -135,12 +141,20 @@ class CVEStore:
 
         return [self._to_record(row) for row in rows]
 
-    async def get_plugins_wordlist(self) -> list[str]:
+    async def get_plugins_wordlist(self, top_n: int | None = None) -> list[str]:
+        """Return plugin slugs ordered by popularity. If top_n is set, return only the top N."""
         async with self._sf() as session:
-            result = await session.execute(select(PluginsWordlist.slug))
+            q = select(PluginsWordlist.slug).order_by(desc(PluginsWordlist.active_installs))
+            if top_n is not None:
+                q = q.limit(top_n)
+            result = await session.execute(q)
             return list(result.scalars().all())
 
-    async def get_themes_wordlist(self) -> list[str]:
+    async def get_themes_wordlist(self, top_n: int | None = None) -> list[str]:
+        """Return theme slugs ordered by popularity. If top_n is set, return only the top N."""
         async with self._sf() as session:
-            result = await session.execute(select(ThemesWordlist.slug))
+            q = select(ThemesWordlist.slug).order_by(desc(ThemesWordlist.active_installs))
+            if top_n is not None:
+                q = q.limit(top_n)
+            result = await session.execute(q)
             return list(result.scalars().all())
