@@ -128,6 +128,16 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - `patch_applier._apply_upserts()` batches with `session.flush()` every 2000 records; `session.commit()` happens once at end
 - `.where()` does NOT accept Python `True`/`False` as fallback conditions — build a `conditions: list` and append conditionally, then unpack with `*conditions`
 
+## Modules That Need the Database Store
+- Modules requiring DB access receive `store: CVEStore | None` in constructor (like `CVEsModule`)
+- Use `if TYPE_CHECKING: from plecost.database.store import CVEStore` to avoid circular imports
+- When `store is None` (DB unavailable), module must still run gracefully and emit its summary finding
+- Register in `scanner.py` as `MyModule(store)` — `store` is the local variable that may be None
+
+## asyncio.gather() Shared Mutable State
+- Use `counter: list[int] = [0]` to share numeric counters across parallel coroutines safely
+- asyncio is single-threaded — list.append() needs no locks
+
 ## Background Agents & Git
 - When running multiple background agents that commit, tell each to commit but NOT push; do a single `git push` from the main session after all agents finish
 
