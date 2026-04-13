@@ -110,6 +110,11 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - Add module name to `_ALL_MODULE_NAMES` in `plecost/cli.py` (verbose progress display)
 - Add new IDs to `KNOWN_FINDING_IDS` in `tests/contract/test_finding_ids.py`
 
+## Semi-Active Checks (eCommerce modules)
+- CVE detection must be **boolean-only**: check for SQL error strings / deserialization patterns in `response.text[:4096]`
+- **Never** use time-based detection (SLEEP, WAITFOR) — it ties up the httpx connection and starves the asyncio event loop
+- `module_options` key is user-defined per module and need NOT match `name`: e.g., `wp_ecommerce` module reads `ctx.opts.module_options.get("wpec", {})` — document the key in the module's docstring or CLAUDE.md entry
+
 ## Typer Gotchas
 - `tuple[str, ...]` NOT supported as parameter type — use `List[str]` from `typing` for multi-value CLI options; causes `RuntimeError: Type not yet supported: Ellipsis` at runtime
 - Default for `List[str]` Typer options must be `[]` not `()`
