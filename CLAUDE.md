@@ -9,6 +9,7 @@ pip install -e ".[dev,postgres]"  # include asyncpg for PostgreSQL
 ## Development Commands
 ```bash
 python3 -m pytest tests/unit tests/integration tests/contract tests/property -v
+python3 -m pytest tests/unit tests/integration tests/contract tests/property --cov=plecost --cov-fail-under=75
 python3 -m ruff check plecost/ --fix
 python3 -m mypy plecost/ --ignore-missing-imports
 ```
@@ -30,7 +31,7 @@ plecost scan -T urls.txt -o report.json        # bulk scan, save JSON
 - `plecost/cli.py` — Typer entrypoint; commands: `scan`, `explain`, `update-db`, `build-db`, `sync-db`, `modules`
 - `plecost/scanner.py` — `Scanner.run()` and `Scanner.run_many()` (public API for use as a library)
 - `plecost/engine/` — `http_client.py` (httpx async), `context.py` (shared state), `scheduler.py` (async dependency graph)
-- `plecost/modules/` — 16 detection modules; each extends `ScanModule` with `name`, `depends_on`, `async run()`
+- `plecost/modules/` — 17 detection modules; each extends `ScanModule` with `name`, `depends_on`, `async run()`
 - `plecost/database/` — SQLAlchemy async; `updater.py` (NVD full build), `incremental.py` (delta sync), `downloader.py` (from release), `store.py` (queries)
 - `plecost/database/patch_applier.py` — applies JSON patches (upserts + soft-deletes); portable SQLite/PG
 - `plecost/reporters/` — `terminal.py` (Rich), `json_reporter.py` (JSON)
@@ -39,7 +40,7 @@ plecost scan -T urls.txt -o report.json        # bulk scan, save JSON
 ## Finding IDs
 - Permanent format: `PC-{MODULE}-{NNN}` (e.g. `PC-MCFG-001`, `PC-CVE-CVE-2023-28121`)
 - Associated remediation ID: `REM-{MODULE}-{NNN}`
-- Full registry of 60 IDs in `plecost/cli.py` → `plecost explain <ID>`
+- Full registry of 73 IDs in `plecost/cli.py` → `plecost explain <ID>`
 
 ## Public API
 - `from plecost import Scanner, ScanOptions, ScanResult` — only these three are exported (`__all__`)
