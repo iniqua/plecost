@@ -37,12 +37,15 @@ class TerminalReporter:
             f"[bold cyan]Scan ID:[/bold cyan] {r.scan_id}",
             f"[bold cyan]Timestamp:[/bold cyan] {r.timestamp.isoformat()}",
             f"[bold cyan]Duration:[/bold cyan] {r.duration_seconds}s",
-            f"[bold cyan]WordPress:[/bold cyan] {'Yes' if r.is_wordpress else 'No'}",
         ]
-        if r.wordpress_version:
-            lines.append(f"[bold cyan]WP Version:[/bold cyan] {r.wordpress_version}")
-        if r.waf_detected:
-            lines.append(f"[bold cyan]WAF:[/bold cyan] {r.waf_detected}")
+        if r.blocked:
+            lines.append("[bold red]Status:[/bold red] [bold red]BLOCKED — target returned HTTP 403, scan aborted[/bold red]")
+        else:
+            lines.append(f"[bold cyan]WordPress:[/bold cyan] {'Yes' if r.is_wordpress else 'No'}")
+            if r.wordpress_version:
+                lines.append(f"[bold cyan]WP Version:[/bold cyan] {r.wordpress_version}")
+            if r.waf_detected:
+                lines.append(f"[bold cyan]WAF:[/bold cyan] {r.waf_detected}")
 
         self._console.print(Panel("\n".join(lines), title="[bold]Plecost v4.0 Scan Report[/bold]"))
 
@@ -80,6 +83,12 @@ class TerminalReporter:
             )
 
         self._console.print(findings_table)
+
+        # Finding details
+        for finding in sorted(r.findings, key=lambda f: list(Severity).index(f.severity)):
+            if self._quiet and finding.severity not in (Severity.CRITICAL, Severity.HIGH):
+                continue
+            self._print_finding_detail(finding)
 
         # Plugins
         if r.plugins:
@@ -136,15 +145,10 @@ class TerminalReporter:
             themes_table = Table(title="Detected Themes")
             themes_table.add_column("Slug")
             themes_table.add_column("Version")
-            themes_table.add_column("Latest Version")
-            themes_table.add_column("Outdated")
             for t in r.themes:
-                outdated_marker = "[yellow]Yes[/yellow]" if t.outdated else "No"
                 themes_table.add_row(
                     t.slug,
                     t.version or "unknown",
-                    t.latest_version or "unknown",
-                    outdated_marker,
                 )
             self._console.print(themes_table)
 
@@ -158,6 +162,33 @@ class TerminalReporter:
             self._console.print(users_table)
 
 
+    def _print_finding_detail(self, finding: Finding) -> None:
+        color = _SEVERITY_COLORS.get(finding.severity, "white")
+        detail = Table(show_lines=True, box=box.SIMPLE_HEAD, expand=True)
+        detail.add_column("Field", style="bold", no_wrap=True, width=14)
+        detail.add_column("Value")
+
+        detail.add_row("Description", finding.description)
+
+        first = True
+        for key, val in finding.evidence.items():
+            label = "Evidence" if first else ""
+            detail.add_row(label, f"[bold]{key}:[/bold] {val}")
+            first = False
+
+        detail.add_row("Remediation", finding.remediation)
+
+        if finding.references:
+            for i, ref in enumerate(finding.references):
+                detail.add_row("References" if i == 0 else "", ref)
+
+        if finding.cvss_score is not None:
+            detail.add_row("CVSS Score", str(finding.cvss_score))
+
+        title = f"[{color}]{finding.id}[/{color}]  [{color}]{finding.severity.value}[/{color}]  {finding.title}"
+        self._console.print(Panel(detail, title=title, title_align="left"))
+
+
 class VerboseDisplay:
     """Rich Live display for verbose scan progress: modules + real-time findings."""
 
@@ -165,6 +196,7 @@ class VerboseDisplay:
 
     def __init__(self, console: Console, module_names: list[str]) -> None:
         self._modules: dict[str, str] = {name: "pending" for name in module_names}
+        self._progress: dict[str, tuple[int, int]] = {}  # name -> (current, total)
         self._findings: list[Finding] = []
         self._console = console
         self._live: Live | None = None
@@ -183,10 +215,15 @@ class VerboseDisplay:
 
     def on_module_done(self, name: str) -> None:
         self._modules[name] = "done"
+        self._progress.pop(name, None)
         self._refresh()
 
     def on_finding(self, finding: Finding) -> None:
         self._findings.append(finding)
+        self._refresh()
+
+    def on_module_progress(self, name: str, current: int, total: int) -> None:
+        self._progress[name] = (current, total)
         self._refresh()
 
     def _refresh(self) -> None:
@@ -197,8 +234,14 @@ class VerboseDisplay:
         mod_table = Table(title="Módulos", box=box.SIMPLE)
         mod_table.add_column("", width=3)
         mod_table.add_column("Módulo")
+        mod_table.add_column("Progreso", width=14)
         for name, state in self._modules.items():
-            mod_table.add_row(self._STATUS_ICON[state], name)
+            progress_str = ""
+            if state == "running" and name in self._progress:
+                cur, tot = self._progress[name]
+                pct = int(cur / tot * 100) if tot else 0
+                progress_str = f"[cyan]{cur}/{tot}[/cyan] [dim]({pct}%)[/dim]"
+            mod_table.add_row(self._STATUS_ICON[state], name, progress_str)
 
         find_table = Table(title=f"Findings ({len(self._findings)})", box=box.SIMPLE)
         find_table.add_column("Severidad", width=10)

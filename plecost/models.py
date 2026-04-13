@@ -94,6 +94,7 @@ class ScanResult:
     waf_detected: str | None
     findings: list[Finding]
     summary: ScanSummary
+    blocked: bool = False
 
     def to_json(self, path: str) -> None:
         def default(obj: Any) -> Any:

@@ -49,11 +49,13 @@ class Scanner:
         on_module_start: Callable[[str], None] | None = None,
         on_module_done: Callable[[str], None] | None = None,
         on_finding: Callable[[Finding], None] | None = None,
+        on_module_progress: Callable[[str, int, int], None] | None = None,
     ) -> None:
         self._opts = opts
         self._on_module_start = on_module_start
         self._on_module_done = on_module_done
         self._on_finding = on_finding
+        self._on_progress = on_module_progress
 
     async def run_many(self, urls: list[str]) -> list[ScanResult]:
         """Scan multiple targets sequentially and return a list of ScanResults."""
@@ -82,12 +84,13 @@ class Scanner:
 
     async def run(self) -> ScanResult:
         start = time.monotonic()
-        ctx = ScanContext(self._opts, on_finding=self._on_finding)
+        ctx = ScanContext(self._opts, on_finding=self._on_finding, on_progress=self._on_progress)
 
         # Initialize CVE store and wordlists asynchronously
         cve_mod: CVEsModule | None = None
         plugin_wl: list[str] = []
         theme_wl: list[str] = []
+        store = None
         try:
             from plecost.database.store import CVEStore
             from pathlib import Path
@@ -116,15 +119,50 @@ class Scanner:
         if cve_mod:
             modules.append(cve_mod)
 
-        scheduler = Scheduler(modules, on_module_start=self._on_module_start, on_module_done=self._on_module_done)
-        async with PlecostHTTPClient(self._opts) as http:
-            await scheduler.run(ctx, http)
+        try:
+            scheduler = Scheduler(modules, on_module_start=self._on_module_start, on_module_done=self._on_module_done)
+            async with PlecostHTTPClient(self._opts) as http:
+                blocked = await self._check_access(ctx, http)
+                if not blocked:
+                    await scheduler.run(ctx, http)
+        finally:
+            if store is not None:
+                await store.dispose()
         duration = time.monotonic() - start
         return ScanResult(
-            scan_id=str(uuid.uuid4()), url=self._opts.url,
+            scan_id=str(uuid.uuid4()), url=self._opts.url, blocked=ctx.blocked,
             timestamp=datetime.now(), duration_seconds=round(duration, 2),
             is_wordpress=ctx.is_wordpress, wordpress_version=ctx.wordpress_version,
             plugins=ctx.plugins, themes=ctx.themes, users=ctx.users,
             waf_detected=ctx.waf_detected, findings=ctx.findings,
             summary=_build_summary(ctx.findings)
         )
+
+    async def _check_access(self, ctx: ScanContext, http: PlecostHTTPClient) -> bool:
+        """Pre-flight: probe the target URL. Returns True (blocked) if access is denied."""
+        try:
+            r = await http.get(ctx.url + "/")
+            if r.status_code == 403:
+                ctx.blocked = True
+                ctx.add_finding(Finding(
+                    id="PC-PRE-001", remediation_id="REM-PRE-001",
+                    title="Target host blocked this scanner (HTTP 403)",
+                    severity=Severity.INFO,
+                    description=(
+                        f"The target {ctx.url} returned HTTP 403 Forbidden on the initial "
+                        "probe request. The server is actively blocking this scanner's IP or "
+                        "User-Agent. No further analysis was performed."
+                    ),
+                    evidence={"url": ctx.url + "/", "status_code": "403"},
+                    remediation=(
+                        "Try scanning from a different IP, use --proxy to route through a "
+                        "different exit node, or use --user-agent to change the User-Agent string."
+                    ),
+                    references=[],
+                    cvss_score=None,
+                    module="pre-flight",
+                ))
+                return True
+        except Exception:
+            pass
+        return False
