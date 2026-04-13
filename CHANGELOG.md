@@ -1,4 +1,4 @@
-## [2026-04-13]
+## [4.1.0] — 2026-04-13
 
 ### Added
 - New `woocommerce` module for detecting vulnerabilities and misconfigurations in WooCommerce and its official plugins (Payments, Blocks, Stripe Gateway)

@@ -131,7 +131,7 @@ plecost scan https://target.com
 ```
 $ plecost scan https://target.com
 
-  Plecost v4.0 — WordPress Security Scanner
+  Plecost v4.1 — WordPress Security Scanner
   Target: https://target.com
 
   WordPress 6.4.2 detected  |  WAF: Cloudflare
@@ -200,11 +200,12 @@ plecost scan https://target.com --quiet
 | `--deep` | Full wordlist scan (4750+ plugins, 900+ themes); default is top 150/50 | off |
 | `--verbose / -v` | Real-time module progress and findings during scan | off |
 | `--quiet` | Show only HIGH and CRITICAL findings | off |
+| `--module-option` | Module-specific option: `MODULE:KEY=VALUE` (repeatable) | — |
 
 
 ## Detection Modules
 
-Plecost runs **15 async modules** in parallel, wired through an explicit dependency graph. Modules without interdependencies run concurrently from the start; `cves` waits for `plugins` and `themes` to complete before correlating results against the local database.
+Plecost runs **16 async modules** in parallel, wired through an explicit dependency graph. Modules without interdependencies run concurrently from the start; `cves` waits for `plugins` and `themes` to complete before correlating results against the local database.
 
 | Module | What it checks | Finding IDs |
 |--------|----------------|-------------|
@@ -223,8 +224,58 @@ Plecost runs **15 async modules** in parallel, wired through an explicit depende
 | `content_analysis` | Card skimming scripts, suspicious iframes, hardcoded API keys | PC-CNT-001/002/003 |
 | `auth` | Authenticated checks: login verification, open user registration | PC-AUTH-001/002 |
 | `cves` | CVE correlation for core + plugins + themes against local DB | PC-CVE-{CVE-ID} |
+| `woocommerce` | WooCommerce-specific security checks (see below) | PC-WC-000–021 |
 
 Use `plecost explain <ID>` for full technical detail and remediation steps on any finding ID.
+
+
+## WooCommerce Security
+
+The `woocommerce` module performs dedicated security checks for WooCommerce installations and its official extensions (Payments, Blocks, Stripe Gateway). It runs automatically when WooCommerce is detected.
+
+### Passive checks (always on)
+
+- **Fingerprinting** — detects WooCommerce version, active extensions (Payments, Blocks, Stripe Gateway), and exposed API namespaces
+- **REST API without authentication** — checks whether `/wp-json/wc/v3/customers`, `/orders`, `/coupons`, and `/system-status` are accessible without credentials (CRITICAL/HIGH)
+- **Sensitive file exposure** — directory listing on `/wp-content/uploads/wc-logs/`, access to `/wp-content/uploads/woocommerce_uploads/`
+
+### Semi-active checks (opt-in)
+
+Semi-active checks send additional HTTP requests that could leave traces in server logs. Enable explicitly:
+
+```bash
+plecost scan https://target.com --module-option woocommerce:mode=semi-active
+```
+
+| Check | CVE | CVSS |
+|-------|-----|------|
+| WooCommerce Payments authentication bypass | CVE-2023-28121 | 9.8 Critical |
+| WooCommerce Stripe Gateway IDOR (PII disclosure) | CVE-2023-34000 | 7.5 High |
+
+### Authenticated checks (optional)
+
+Provide WooCommerce REST API credentials to unlock additional checks (system configuration disclosure, payment gateway enumeration):
+
+```bash
+plecost scan https://target.com \
+  --module-option woocommerce:wc_consumer_key=ck_xxx \
+  --module-option woocommerce:wc_consumer_secret=cs_xxx
+```
+
+### WooCommerce JSON output
+
+When WooCommerce is detected, the scan result includes a dedicated `woocommerce` section:
+
+```json
+{
+  "woocommerce": {
+    "detected": true,
+    "version": "8.5.2",
+    "active_plugins": ["core", "payments", "blocks", "stripe-gateway"],
+    "api_namespaces": ["wc/store/v1", "wc/v3"]
+  }
+}
+```
 
 
 ## Output Formats
@@ -265,7 +316,13 @@ plecost scan https://target.com --output report.json
   ],
   "summary": { "critical": 1, "high": 1, "medium": 3, "low": 2 },
   "duration_seconds": 4.2,
-  "blocked": false
+  "blocked": false,
+  "woocommerce": {
+    "detected": true,
+    "version": "8.2.1",
+    "active_plugins": ["core", "payments", "blocks"],
+    "api_namespaces": ["wc/store/v1", "wc/v3"]
+  }
 }
 ```
 
@@ -389,6 +446,7 @@ plecost scan https://target.com --force
 | Plugin brute-force | Yes | Yes | No |
 | CVE correlation (daily updates) | Yes | Yes | Yes |
 | Content / skimmer analysis | Yes | No | Yes |
+| WooCommerce dedicated checks | Yes | No | No |
 | Stable finding IDs | Yes | No | No |
 | Docker native | Yes | Yes | No |
 | Celery / library compatible | Yes | No | No |
