@@ -1,6 +1,8 @@
 ## [Unreleased] - 2026-04-13
 
 ### Added
+- Extended `tests/property/test_robustness.py` with three new Hypothesis tests: `plugins._VER_RE` never raises on arbitrary text, all `_FINDINGS_REGISTRY` IDs match the `PC-<MODULE>-<ID>` pattern, and `ScanContext.url` never retains a trailing slash
+- New `tests/contract/test_json_output_schema.py` with 10 golden/schema tests verifying the JSON output contract: required top-level keys, ecommerce fields always present, Finding field completeness, ScanSummary keys, Severity serialized as uppercase string, timestamp as ISO string, correct types for lists/booleans/numbers
 - 8 new unit tests for `FingerprintModule` covering `_try_feed()`, `_try_rest_api()`, and `_try_wp_paths()` (normal server and WAF blanket scenarios)
 
 ## [4.2.0] - 2026-04-13
