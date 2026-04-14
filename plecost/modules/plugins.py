@@ -9,6 +9,8 @@ from plecost.modules.base import ScanModule
 _PLUGIN_PATH_RE = re.compile(r'/wp-content/plugins/([a-z0-9_-]+)/', re.I)
 _VER_RE = re.compile(r'[Ss]table\s+tag:\s*([\d.]+)')
 _QVER_RE = re.compile(r'\?ver=([\d.]+)')
+# Patterns that only appear in a real WordPress plugin readme.txt
+_README_VALID_RE = re.compile(r'(===\s+\S|Stable\s+tag:|Contributors:|Plugin\s+Name:)', re.I)
 
 
 class PluginsModule(ScanModule):
@@ -40,12 +42,17 @@ class PluginsModule(ScanModule):
 
         # Active: brute-force wordlist
         # First probe a nonexistent slug to establish the 404 baseline.
-        # If the server returns non-404 for nonexistent paths (WAF blanket block),
-        # then 403 is not a reliable "plugin exists" signal — only accept 200.
+        # Some servers return non-404 for nonexistent paths (WAF blanket block or WordPress
+        # routing through index.php). In those cases we validate response content instead.
         baseline_is_404 = True
+        baseline_is_soft_200 = False  # server returns 200 for non-existent paths
         try:
             probe = await http.get(f"{ctx.url}/wp-content/plugins/__plecost_probe__/readme.txt")
             baseline_is_404 = probe.status_code == 404
+            if not baseline_is_404 and probe.status_code == 200:
+                # Server returns 200 for everything (e.g. WordPress routing to index.php).
+                # A real readme.txt must pass content validation; fake ones won't.
+                baseline_is_soft_200 = True
         except Exception:
             pass
 
@@ -59,7 +66,11 @@ class PluginsModule(ScanModule):
                 url = f"{ctx.url}/wp-content/plugins/{slug}/readme.txt"
                 try:
                     r = await http.get(url)
-                    exists = r.status_code == 200 or (baseline_is_404 and r.status_code == 403)
+                    if baseline_is_soft_200:
+                        # Server returns 200 for everything; only trust a real readme.txt
+                        exists = r.status_code == 200 and bool(_README_VALID_RE.search(r.text[:2000]))
+                    else:
+                        exists = r.status_code == 200 or (baseline_is_404 and r.status_code == 403)
                     if exists:
                         ver = None
                         if r.status_code == 200:
@@ -67,7 +78,9 @@ class PluginsModule(ScanModule):
                                 ver = m.group(1)
                         if slug not in found:
                             found[slug] = ver
-                        elif ver and found[slug] is None:
+                        elif ver:
+                            # readme.txt "Stable tag" is authoritative; always prefer it
+                            # over the ?ver= picked up from passive HTML scanning
                             found[slug] = ver
                 except Exception:
                     pass
@@ -90,6 +103,10 @@ class PluginsModule(ScanModule):
                     try:
                         r = await http.get(url)
                         if r.status_code == 200:
+                            if baseline_is_soft_200 and not _README_VALID_RE.search(r.text[:2000]):
+                                # Fake 200 — plugin doesn't really exist; remove it
+                                found.pop(slug, None)
+                                return
                             if m := _VER_RE.search(r.text):
                                 found[slug] = m.group(1)
                     except Exception:

@@ -23,7 +23,9 @@
 - **themes**: same fix — first occurrence without `?ver=` is now upgraded if a later occurrence has the parameter
 - **plugins / themes**: passive detection window for `?ver=` extended from 100 to 200 characters after the path match, reducing missed versions on deeper resource paths
 - **plugins / themes**: plugins/themes detected passively but absent from the brute-force wordlist now receive a targeted `readme.txt` / `style.css` fetch to recover the version instead of always showing `unknown`
-- 6 new regression tests (3 plugins + 3 themes) covering the three fixed scenarios
+- **plugins / themes**: `readme.txt` "Stable tag" and `style.css` "Version:" now always take precedence over `?ver=` from HTML; previously sub-package assets with different version strings could pollute the reported version (e.g. woocommerce showing 4.0.0 instead of 5.0.0)
+- **plugins / themes**: when the server returns HTTP 200 for non-existent paths (WordPress routing all requests through `index.php`), the brute-force scanner now validates response content using readme.txt / style.css header patterns instead of trusting the status code; this eliminates false positives where all plugins in the wordlist were reported as installed
+- 10 new regression tests covering all five fixed scenarios (3 existing + 4 new in this round + 3 from previous round)
 
 ### Added
 - `webshells` module: remote webshell detection for WordPress sites

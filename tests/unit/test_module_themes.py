@@ -95,3 +95,49 @@ async def test_passive_only_theme_gets_active_version_check(ctx):
     theme = next((t for t in ctx.themes if t.slug == "custom-theme"), None)
     assert theme is not None
     assert theme.version == "4.2.1", f"passive-only theme version not fetched: got {theme.version!r}"
+
+
+@pytest.mark.asyncio
+async def test_style_css_version_beats_qver_in_html(ctx):
+    """Version: in style.css must override the ?ver= captured from HTML."""
+    html = '<link href="/wp-content/themes/mytheme/style.css?ver=1.0"/>'
+    css = "/*\nTheme Name: My Theme\nVersion: 3.5.2\nAuthor: Dev\n*/"
+    async with respx.mock:
+        respx.get("https://example.com/").mock(return_value=httpx.Response(200, text=html))
+        respx.get("https://example.com/wp-content/themes/__plecost_probe__/style.css").mock(
+            return_value=httpx.Response(404)
+        )
+        respx.get("https://example.com/wp-content/themes/mytheme/style.css").mock(
+            return_value=httpx.Response(200, text=css)
+        )
+        async with PlecostHTTPClient(ctx.opts) as http:
+            mod = ThemesModule(wordlist=["mytheme"])
+            await mod.run(ctx, http)
+    theme = next((t for t in ctx.themes if t.slug == "mytheme"), None)
+    assert theme is not None
+    assert theme.version == "3.5.2", f"style.css version should win over ?ver=: got {theme.version!r}"
+
+
+@pytest.mark.asyncio
+async def test_soft_200_server_filters_false_positive_themes(ctx):
+    """When server returns 200 for all paths, non-real themes are excluded."""
+    fake_body = "WordPress 404 page or mu-plugins output"
+    real_css = "/*\nTheme Name: Real Theme\nVersion: 2.0.0\nAuthor: Dev\n*/"
+    async with respx.mock:
+        respx.get("https://example.com/").mock(return_value=httpx.Response(200, text=""))
+        # Probe also returns 200 → baseline_is_soft_200=True
+        respx.get("https://example.com/wp-content/themes/__plecost_probe__/style.css").mock(
+            return_value=httpx.Response(200, text=fake_body)
+        )
+        respx.get("https://example.com/wp-content/themes/real-theme/style.css").mock(
+            return_value=httpx.Response(200, text=real_css)
+        )
+        respx.get("https://example.com/wp-content/themes/fake-theme/style.css").mock(
+            return_value=httpx.Response(200, text=fake_body)
+        )
+        async with PlecostHTTPClient(ctx.opts) as http:
+            mod = ThemesModule(wordlist=["real-theme", "fake-theme"])
+            await mod.run(ctx, http)
+    slugs = {t.slug for t in ctx.themes}
+    assert "real-theme" in slugs, "real theme with valid style.css should be detected"
+    assert "fake-theme" not in slugs, "fake theme returning non-CSS content should be excluded"

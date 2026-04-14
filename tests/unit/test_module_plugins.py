@@ -94,3 +94,49 @@ async def test_passive_only_plugin_gets_active_version_check(ctx):
     plugin = next((p for p in ctx.plugins if p.slug == "custom-plugin"), None)
     assert plugin is not None
     assert plugin.version == "2.5.0", f"passive-only plugin version not fetched: got {plugin.version!r}"
+
+
+@pytest.mark.asyncio
+async def test_readme_version_beats_qver_in_html(ctx):
+    """Stable tag: in readme.txt must override the ?ver= captured from HTML."""
+    # HTML says ver=4.0.0 (e.g. a sub-package asset); readme.txt says 5.0.0 (the real version)
+    html = '<script src="/wp-content/plugins/myplugin/blocks/build/style.css?ver=4.0.0"></script>'
+    async with respx.mock:
+        respx.get("https://example.com/").mock(return_value=httpx.Response(200, text=html))
+        respx.get("https://example.com/wp-content/plugins/__plecost_probe__/readme.txt").mock(
+            return_value=httpx.Response(404)
+        )
+        respx.get("https://example.com/wp-content/plugins/myplugin/readme.txt").mock(
+            return_value=httpx.Response(200, text="=== My Plugin ===\nStable tag: 5.0.0\n")
+        )
+        async with PlecostHTTPClient(ctx.opts) as http:
+            mod = PluginsModule(wordlist=["myplugin"])
+            await mod.run(ctx, http)
+    plugin = next((p for p in ctx.plugins if p.slug == "myplugin"), None)
+    assert plugin is not None
+    assert plugin.version == "5.0.0", f"readme.txt version should win over ?ver=: got {plugin.version!r}"
+
+
+@pytest.mark.asyncio
+async def test_soft_200_server_filters_false_positives(ctx):
+    """When server returns 200 for all paths, non-real plugins are excluded."""
+    fake_body = "WordPress 404 page or mu-plugins output"
+    real_readme = "=== Real Plugin ===\nStable tag: 3.1.0\nContributors: author\n"
+    async with respx.mock:
+        respx.get("https://example.com/").mock(return_value=httpx.Response(200, text=""))
+        # Probe also returns 200 → baseline_is_soft_200=True
+        respx.get("https://example.com/wp-content/plugins/__plecost_probe__/readme.txt").mock(
+            return_value=httpx.Response(200, text=fake_body)
+        )
+        respx.get("https://example.com/wp-content/plugins/real-plugin/readme.txt").mock(
+            return_value=httpx.Response(200, text=real_readme)
+        )
+        respx.get("https://example.com/wp-content/plugins/fake-plugin/readme.txt").mock(
+            return_value=httpx.Response(200, text=fake_body)
+        )
+        async with PlecostHTTPClient(ctx.opts) as http:
+            mod = PluginsModule(wordlist=["real-plugin", "fake-plugin"])
+            await mod.run(ctx, http)
+    slugs = {p.slug for p in ctx.plugins}
+    assert "real-plugin" in slugs, "real plugin with valid readme.txt should be detected"
+    assert "fake-plugin" not in slugs, "fake plugin returning non-readme content should be excluded"
