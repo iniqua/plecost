@@ -1,14 +1,23 @@
-## [Unreleased] - 2026-04-14
+## [Unreleased] — 2026-04-14
 
 ### Added
-- `webshells` module Task 6: `FakePluginRestDetector` in `plecost/modules/webshells/detectors/fake_plugins.py` — queries WP REST API `/wp-json/wp/v2/plugins` with Basic Auth and flags any active plugin not previously detected by passive scanning, emits `PC-WSH-300` (HIGH, CVSS 7.5)
+- `webshells` module: remote webshell detection for WordPress sites
+  - `KnownPathsDetector`: probes ~100-300 known webshell filenames across WP directories; includes catch-all preflight guard to eliminate false positives
+  - `UploadsPhpDetector`: detects PHP execution in `wp-content/uploads/` across all year/month subdirs (2020–present)
+  - `MuPluginsDetector`: probes must-use plugins directory (`wp-content/mu-plugins/`) — primary vector for persistent backdoors in 2024-2025 attacks
+  - `ResponseFingerprintDetector`: fingerprints HTTP response bodies against China Chopper, WSO/FilesMan, b374k, c99shell, Godzilla/Behinder, and polyglot image/PHP families
+  - `ChecksumsDetector` (requires credentials): verifies 20 high-risk WordPress core files via `api.wordpress.org/core/checksums/`
+  - `FakePluginRestDetector` (requires credentials): uses `/wp-json/wp/v2/plugins` with Basic Auth to detect unauthorized or hidden plugins
+- 6 new finding IDs: `PC-WSH-001`, `PC-WSH-100`, `PC-WSH-150`, `PC-WSH-200`, `PC-WSH-250`, `PC-WSH-300`
+- Module option `--module-option webshells:wordlist=extended` activates ~300-path wordlist
+- Module option `--module-option webshells:detectors=name1,name2` runs only specified detectors
+- `FakePluginRestDetector` in `plecost/modules/webshells/detectors/fake_plugins.py` — queries WP REST API `/wp-json/wp/v2/plugins` with Basic Auth and flags any active plugin not previously detected by passive scanning, emits `PC-WSH-300` (HIGH, CVSS 7.5)
 - 4 unit tests in `tests/unit/test_module_webshells_fake_plugins.py`: fake plugin flagged, known plugin skipped, no credentials skipped, 401 response skipped
-- `webshells` module Task 2: `UploadsPhpDetector` in `plecost/modules/webshells/detectors/uploads_php.py` — probes `wp-content/uploads/` (root and dated year/month subdirectories) for accessible PHP files, emits `PC-WSH-100` (CRITICAL, CVSS 9.8) on any HTTP 200 response
+- `UploadsPhpDetector` in `plecost/modules/webshells/detectors/uploads_php.py` — probes `wp-content/uploads/` (root and dated year/month subdirectories) for accessible PHP files, emits `PC-WSH-100` (CRITICAL, CVSS 9.8) on any HTTP 200 response
 - 3 unit tests in `tests/unit/test_module_webshells_uploads.py`: PHP in uploads root, PHP in dated subdir, no finding on 403
-- `webshells` module Task 1: `KnownPathsDetector` in `plecost/modules/webshells/detectors/known_paths.py` — probes known webshell filenames across common WordPress directories, emits `PC-WSH-001` (CRITICAL, CVSS 9.8) on hit
+- `KnownPathsDetector` in `plecost/modules/webshells/detectors/known_paths.py` — probes known webshell filenames across common WordPress directories, emits `PC-WSH-001` (CRITICAL, CVSS 9.8) on hit
 - Preflight catch-all guard: detects sites that return 200 for arbitrary paths and skips scan to avoid mass false positives
 - Content-type FP guard: only flags responses with `text/html`, `text/plain`, or `application/x-httpd-php` content types
-- Supports `--module-option webshells:wordlist=extended` for larger wordlist coverage
 - 4 unit tests in `tests/unit/test_module_webshells_known_paths.py`: 200/text-html hit, all-404, image content-type FP guard, catch-all site skip
 - `magecart` module: detects Magecart/card-skimming JavaScript on WooCommerce and WP eCommerce checkout pages via blocklist lookup (`PC-MGC-000` through `PC-MGC-004`)
 - `MagecartDomain` ORM model and `get_magecart_domains()` store query in `plecost/database/`
