@@ -52,6 +52,9 @@ class CVEsModule(ScanModule):
             cvss_score=vuln.cvss_score,
             has_exploit=vuln.has_exploit,
             version_range=version_range,
+            description=vuln.description,
+            remediation=vuln.remediation,
+            references=vuln.references,
         )
 
     def _make_finding(self, vuln: VulnerabilityRecord) -> Finding:

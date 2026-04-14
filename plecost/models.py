@@ -36,6 +36,9 @@ class PluginVuln:
     cvss_score: float | None
     has_exploit: bool
     version_range: str     # e.g. "1.0.0–2.3.4" or "*–*"
+    description: str = ""
+    remediation: str = ""
+    references: list[str] = field(default_factory=list)
 
 
 @dataclass
