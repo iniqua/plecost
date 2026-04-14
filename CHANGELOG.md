@@ -1,3 +1,9 @@
+## [4.2.1] — 2026-04-14
+
+### Fixed
+- `PluginVuln` now includes `description`, `remediation`, and `references` fields in JSON output so downstream tooling has full CVE details without cross-referencing the `findings` array.
+- Fixed missing type annotations in `i18n.py` and `webshells/detectors/fake_plugins.py` that caused mypy strict-mode failures in CI.
+
 ## [unreleased] — 2026-04-14
 
 ### Added
