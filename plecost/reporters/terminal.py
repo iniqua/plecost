@@ -5,6 +5,7 @@ from rich.live import Live
 from rich.table import Table
 from rich.panel import Panel
 from plecost.models import Finding, ScanResult, Severity
+from plecost.i18n import t
 
 _SEVERITY_COLORS = {
     Severity.CRITICAL: "bold red",
@@ -33,27 +34,27 @@ class TerminalReporter:
         r = self._result
         # Header panel
         lines = [
-            f"[bold cyan]URL:[/bold cyan] {r.url}",
-            f"[bold cyan]Scan ID:[/bold cyan] {r.scan_id}",
-            f"[bold cyan]Timestamp:[/bold cyan] {r.timestamp.isoformat()}",
-            f"[bold cyan]Duration:[/bold cyan] {r.duration_seconds}s",
+            f"[bold cyan]{t('reporter.panel.url')}:[/bold cyan] {r.url}",
+            f"[bold cyan]{t('reporter.panel.scan_id')}:[/bold cyan] {r.scan_id}",
+            f"[bold cyan]{t('reporter.panel.timestamp')}:[/bold cyan] {r.timestamp.isoformat()}",
+            f"[bold cyan]{t('reporter.panel.duration')}:[/bold cyan] {r.duration_seconds}s",
         ]
         if r.blocked:
-            lines.append("[bold red]Status:[/bold red] [bold red]BLOCKED — target returned HTTP 403, scan aborted[/bold red]")
+            lines.append(f"[bold red]{t('reporter.panel.status')}:[/bold red] [bold red]{t('reporter.panel.blocked')}[/bold red]")
         else:
-            lines.append(f"[bold cyan]WordPress:[/bold cyan] {'Yes' if r.is_wordpress else 'No'}")
+            lines.append(f"[bold cyan]{t('reporter.panel.wordpress')}:[/bold cyan] {t('reporter.panel.yes') if r.is_wordpress else t('reporter.panel.no')}")
             if r.wordpress_version:
-                lines.append(f"[bold cyan]WP Version:[/bold cyan] {r.wordpress_version}")
+                lines.append(f"[bold cyan]{t('reporter.panel.wp_version')}:[/bold cyan] {r.wordpress_version}")
             if r.waf_detected:
-                lines.append(f"[bold cyan]WAF:[/bold cyan] {r.waf_detected}")
+                lines.append(f"[bold cyan]{t('reporter.panel.waf')}:[/bold cyan] {r.waf_detected}")
 
-        self._console.print(Panel("\n".join(lines), title="[bold]Plecost v4.0 Scan Report[/bold]"))
+        self._console.print(Panel("\n".join(lines), title=f"[bold]{t('reporter.panel.title')}[/bold]"))
 
         # Summary table
         s = r.summary
-        summary_table = Table(title="Summary")
-        summary_table.add_column("Severity")
-        summary_table.add_column("Count", justify="right")
+        summary_table = Table(title=t("reporter.table.summary"))
+        summary_table.add_column(t("reporter.column.severity"))
+        summary_table.add_column(t("reporter.column.count"), justify="right")
         for sev, count in [("CRITICAL", s.critical), ("HIGH", s.high), ("MEDIUM", s.medium),
                             ("LOW", s.low), ("INFO", s.info)]:
             color = _SEVERITY_COLORS.get(Severity(sev), "white")
@@ -61,15 +62,15 @@ class TerminalReporter:
         self._console.print(summary_table)
 
         if not r.findings:
-            self._console.print("[green]No findings.[/green]")
+            self._console.print(f"[green]{t('reporter.panel.no_findings')}[/green]")
             return
 
         # Findings table
-        findings_table = Table(title="Findings", show_lines=True)
-        findings_table.add_column("ID", style="bold")
-        findings_table.add_column("Severity", width=10)
-        findings_table.add_column("Title")
-        findings_table.add_column("Module")
+        findings_table = Table(title=t("reporter.table.findings"), show_lines=True)
+        findings_table.add_column(t("reporter.column.id"), style="bold")
+        findings_table.add_column(t("reporter.column.severity"), width=10)
+        findings_table.add_column(t("reporter.column.title"))
+        findings_table.add_column(t("reporter.column.module"))
 
         for finding in sorted(r.findings, key=lambda f: list(Severity).index(f.severity)):
             if self._quiet and finding.severity not in (Severity.CRITICAL, Severity.HIGH):
@@ -92,31 +93,31 @@ class TerminalReporter:
 
         # Plugins
         if r.plugins:
-            plugins_table = Table(title="Detected Plugins")
-            plugins_table.add_column("Slug")
-            plugins_table.add_column("Version")
-            plugins_table.add_column("Known CVEs", justify="right")
+            plugins_table = Table(title=t("reporter.table.detected_plugins"))
+            plugins_table.add_column(t("reporter.column.slug"))
+            plugins_table.add_column(t("reporter.column.version"))
+            plugins_table.add_column(t("reporter.column.known_cves"), justify="right")
             for p in r.plugins:
                 if p.vuln_count > 0:
                     cve_cell = f"[bold red]{p.vuln_count}[/bold red]"
                 else:
                     cve_cell = "[green]0[/green]"
-                plugins_table.add_row(p.slug, p.version or "unknown", cve_cell)
+                plugins_table.add_row(p.slug, p.version or t("reporter.panel.unknown"), cve_cell)
             self._console.print(plugins_table)
 
             for p in r.plugins:
                 if not p.vulns:
                     continue
                 cve_table = Table(
-                    title=f"[bold]{p.slug}[/bold] — Known Vulnerabilities",
+                    title=f"[bold]{p.slug}[/bold] — {t('reporter.table.known_vulnerabilities')}",
                     show_lines=True,
                 )
-                cve_table.add_column("CVE ID", style="bold", no_wrap=True)
-                cve_table.add_column("Severity", width=10)
-                cve_table.add_column("CVSS", justify="right", width=5)
-                cve_table.add_column("Exploit", width=7, justify="center")
-                cve_table.add_column("Affects versions", no_wrap=True)
-                cve_table.add_column("Title")
+                cve_table.add_column(t("reporter.column.cve_id"), style="bold", no_wrap=True)
+                cve_table.add_column(t("reporter.column.severity"), width=10)
+                cve_table.add_column(t("reporter.column.cvss"), justify="right", width=5)
+                cve_table.add_column(t("reporter.column.exploit"), width=7, justify="center")
+                cve_table.add_column(t("reporter.column.affects_versions"), no_wrap=True)
+                cve_table.add_column(t("reporter.column.title"))
 
                 sorted_vulns = sorted(
                     p.vulns,
@@ -142,21 +143,21 @@ class TerminalReporter:
 
         # Themes
         if r.themes:
-            themes_table = Table(title="Detected Themes")
-            themes_table.add_column("Slug")
-            themes_table.add_column("Version")
-            for t in r.themes:
+            themes_table = Table(title=t("reporter.table.detected_themes"))
+            themes_table.add_column(t("reporter.column.slug"))
+            themes_table.add_column(t("reporter.column.version"))
+            for th in r.themes:
                 themes_table.add_row(
-                    t.slug,
-                    t.version or "unknown",
+                    th.slug,
+                    th.version or t("reporter.panel.unknown"),
                 )
             self._console.print(themes_table)
 
         # Users
         if r.users:
-            users_table = Table(title="Detected Users")
-            users_table.add_column("Username")
-            users_table.add_column("Source")
+            users_table = Table(title=t("reporter.table.detected_users"))
+            users_table.add_column(t("reporter.column.username"))
+            users_table.add_column(t("reporter.column.source"))
             for u in r.users:
                 users_table.add_row(u.username, u.source)
             self._console.print(users_table)
@@ -168,22 +169,22 @@ class TerminalReporter:
         detail.add_column("Field", style="bold", no_wrap=True, width=14)
         detail.add_column("Value")
 
-        detail.add_row("Description", finding.description)
+        detail.add_row(t("reporter.field.description"), finding.description)
 
         first = True
         for key, val in finding.evidence.items():
-            label = "Evidence" if first else ""
+            label = t("reporter.field.evidence") if first else ""
             detail.add_row(label, f"[bold]{key}:[/bold] {val}")
             first = False
 
-        detail.add_row("Remediation", finding.remediation)
+        detail.add_row(t("reporter.field.remediation"), finding.remediation)
 
         if finding.references:
             for i, ref in enumerate(finding.references):
-                detail.add_row("References" if i == 0 else "", ref)
+                detail.add_row(t("reporter.field.references") if i == 0 else "", ref)
 
         if finding.cvss_score is not None:
-            detail.add_row("CVSS Score", str(finding.cvss_score))
+            detail.add_row(t("reporter.field.cvss_score"), str(finding.cvss_score))
 
         title = f"[{color}]{finding.id}[/{color}]  [{color}]{finding.severity.value}[/{color}]  {finding.title}"
         self._console.print(Panel(detail, title=title, title_align="left"))
@@ -231,10 +232,10 @@ class VerboseDisplay:
             self._live.update(self._render())
 
     def _render(self) -> Group:
-        mod_table = Table(title="Módulos", box=box.SIMPLE)
+        mod_table = Table(title=t("verbose.table.modules"), box=box.SIMPLE)
         mod_table.add_column("", width=3)
-        mod_table.add_column("Módulo")
-        mod_table.add_column("Progreso", width=14)
+        mod_table.add_column(t("verbose.column.module"))
+        mod_table.add_column(t("verbose.column.progress"), width=14)
         for name, state in self._modules.items():
             progress_str = ""
             if state == "running" and name in self._progress:
@@ -243,10 +244,10 @@ class VerboseDisplay:
                 progress_str = f"[cyan]{cur}/{tot}[/cyan] [dim]({pct}%)[/dim]"
             mod_table.add_row(self._STATUS_ICON[state], name, progress_str)
 
-        find_table = Table(title=f"Findings ({len(self._findings)})", box=box.SIMPLE)
-        find_table.add_column("Severidad", width=10)
-        find_table.add_column("ID")
-        find_table.add_column("Título")
+        find_table = Table(title=t("verbose.table.findings", count=len(self._findings)), box=box.SIMPLE)
+        find_table.add_column(t("verbose.column.severity"), width=10)
+        find_table.add_column(t("verbose.column.id"))
+        find_table.add_column(t("verbose.column.title"))
         for f in self._findings[-20:]:
             color = _SEVERITY_COLORS.get(f.severity, "white")
             find_table.add_row(f"[{color}]{f.severity.value}[/{color}]", f.id, f.title)
