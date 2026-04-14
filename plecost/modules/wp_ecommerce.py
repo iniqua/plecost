@@ -7,6 +7,7 @@ from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity, WPECommerceInfo
 from plecost.modules.base import ScanModule
+from plecost.i18n import t
 
 _VERSION_RE = re.compile(r'Stable tag:\s*([\d.]+)', re.I)
 _DIR_LISTING_RE = re.compile(r'<title>\s*index of', re.I)
@@ -48,18 +49,11 @@ class WPECommerceModule(ScanModule):
         ctx.add_finding(Finding(
             id="PC-WPEC-003",
             remediation_id="REM-WPEC-003",
-            title="WP eCommerce: plugin abandonado con CVEs sin parchear",
+            title=t("findings.pc_wpec_003.title"),
             severity=Severity.HIGH,
-            description=(
-                "WP eCommerce no recibe actualizaciones desde 2020 (última versión: 3.15.1). "
-                "Todas las instalaciones actuales son vulnerables a CVE-2024-1514 (SQL Injection "
-                "via ChronoPay callback) y CVE-2026-1235 (PHP Object Injection), sin parche disponible."
-            ),
+            description=t("findings.pc_wpec_003.description"),
             evidence={"version": version, "last_update": "2020", "last_version": "3.15.1"},
-            remediation=(
-                "Desinstalar WP eCommerce inmediatamente y migrar a una alternativa activamente "
-                "mantenida como WooCommerce."
-            ),
+            remediation=t("findings.pc_wpec_003.remediation"),
             references=[
                 "https://wordpress.org/plugins/wp-e-commerce/",
                 "https://nvd.nist.gov/vuln/detail/CVE-2024-1514",
@@ -109,11 +103,11 @@ class WPECommerceModule(ScanModule):
                     ctx.add_finding(Finding(
                         id="PC-WPEC-001",
                         remediation_id="REM-WPEC-001",
-                        title="WP eCommerce detectado",
+                        title=t("findings.pc_wpec_001.title"),
                         severity=Severity.INFO,
-                        description="El plugin WP eCommerce (wp-e-commerce) está instalado y activo.",
+                        description=t("findings.pc_wpec_001.description"),
                         evidence={"url": url},
-                        remediation="WP eCommerce está abandonado. Considerar migrar a WooCommerce.",
+                        remediation=t("findings.pc_wpec_001.remediation"),
                         references=["https://wordpress.org/plugins/wp-e-commerce/"],
                         cvss_score=None,
                         module=self.name,
@@ -122,11 +116,11 @@ class WPECommerceModule(ScanModule):
                         ctx.add_finding(Finding(
                             id="PC-WPEC-002",
                             remediation_id="REM-WPEC-002",
-                            title="WP eCommerce: versión expuesta via readme.txt",
+                            title=t("findings.pc_wpec_002.title"),
                             severity=Severity.LOW,
-                            description="La versión de WP eCommerce es accesible públicamente via readme.txt.",
+                            description=t("findings.pc_wpec_002.description"),
                             evidence={"url": url, "version": version_holder[0]},
-                            remediation="Bloquear acceso a readme.txt con reglas de servidor web.",
+                            remediation=t("findings.pc_wpec_002.remediation"),
                             references=[],
                             cvss_score=5.3,
                             module=self.name,
@@ -171,11 +165,11 @@ class WPECommerceModule(ScanModule):
                     ctx.add_finding(Finding(
                         id="PC-WPEC-004",
                         remediation_id="REM-WPEC-004",
-                        title="WP eCommerce: pasarela ChronoPay detectada",
+                        title=t("findings.pc_wpec_004.title"),
                         severity=Severity.INFO,
-                        description="El gateway de pago ChronoPay está instalado en WP eCommerce.",
+                        description=t("findings.pc_wpec_004.description"),
                         evidence={"url": url},
-                        remediation="Verificar que el gateway ChronoPay esté configurado de forma segura.",
+                        remediation=t("findings.pc_wpec_004.remediation"),
                         references=["https://nvd.nist.gov/vuln/detail/CVE-2024-1514"],
                         cvss_score=None,
                         module=self.name,
@@ -211,16 +205,11 @@ class WPECommerceModule(ScanModule):
                     ctx.add_finding(Finding(
                         id="PC-WPEC-008",
                         remediation_id="REM-WPEC-008",
-                        title="WP eCommerce: script de backup de base de datos accesible",
+                        title=t("findings.pc_wpec_008.title"),
                         severity=Severity.HIGH,
-                        description=(
-                            "El script db-backup.php del panel admin de WP eCommerce es accesible "
-                            "sin autenticación."
-                        ),
+                        description=t("findings.pc_wpec_008.description"),
                         evidence={"url": url},
-                        remediation=(
-                            "Bloquear acceso directo a archivos en wpsc-admin/ con reglas de servidor web."
-                        ),
+                        remediation=t("findings.pc_wpec_008.remediation"),
                         references=[],
                         cvss_score=7.5,
                         module=self.name,
@@ -236,16 +225,11 @@ class WPECommerceModule(ScanModule):
                     ctx.add_finding(Finding(
                         id="PC-WPEC-009",
                         remediation_id="REM-WPEC-009",
-                        title="WP eCommerce: visor de logs accesible",
+                        title=t("findings.pc_wpec_009.title"),
                         severity=Severity.MEDIUM,
-                        description=(
-                            "El visor de logs display-log.php de WP eCommerce es accesible "
-                            "sin autenticación."
-                        ),
+                        description=t("findings.pc_wpec_009.description"),
                         evidence={"url": url},
-                        remediation=(
-                            "Bloquear acceso directo a archivos en wpsc-admin/ con reglas de servidor web."
-                        ),
+                        remediation=t("findings.pc_wpec_009.remediation"),
                         references=[],
                         cvss_score=5.3,
                         module=self.name,
@@ -275,14 +259,11 @@ class WPECommerceModule(ScanModule):
                     ctx.add_finding(Finding(
                         id="PC-WPEC-005",
                         remediation_id="REM-WPEC-005",
-                        title="WP eCommerce: directory listing habilitado en directorio del plugin",
+                        title=t("findings.pc_wpec_005.title"),
                         severity=Severity.HIGH,
-                        description=(
-                            "El directory listing está habilitado en el directorio del plugin "
-                            "WP eCommerce, exponiendo su estructura de archivos."
-                        ),
+                        description=t("findings.pc_wpec_005.description"),
                         evidence={"url": url},
-                        remediation="Deshabilitar directory listing en el servidor web.",
+                        remediation=t("findings.pc_wpec_005.remediation"),
                         references=[],
                         cvss_score=7.5,
                         module=self.name,
@@ -298,15 +279,11 @@ class WPECommerceModule(ScanModule):
                     ctx.add_finding(Finding(
                         id="PC-WPEC-006",
                         remediation_id="REM-WPEC-006",
-                        title="WP eCommerce: directorio de uploads accesible",
+                        title=t("findings.pc_wpec_006.title"),
                         severity=Severity.HIGH,
-                        description=(
-                            "El directorio de uploads de WP eCommerce es accesible públicamente."
-                        ),
+                        description=t("findings.pc_wpec_006.description"),
                         evidence={"url": url},
-                        remediation=(
-                            "Añadir un archivo .htaccess que niegue acceso directo al directorio wpsc/."
-                        ),
+                        remediation=t("findings.pc_wpec_006.remediation"),
                         references=[],
                         cvss_score=7.5,
                         module=self.name,
@@ -322,16 +299,11 @@ class WPECommerceModule(ScanModule):
                     ctx.add_finding(Finding(
                         id="PC-WPEC-007",
                         remediation_id="REM-WPEC-007",
-                        title="WP eCommerce: directorio de descargas digitales expuesto",
+                        title=t("findings.pc_wpec_007.title"),
                         severity=Severity.CRITICAL,
-                        description=(
-                            "El directorio de productos digitales es accesible públicamente, "
-                            "exponiendo archivos de descarga pagados."
-                        ),
+                        description=t("findings.pc_wpec_007.description"),
                         evidence={"url": url},
-                        remediation=(
-                            "Configurar el servidor web para negar acceso directo al directorio wpsc/digital/."
-                        ),
+                        remediation=t("findings.pc_wpec_007.remediation"),
                         references=[],
                         cvss_score=9.1,
                         module=self.name,
@@ -350,17 +322,11 @@ class WPECommerceModule(ScanModule):
                     ctx.add_finding(Finding(
                         id="PC-WPEC-010",
                         remediation_id="REM-WPEC-010",
-                        title="WP eCommerce: endpoint callback de ChronoPay expuesto",
+                        title=t("findings.pc_wpec_010.title"),
                         severity=Severity.MEDIUM,
-                        description=(
-                            "El endpoint de callback de ChronoPay responde sin verificación de firma, "
-                            "lo que puede facilitar CVE-2024-1514."
-                        ),
+                        description=t("findings.pc_wpec_010.description"),
                         evidence={"url": url},
-                        remediation=(
-                            "Verificar la configuración de ChronoPay y aplicar validación de firma "
-                            "en callbacks."
-                        ),
+                        remediation=t("findings.pc_wpec_010.remediation"),
                         references=["https://nvd.nist.gov/vuln/detail/CVE-2024-1514"],
                         cvss_score=5.3,
                         module=self.name,
@@ -400,14 +366,11 @@ class WPECommerceModule(ScanModule):
                 ctx.add_finding(Finding(
                     id="PC-WPEC-020",
                     remediation_id="REM-WPEC-020",
-                    title="CVE-2024-1514: WP eCommerce ChronoPay SQL Injection",
+                    title=t("findings.pc_wpec_020.title"),
                     severity=Severity.CRITICAL,
-                    description=(
-                        "El endpoint de callback de ChronoPay es vulnerable a SQL Injection "
-                        "(CVE-2024-1514). Un atacante puede extraer datos de la base de datos."
-                    ),
+                    description=t("findings.pc_wpec_020.description"),
                     evidence={"url": url, "pattern": "SQL error detected in response"},
-                    remediation="Desinstalar WP eCommerce. No existe parche disponible.",
+                    remediation=t("findings.pc_wpec_020.remediation"),
                     references=["https://nvd.nist.gov/vuln/detail/CVE-2024-1514"],
                     cvss_score=9.8,
                     module=self.name,
@@ -438,15 +401,11 @@ class WPECommerceModule(ScanModule):
                 ctx.add_finding(Finding(
                     id="PC-WPEC-021",
                     remediation_id="REM-WPEC-021",
-                    title="CVE-2026-1235: WP eCommerce PHP Object Injection",
+                    title=t("findings.pc_wpec_021.title"),
                     severity=Severity.HIGH,
-                    description=(
-                        "El endpoint AJAX de WP eCommerce es vulnerable a PHP Object Injection "
-                        "(CVE-2026-1235). Un objeto PHP serializado malicioso puede ejecutar "
-                        "código arbitrario en el servidor."
-                    ),
+                    description=t("findings.pc_wpec_021.description"),
                     evidence={"url": url, "pattern": "Unserialization pattern detected"},
-                    remediation="Desinstalar WP eCommerce. No existe parche disponible.",
+                    remediation=t("findings.pc_wpec_021.remediation"),
                     references=["https://nvd.nist.gov/vuln/detail/CVE-2026-1235"],
                     cvss_score=8.1,
                     module=self.name,
@@ -463,16 +422,16 @@ class WPECommerceModule(ScanModule):
         ctx.add_finding(Finding(
             id="PC-WPEC-000",
             remediation_id="REM-WPEC-000",
-            title="WP eCommerce: resumen de instalación",
+            title=t("findings.pc_wpec_000.title"),
             severity=Severity.INFO,
-            description="Resumen del análisis del plugin WP eCommerce.",
+            description=t("findings.pc_wpec_000.description"),
             evidence={
                 "version": wpe.version,
                 "active_gateways": wpe.active_gateways,
                 "checks_run": wpe.checks_run,
                 "mode": mode,
             },
-            remediation="Ver findings individuales para detalles de remediación.",
+            remediation=t("findings.pc_wpec_000.remediation"),
             references=[],
             cvss_score=None,
             module=self.name,
