@@ -20,6 +20,7 @@ _ALL_MODULE_NAMES = [
     "woocommerce",
     "wp_ecommerce",
     "magecart",
+    "webshells",
 ]
 
 
@@ -694,6 +695,65 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
         "remediation": "Investigate the script source. Remove if unauthorized. Check if the domain appears on checkout pages as well.",
         "references": ["https://www.riskiq.com/what-is-magecart/"],
         "remediation_id": "REM-MGC-004",
+    },
+    "PC-WSH-001": {
+        "title": "Known webshell path is accessible",
+        "severity": "CRITICAL",
+        "description": "A file matching a known webshell filename was found accessible via HTTP.",
+        "remediation": "Remove the file immediately. Audit all wp-content directories. Rotate all credentials.",
+        "references": [
+            "https://media.defense.gov/2020/Jun/09/2002313081/-1/-1/0/CSI-DETECT-AND-PREVENT-WEB-SHELL-MALWARE-20200422.PDF",
+            "https://github.com/nsacyber/Mitigating-Web-Shells",
+        ],
+        "remediation_id": "REM-WSH-001",
+    },
+    "PC-WSH-100": {
+        "title": "PHP file executable in wp-content/uploads",
+        "severity": "CRITICAL",
+        "description": "A PHP file is accessible and executable inside wp-content/uploads, which should never execute PHP.",
+        "remediation": "Remove the file. Add .htaccess to uploads/ to deny PHP execution.",
+        "references": [],
+        "remediation_id": "REM-WSH-100",
+    },
+    "PC-WSH-150": {
+        "title": "Suspicious PHP file in wp-content/mu-plugins",
+        "severity": "CRITICAL",
+        "description": "A PHP file matching a known backdoor name was found in must-use plugins directory.",
+        "remediation": "Review and remove unexpected files from wp-content/mu-plugins/.",
+        "references": [
+            "https://blog.sucuri.net/2025/03/hidden-malware-strikes-again-mu-plugins-under-attack.html",
+        ],
+        "remediation_id": "REM-WSH-150",
+    },
+    "PC-WSH-200": {
+        "title": "Webshell family fingerprint matched in HTTP response",
+        "severity": "CRITICAL",
+        "description": "The response from a PHP file matches a known webshell family signature.",
+        "remediation": "The site is compromised. Take offline, remove webshell, audit all files, rotate all credentials.",
+        "references": [
+            "https://www.recordedfuture.com/blog/web-shell-analysis-part-1",
+        ],
+        "remediation_id": "REM-WSH-200",
+    },
+    "PC-WSH-250": {
+        "title": "WordPress core file has been modified",
+        "severity": "HIGH",
+        "description": "A WordPress core file does not match the official checksum for the installed version.",
+        "remediation": "Verify if the modification is authorized. If not, restore the file from a clean WP installation.",
+        "references": [
+            "https://developer.wordpress.org/reference/functions/get_core_checksums/",
+        ],
+        "remediation_id": "REM-WSH-250",
+    },
+    "PC-WSH-300": {
+        "title": "Unrecognized plugin detected via WordPress REST API",
+        "severity": "HIGH",
+        "description": "The WordPress REST API reports an active plugin that was not detected during passive scanning.",
+        "remediation": "Verify the plugin is intentionally installed. If unknown, remove it and inspect for malicious code.",
+        "references": [
+            "https://blog.sucuri.net/2020/01/webshell-in-fake-plugin-blnmrpb-directory.html",
+        ],
+        "remediation_id": "REM-WSH-300",
     },
 }
 

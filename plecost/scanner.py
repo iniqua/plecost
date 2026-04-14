@@ -24,6 +24,7 @@ from plecost.modules.auth import AuthModule
 from plecost.modules.woocommerce import WooCommerceModule
 from plecost.modules.wp_ecommerce import WPECommerceModule
 from plecost.modules.magecart import MagecartModule
+from plecost.modules.webshells import WebshellsModule
 from plecost.modules.cves import CVEsModule
 from plecost.modules.base import ScanModule
 from plecost.models import Finding
@@ -125,6 +126,7 @@ class Scanner:
             WooCommerceModule(),
             WPECommerceModule(),
             MagecartModule(store),  # store puede ser None si DB no disponible
+            WebshellsModule(),
         ]
         if cve_mod:
             modules.append(cve_mod)
