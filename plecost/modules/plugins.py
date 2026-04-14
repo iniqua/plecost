@@ -104,8 +104,9 @@ class PluginsModule(ScanModule):
                         r = await http.get(url)
                         if r.status_code == 200:
                             if baseline_is_soft_200 and not _README_VALID_RE.search(r.text[:2000]):
-                                # Fake 200 — plugin doesn't really exist; remove it
-                                found.pop(slug, None)
+                                # Fake 200 — readme.txt not readable, but the plugin was
+                                # found in the HTML so installation is confirmed; keep it
+                                # with version=None rather than discarding it entirely.
                                 return
                             if m := _VER_RE.search(r.text):
                                 found[slug] = m.group(1)

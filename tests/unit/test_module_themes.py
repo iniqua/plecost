@@ -141,3 +141,30 @@ async def test_soft_200_server_filters_false_positive_themes(ctx):
     slugs = {t.slug for t in ctx.themes}
     assert "real-theme" in slugs, "real theme with valid style.css should be detected"
     assert "fake-theme" not in slugs, "fake theme returning non-CSS content should be excluded"
+
+
+@pytest.mark.asyncio
+async def test_passive_html_theme_kept_when_style_css_unreadable(ctx):
+    """Theme in HTML is kept with version=None when style.css returns fake 200.
+
+    If the theme appeared in the page HTML it is considered installed even if
+    its style.css is unreadable (blocked or WordPress routing fake 200).
+    Only brute-force wordlist candidates are discarded on content mismatch.
+    """
+    fake_body = "WordPress 404 page or mu-plugins output"
+    html = '<link href="/wp-content/themes/hidden-theme/style.css"/>'
+    async with respx.mock:
+        respx.get("https://example.com/").mock(return_value=httpx.Response(200, text=html))
+        # Probe returns 200 → baseline_is_soft_200=True
+        respx.get("https://example.com/wp-content/themes/__plecost_probe__/style.css").mock(
+            return_value=httpx.Response(200, text=fake_body)
+        )
+        respx.get("https://example.com/wp-content/themes/hidden-theme/style.css").mock(
+            return_value=httpx.Response(200, text=fake_body)
+        )
+        async with PlecostHTTPClient(ctx.opts) as http:
+            mod = ThemesModule(wordlist=[])  # not in wordlist, passive-only
+            await mod.run(ctx, http)
+    theme = next((t for t in ctx.themes if t.slug == "hidden-theme"), None)
+    assert theme is not None, "HTML-detected theme must be kept even when style.css is unreadable"
+    assert theme.version is None, "version should be None when style.css cannot be validated"

@@ -140,3 +140,30 @@ async def test_soft_200_server_filters_false_positives(ctx):
     slugs = {p.slug for p in ctx.plugins}
     assert "real-plugin" in slugs, "real plugin with valid readme.txt should be detected"
     assert "fake-plugin" not in slugs, "fake plugin returning non-readme content should be excluded"
+
+
+@pytest.mark.asyncio
+async def test_passive_html_plugin_kept_when_readme_unreadable(ctx):
+    """Plugin in HTML is kept with version=None when readme.txt returns fake 200.
+
+    If the plugin appeared in the page HTML it is considered installed even if
+    its readme.txt is unreadable (blocked or WordPress routing fake 200).
+    Only brute-force wordlist candidates are discarded on content mismatch.
+    """
+    fake_body = "WordPress 404 page or mu-plugins output"
+    html = '<script src="/wp-content/plugins/hidden-plugin/assets/js/main.js"></script>'
+    async with respx.mock:
+        respx.get("https://example.com/").mock(return_value=httpx.Response(200, text=html))
+        # Probe returns 200 → baseline_is_soft_200=True
+        respx.get("https://example.com/wp-content/plugins/__plecost_probe__/readme.txt").mock(
+            return_value=httpx.Response(200, text=fake_body)
+        )
+        respx.get("https://example.com/wp-content/plugins/hidden-plugin/readme.txt").mock(
+            return_value=httpx.Response(200, text=fake_body)
+        )
+        async with PlecostHTTPClient(ctx.opts) as http:
+            mod = PluginsModule(wordlist=[])  # not in wordlist, passive-only
+            await mod.run(ctx, http)
+    plugin = next((p for p in ctx.plugins if p.slug == "hidden-plugin"), None)
+    assert plugin is not None, "HTML-detected plugin must be kept even when readme.txt is unreadable"
+    assert plugin.version is None, "version should be None when readme.txt cannot be validated"

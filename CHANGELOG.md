@@ -25,7 +25,8 @@
 - **plugins / themes**: plugins/themes detected passively but absent from the brute-force wordlist now receive a targeted `readme.txt` / `style.css` fetch to recover the version instead of always showing `unknown`
 - **plugins / themes**: `readme.txt` "Stable tag" and `style.css` "Version:" now always take precedence over `?ver=` from HTML; previously sub-package assets with different version strings could pollute the reported version (e.g. woocommerce showing 4.0.0 instead of 5.0.0)
 - **plugins / themes**: when the server returns HTTP 200 for non-existent paths (WordPress routing all requests through `index.php`), the brute-force scanner now validates response content using readme.txt / style.css header patterns instead of trusting the status code; this eliminates false positives where all plugins in the wordlist were reported as installed
-- 10 new regression tests covering all five fixed scenarios (3 existing + 4 new in this round + 3 from previous round)
+- **plugins / themes**: passive HTML detections (plugin/theme path in page source) are kept with `version=null` even when readme.txt / style.css cannot be validated; only brute-force wordlist candidates are discarded on content mismatch — a plugin referenced in the HTML is considered installed regardless
+- 12 new regression tests covering all five fixed scenarios
 
 ### Added
 - `webshells` module: remote webshell detection for WordPress sites

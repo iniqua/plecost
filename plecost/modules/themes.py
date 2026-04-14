@@ -106,8 +106,9 @@ class ThemesModule(ScanModule):
                         r = await http.get(url)
                         if r.status_code == 200:
                             if baseline_is_soft_200 and not _STYLE_VALID_RE.search(r.text[:2000]):
-                                # Fake 200 — theme doesn't really exist; remove it
-                                found.pop(slug, None)
+                                # Fake 200 — style.css not readable, but the theme was
+                                # found in the HTML so installation is confirmed; keep it
+                                # with version=None rather than discarding it entirely.
                                 return
                             if m := _CSS_VER_RE.search(r.text):
                                 found[slug] = m.group(1)
