@@ -29,9 +29,12 @@ class PluginsModule(ScanModule):
             for m in _PLUGIN_PATH_RE.finditer(r.text):
                 slug = m.group(1)
                 # Try to get version from ?ver= near this path
-                surrounding = r.text[max(0, m.start()-5):m.end()+100]
+                surrounding = r.text[max(0, m.start()-5):m.end()+200]
                 ver_m = _QVER_RE.search(surrounding)
-                found[slug] = ver_m.group(1) if ver_m else None
+                ver = ver_m.group(1) if ver_m else None
+                # Keep the best version seen: don't overwrite a known version with None
+                if slug not in found or (ver and found[slug] is None):
+                    found[slug] = ver
         except Exception:
             pass
 
@@ -73,6 +76,26 @@ class PluginsModule(ScanModule):
                     ctx.report_progress("plugins", checked, total)
 
         await asyncio.gather(*[check_plugin(s) for s in self._wordlist])
+
+        # Active check for plugins found passively but not in the wordlist:
+        # they have no version yet, so try to fetch their readme.txt directly.
+        wordlist_set = set(self._wordlist)
+        passive_only = [slug for slug, ver in found.items() if ver is None and slug not in wordlist_set]
+        if passive_only:
+            sem2 = asyncio.Semaphore(ctx.opts.concurrency)
+
+            async def fetch_passive_version(slug: str) -> None:
+                async with sem2:
+                    url = f"{ctx.url}/wp-content/plugins/{slug}/readme.txt"
+                    try:
+                        r = await http.get(url)
+                        if r.status_code == 200:
+                            if m := _VER_RE.search(r.text):
+                                found[slug] = m.group(1)
+                    except Exception:
+                        pass
+
+            await asyncio.gather(*[fetch_passive_version(s) for s in passive_only])
 
         for slug, version in found.items():
             ctx.add_plugin(Plugin(

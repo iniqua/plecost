@@ -1,5 +1,12 @@
 ## [Unreleased] — 2026-04-14
 
+### Fixed
+- **plugins**: passive scan no longer overwrites a found `?ver=` version with `None` when the same plugin slug appears multiple times in the HTML; now keeps the best version seen across all occurrences
+- **themes**: same fix — first occurrence without `?ver=` is now upgraded if a later occurrence has the parameter
+- **plugins / themes**: passive detection window for `?ver=` extended from 100 to 200 characters after the path match, reducing missed versions on deeper resource paths
+- **plugins / themes**: plugins/themes detected passively but absent from the brute-force wordlist now receive a targeted `readme.txt` / `style.css` fetch to recover the version instead of always showing `unknown`
+- 6 new regression tests (3 plugins + 3 themes) covering the three fixed scenarios
+
 ### Added
 - `webshells` module: remote webshell detection for WordPress sites
   - `KnownPathsDetector`: probes ~100-300 known webshell filenames across WP directories; includes catch-all preflight guard to eliminate false positives
