@@ -1,5 +1,6 @@
 from __future__ import annotations
 import base64
+from typing import Any
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
@@ -34,7 +35,7 @@ class FakePluginRestDetector(BaseDetector):
             )
             if r.status_code not in (200,):
                 return []
-            plugins_data: list[dict] = r.json()
+            plugins_data: list[dict[str, Any]] = r.json()
         except Exception:
             return []
 

@@ -11,10 +11,10 @@ _LOCALES_DIR = Path(__file__).parent / "locales"
 
 # Runtime state (module-level singletons)
 _current_lang: str | None = None          # set by set_language() or CLI flag
-_translations: dict[str, dict] = {}       # cache: lang -> parsed JSON
+_translations: dict[str, dict[str, Any]] = {}   # cache: lang -> parsed JSON
 
 
-def _load(lang: str) -> dict:
+def _load(lang: str) -> dict[str, Any]:
     """Load and cache translation dict for *lang*. Returns empty dict on error."""
     if lang in _translations:
         return _translations[lang]
@@ -22,6 +22,7 @@ def _load(lang: str) -> dict:
     if not path.exists():
         _translations[lang] = {}
         return {}
+    data: dict[str, Any]
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
@@ -30,7 +31,7 @@ def _load(lang: str) -> dict:
     return data
 
 
-def _get_nested(data: dict, key: str) -> str | None:
+def _get_nested(data: dict[str, Any], key: str) -> str | None:
     """Resolve dot-notation key in nested dict. Returns None if missing."""
     parts = key.split(".")
     node: Any = data
