@@ -6,6 +6,7 @@ import httpx
 import typer
 from rich.console import Console
 from plecost.models import ScanOptions
+from plecost.i18n import set_language, t
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
@@ -67,8 +68,11 @@ def scan(
             "Example: --module-option woocommerce:mode=semi-active"
         ),
     ),
+    lang: Optional[str] = typer.Option(None, "--lang", "-L", help="Language for output (en, es). Overrides PLECOST_LANG env var and system locale.", envvar="PLECOST_LANG"),
 ) -> None:
     """Scan a WordPress site for security vulnerabilities."""
+    if lang:
+        set_language(lang)
     # Resolve list of URLs to scan
     if targets:
         targets_path = Path(targets)
@@ -357,33 +361,17 @@ app.add_typer(modules_app, name="modules")
 
 
 @modules_app.command("list")
-def modules_list() -> None:
+def modules_list(
+    lang: Optional[str] = typer.Option(None, "--lang", "-L", help="Language for output (en, es).", envvar="PLECOST_LANG"),
+) -> None:
     """List all available scanner modules."""
+    if lang:
+        set_language(lang)
     from rich.table import Table
-    table = Table(title="Available Modules")
-    table.add_column("Module", style="cyan")
-    table.add_column("Depends On")
-    table.add_column("Description")
-    descriptions = {
-        "fingerprint": "Detect WordPress version (9 methods)",
-        "waf": "Detect WAF/CDN (Cloudflare, Sucuri, etc.)",
-        "plugins": "Enumerate plugins (passive + brute-force)",
-        "themes": "Enumerate themes (passive + brute-force)",
-        "users": "Enumerate users (REST API, author archives)",
-        "xmlrpc": "Check XML-RPC security (pingback, multicall)",
-        "rest_api": "Check REST API exposure and misconfigs",
-        "misconfigs": "Check for exposed sensitive files",
-        "directory_listing": "Check for open directory listing",
-        "http_headers": "Check for missing security headers",
-        "ssl_tls": "Check SSL/TLS configuration",
-        "debug_exposure": "Detect debug mode and PHP exposure",
-        "content_analysis": "Detect card skimming and hardcoded secrets",
-        "auth": "Authenticated scan (requires --user --password)",
-        "cves": "Correlate found software with CVE database",
-        "woocommerce": "Detect WooCommerce and its configuration",
-        "wp_ecommerce": "Detect WP eCommerce and check for vulnerabilities",
-        "magecart": "Detect Magecart/card-skimming scripts on checkout pages",
-    }
+    table = Table(title=t("cli.modules.table_title"))
+    table.add_column(t("cli.modules.column_module"), style="cyan")
+    table.add_column(t("cli.modules.column_depends_on"))
+    table.add_column(t("cli.modules.column_description"))
     deps = {
         "fingerprint": "—", "waf": "—",
         "plugins": "fingerprint", "themes": "fingerprint",
@@ -398,8 +386,14 @@ def modules_list() -> None:
         "magecart": "fingerprint, woocommerce, wp_ecommerce",
     }
     for name in _ALL_MODULE_NAMES:
-        table.add_row(name, deps.get(name, "—"), descriptions.get(name, ""))
+        desc = t(f"cli.modules.descriptions.{name}")
+        table.add_row(name, deps.get(name, "—"), desc)
     console.print(table)
+
+
+def _finding_key(finding_id: str) -> str:
+    """Convert 'PC-FP-001' → 'pc_fp_001' for i18n key lookup."""
+    return finding_id.lower().replace("-", "_")
 
 
 _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
@@ -776,8 +770,13 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
 
 
 @app.command("explain")
-def explain(finding_id: str = typer.Argument(..., help="Finding ID (e.g. PC-XMLRPC-002)")) -> None:
+def explain(
+    finding_id: str = typer.Argument(..., help="Finding ID (e.g. PC-XMLRPC-002)"),
+    lang: Optional[str] = typer.Option(None, "--lang", "-L", help="Language for output (en, es).", envvar="PLECOST_LANG"),
+) -> None:
     """Show detailed information and remediation for a finding ID."""
+    if lang:
+        set_language(lang)
     from rich.panel import Panel
     fid = finding_id.upper()
     if fid not in _FINDINGS_REGISTRY:
@@ -785,15 +784,19 @@ def explain(finding_id: str = typer.Argument(..., help="Finding ID (e.g. PC-XMLR
         console.print("[dim]Run 'plecost modules list' to see available modules.[/dim]")
         raise typer.Exit(1)
     info = _FINDINGS_REGISTRY[fid]
+    key = _finding_key(fid)
+    title = t(f"findings.{key}.title")
+    description = t(f"findings.{key}.description")
+    remediation = t(f"findings.{key}.remediation")
     sev_colors = {"CRITICAL": "red", "HIGH": "orange3", "MEDIUM": "yellow", "LOW": "cyan", "INFO": "white"}
     color = sev_colors.get(info["severity"], "white")
     console.print(Panel(
-        f"[bold]{info['title']}[/bold]\n\n"
-        f"[dim]Severity:[/dim] [{color}]{info['severity']}[/{color}]\n"
-        f"[dim]Remediation ID:[/dim] {info['remediation_id']}\n\n"
-        f"[bold]Description:[/bold]\n{info['description']}\n\n"
-        f"[bold]Remediation:[/bold]\n[green]{info['remediation']}[/green]" +
-        ("\n\n[bold]References:[/bold]\n" + "\n".join(f"- {r}" for r in info['references']) if info['references'] else ""),
+        f"[bold]{title}[/bold]\n\n"
+        f"[dim]{t('cli.explain.severity')}:[/dim] [{color}]{info['severity']}[/{color}]\n"
+        f"[dim]{t('cli.explain.remediation_id')}:[/dim] {info['remediation_id']}\n\n"
+        f"[bold]{t('cli.explain.description')}:[/bold]\n{description}\n\n"
+        f"[bold]{t('cli.explain.remediation')}:[/bold]\n[green]{remediation}[/green]" +
+        ("\n\n[bold]{refs}:[/bold]\n".format(refs=t('cli.explain.references')) + "\n".join(f"- {r}" for r in info['references']) if info['references'] else ""),
         title=f"[bold]{fid}[/bold]",
         border_style=color,
     ))
