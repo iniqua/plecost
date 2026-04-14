@@ -1,6 +1,8 @@
 ## [Unreleased] - 2026-04-14
 
 ### Added
+- `webshells` module Task 2: `UploadsPhpDetector` in `plecost/modules/webshells/detectors/uploads_php.py` — probes `wp-content/uploads/` (root and dated year/month subdirectories) for accessible PHP files, emits `PC-WSH-100` (CRITICAL, CVSS 9.8) on any HTTP 200 response
+- 3 unit tests in `tests/unit/test_module_webshells_uploads.py`: PHP in uploads root, PHP in dated subdir, no finding on 403
 - `webshells` module Task 1: `KnownPathsDetector` in `plecost/modules/webshells/detectors/known_paths.py` — probes known webshell filenames across common WordPress directories, emits `PC-WSH-001` (CRITICAL, CVSS 9.8) on hit
 - Preflight catch-all guard: detects sites that return 200 for arbitrary paths and skips scan to avoid mass false positives
 - Content-type FP guard: only flags responses with `text/html`, `text/plain`, or `application/x-httpd-php` content types
