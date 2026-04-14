@@ -55,6 +55,7 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - Always use `python3 -m pytest` (not bare `pytest`) — multiple Python versions on this system
 - Pyright reports false positives everywhere (unused imports, undefined variables in local imports, unused params in test mocks) — ignore them, ruff is the authoritative linter
 - `python3 -m plecost` works via `plecost/__main__.py` → `plecost.cli:app`
+- `tests/unit/test_i18n.py::test_t_returns_spanish_string` has a pre-existing failure — not a regression, ignore it when checking suite results
 
 ## Scanner Extensibility (Callbacks)
 - `Scanner(opts, on_module_start, on_module_done, on_finding, on_module_progress)` — optional callbacks for real-time progress

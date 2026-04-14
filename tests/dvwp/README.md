@@ -1,35 +1,72 @@
 # DVWP — Damn Vulnerable WordPress
 
-Local WordPress environment with outdated, intentionally vulnerable plugins for plecost security testing.
+Local WordPress environment with intentionally vulnerable plugins for plecost security testing.
 
 > **WARNING**: For local/isolated use only. Never expose to the internet.
 
----
+## Table of Contents
 
-## Quick Start
+- [Purpose](#purpose)
+- [How to Use](#how-to-use)
+- [Users](#users)
+- [Vulnerable Plugins](#vulnerable-plugins)
+- [Vulnerable E-Commerce Plugins](#vulnerable-e-commerce-plugins)
+- [Vulnerable Theme](#vulnerable-theme)
+- [Webshell Detection Fixtures](#webshell-detection-fixtures)
+- [How It Works](#how-it-works)
+- [References](#references)
+
+## Purpose
+
+DVWP is a deliberately vulnerable WordPress environment designed to run plecost functional tests (`tests/functional/`) without relying on a real external site.
+
+It includes plugins with known CVEs, users with different roles, and webshell fixtures to cover every detector in the engine. Each element is chosen to exercise a specific part of the scanner.
+
+## How to Use
+
+Start the environment:
 
 ```bash
 docker compose up -d
-docker compose logs wpcli -f   # watch setup progress (~60s)
 ```
 
-Once the `wpcli` container prints the plugin table and exits, the environment is ready.
+Once up (takes ~60 s on first run while `wpcli` configures the site), the environment is available at:
 
-**Access:**
 - Site: http://localhost:8765
-- Admin panel: http://localhost:8765/wp-admin
-  - Username: `admin`
-  - Password: `admin`
+- Admin panel: http://localhost:8765/wp-admin (username `admin`, password `admin`)
 
----
+Run plecost against it:
 
-## What Gets Installed
+```bash
+plecost scan http://localhost:8765 -v
+plecost scan http://localhost:8765 --deep -v
+```
 
-### WordPress
-- Version: **6.6** (official `wordpress:6.6` image)
-- Database: MySQL 8.0
+Run the functional test suite:
 
-### Users
+```bash
+PLECOST_FUNCTIONAL_TESTS=1 python3 -m pytest tests/functional/ -v
+```
+
+Stop without deleting data:
+
+```bash
+docker compose down
+```
+
+Full reset — deletes all data and reinstalls from scratch:
+
+```bash
+docker compose down -v && docker compose up -d
+```
+
+Install an additional plugin at a specific version:
+
+```bash
+docker compose run --rm wpcli wp plugin install <slug> --version=<version> --activate --path=/var/www/html --allow-root
+```
+
+## Users
 
 | Username | Password | Role |
 |---|---|---|
@@ -38,7 +75,7 @@ Once the `wpcli` container prints the plugin table and exits, the environment is
 | `author1` | `author123` | Author |
 | `subscriber1` | `sub123` | Subscriber |
 
-### Vulnerable Plugins
+## Vulnerable Plugins
 
 | Plugin | Version | CVE | Vulnerability |
 |---|---|---|---|
@@ -52,7 +89,7 @@ Once the `wpcli` container prints the plugin table and exits, the environment is
 | Elementor | 3.1.2 | CVE-2022-1329 | Authenticated RCE |
 | Wordfence | 7.5.0 | CVE-2021-24875 | Reflected XSS |
 
-### Vulnerable E-Commerce Plugins
+## Vulnerable E-Commerce Plugins
 
 | Plugin | Version | CVE | Vulnerability |
 |---|---|---|---|
@@ -62,18 +99,17 @@ Once the `wpcli` container prints the plugin table and exits, the environment is
 | YITH WooCommerce Wishlist | 2.2.9 | CVE-2021-24987 | Stored XSS |
 | WooCommerce Stripe Gateway | 4.3.0 | CVE-2019-15826 | Order information disclosure |
 
-### Vulnerable Theme
+## Vulnerable Theme
 
 | Theme | Version | Notes |
 |---|---|---|
 | Twenty Twenty | 1.6 | Multiple minor vulnerabilities |
 
-### Webshell Detection Fixtures
+## Webshell Detection Fixtures
 
-Harmless PHP files are placed at known webshell paths to exercise each detector in the engine.
-They output minimal safe content — no actual code execution capability.
+Harmless PHP files placed at known webshell paths to exercise each detector in the engine. They have no actual code execution capability.
 
-| Path | Detector triggered | Finding | Fingerprint family |
+| Path | Detector | Finding | Fingerprint family |
 |---|---|---|---|
 | `/wp-content/uploads/shell.php` | KnownPathsDetector | PC-WSH-001 | — (path match only) |
 | `/wp-content/uploads/c99.php` | ResponseFingerprintDetector | PC-WSH-200 | `c99shell` |
@@ -82,10 +118,7 @@ They output minimal safe content — no actual code execution capability.
 | `/wp-content/uploads/{year}/04/image.php` | UploadsPhpDetector | PC-WSH-100 | — (PHP in uploads dated subdir) |
 | `/wp-content/mu-plugins/cache.php` | MuPluginsDetector | PC-WSH-150 | — (mu-plugins backdoor) |
 
-> The uploads `.htaccess` is intentionally overridden to allow PHP execution in this environment.
-> In a production WordPress site the `.htaccess` blocks PHP in uploads — that is the correct hardening.
-
----
+The uploads `.htaccess` is intentionally overridden to allow PHP execution in this environment. In a production WordPress site the `.htaccess` blocks PHP in uploads — that is the correct hardening.
 
 ## How It Works
 
@@ -98,47 +131,6 @@ The setup uses three containers:
 | `dvwp_wpcli` | `wordpress:cli` | Runs `setup.sh` once — installs WP core, users and plugins, then exits |
 
 `setup.sh` is mounted read-only into the `wpcli` container and executed on startup. It uses `wp-cli` to fully configure the environment automatically.
-
----
-
-## Stop / Reset
-
-```bash
-# Stop without deleting data (volumes preserved)
-docker compose down
-
-# Full reset — deletes all data and reinstalls from scratch
-docker compose down -v && docker compose up -d
-```
-
----
-
-## Installing Additional Plugins at Specific Versions
-
-```bash
-docker compose run --rm wpcli wp plugin install <slug> --version=<version> --activate --path=/var/www/html --allow-root
-```
-
-Example:
-```bash
-docker compose run --rm wpcli wp plugin install classic-editor --version=1.6 --activate --path=/var/www/html --allow-root
-```
-
-All historical plugin versions are available at:
-```
-https://downloads.wordpress.org/plugin/<slug>.<version>.zip
-```
-
----
-
-## Running plecost Against This Environment
-
-```bash
-plecost scan http://localhost:8765 -v
-plecost scan http://localhost:8765 --deep -v
-```
-
----
 
 ## References
 
