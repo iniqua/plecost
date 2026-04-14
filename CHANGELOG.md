@@ -1,3 +1,21 @@
+## [unreleased] — 2026-04-14
+
+### Added
+- Full internationalization (i18n) support with `plecost/locales/en.json` and `es.json`
+- `--lang` CLI flag on `scan`, `explain`, and `modules list` commands to force output language
+- `PLECOST_LANG` environment variable for language selection (lower priority than `--lang`)
+- Language auto-detection from system locale (`LANG`, `LC_ALL`) with English fallback
+- `plecost/i18n.py` module with `t(key, **kwargs)` and `set_language(lang)` API
+- New languages can be added by dropping a JSON file in `plecost/locales/`
+
+### Changed
+- `reporters/terminal.py`: all hardcoded labels replaced with `t()` calls
+- `modules/wp_ecommerce.py`: all Finding strings now use i18n keys (13 findings localized)
+- `modules/misconfigs.py`: `_CHECKS` tuples use i18n keys; `_check()` calls `t()` at runtime
+- `cli.py`: `explain` and `modules list` commands fully localized
+
+---
+
 ## [Unreleased] — 2026-04-14
 
 ### Fixed
