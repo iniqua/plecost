@@ -28,7 +28,8 @@ async def test_reports_php_in_uploads_root():
 
 
 async def test_reports_php_in_dated_subdir():
-    ctx = ScanContext(ScanOptions(url="https://example.com"))
+    # deep=True is required: fast mode only scans the current year; 2024 paths need deep mode
+    ctx = ScanContext(ScanOptions(url="https://example.com", deep=True))
     ctx.is_wordpress = True
     async with respx.mock:
         respx.get("https://example.com/wp-content/uploads/2024/03/backdoor.php").mock(

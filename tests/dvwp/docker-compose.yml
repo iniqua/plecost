@@ -1,0 +1,86 @@
+# Damn Vulnerable WordPress — testing environment for plecost
+#
+# USAGE:
+#   docker compose up -d
+#   docker compose logs wpcli -f    # watch setup progress (~60s)
+#   http://localhost:8765            # site
+#   http://localhost:8765/wp-admin  # admin / admin
+#
+# FULL RESET:
+#   docker compose down -v && docker compose up -d
+#
+# WARNING: Local/isolated environments only. NEVER expose to the internet.
+
+services:
+  wordpress:
+    image: wordpress:6.6
+    container_name: dvwp_wordpress
+    restart: unless-stopped
+    ports:
+      - "8765:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - dvwp_wp_data:/var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/wp-login.php"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - dvwp
+
+  wpcli:
+    image: wordpress:cli
+    container_name: dvwp_wpcli
+    restart: "no"
+    user: "33:33"
+    depends_on:
+      wordpress:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WP_CLI_CACHE_DIR: /tmp/wp-cli-cache
+    volumes:
+      - dvwp_wp_data:/var/www/html
+      - ./setup.sh:/setup.sh:ro
+    entrypoint: ["sh", "/setup.sh"]
+    networks:
+      - dvwp
+
+  mysql:
+    image: mysql:8.0
+    container_name: dvwp_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - dvwp_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "wordpress", "-pwordpress"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dvwp
+
+volumes:
+  dvwp_wp_data:
+  dvwp_mysql_data:
+
+networks:
+  dvwp:
+    driver: bridge

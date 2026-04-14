@@ -4,7 +4,7 @@ from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.webshells.base import BaseDetector
-from plecost.modules.webshells.wordlists import UPLOADS_PROBE_PATHS
+from plecost.modules.webshells.wordlists import UPLOADS_PROBE_PATHS, UPLOADS_PROBE_PATHS_FAST
 
 
 class UploadsPhpDetector(BaseDetector):
@@ -19,8 +19,11 @@ class UploadsPhpDetector(BaseDetector):
     async def detect(
         self, ctx: ScanContext, http: PlecostHTTPClient
     ) -> list[Finding]:
+        paths = UPLOADS_PROBE_PATHS if ctx.opts.deep else UPLOADS_PROBE_PATHS_FAST
         findings: list[Finding] = []
         sem = asyncio.Semaphore(ctx.opts.concurrency)
+        total = len(paths)
+        checked = [0]
 
         async def _probe(path: str) -> None:
             async with sem:
@@ -53,6 +56,9 @@ class UploadsPhpDetector(BaseDetector):
                     ))
                 except Exception:
                     pass
+                finally:
+                    checked[0] += 1
+                    ctx.report_progress("webshells", checked[0], total)
 
-        await asyncio.gather(*[_probe(p) for p in UPLOADS_PROBE_PATHS])
+        await asyncio.gather(*[_probe(p) for p in paths])
         return findings

@@ -38,12 +38,16 @@ class UsersModule(ScanModule):
                     id=u.get("id"), username=u.get("slug", ""),
                     display_name=u.get("name"), source="rest_api"
                 ))
+            users_formatted = "\n".join(
+                f"  • [id:{u.get('id')}] {u.get('name', '?')} (@{u.get('slug', '?')}) — {u.get('link', '')}"
+                for u in users_data
+            )
             ctx.add_finding(Finding(
                 id="PC-USR-001", remediation_id="REM-USR-001",
                 title="User enumeration via REST API",
                 severity=Severity.MEDIUM,
                 description=f"REST API exposes {len(users_data)} user(s): {[u.get('slug') for u in users_data]}",
-                evidence={"url": f"{ctx.url}/wp-json/wp/v2/users", "users": users_data},
+                evidence={"url": f"{ctx.url}/wp-json/wp/v2/users", "users": users_formatted},
                 remediation="Restrict REST API user endpoint. Add to functions.php: add_filter('rest_endpoints', function($e){ unset($e['/wp/v2/users']); return $e; });",
                 references=["https://www.wordfence.com/learn/wordpress-rest-api/"],
                 cvss_score=5.3, module=self.name

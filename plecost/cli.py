@@ -178,6 +178,21 @@ async def _set_metadata(sf: "async_sessionmaker[AsyncSession]", key: str, value:
         await session.commit()
 
 
+async def _apply_sqlite_migrations(conn: Any) -> None:
+    """Add columns introduced after the initial schema release (SQLite ALTER TABLE)."""
+    from sqlalchemy import text
+
+    migrations: list[tuple[str, str, str]] = [
+        # (table, column, column_definition)
+        ("themes_wordlist", "active_installs", "INTEGER DEFAULT 0"),
+    ]
+    for table, column, definition in migrations:
+        result = await conn.execute(text(f"PRAGMA table_info({table})"))
+        existing_columns = {row[1] for row in result.fetchall()}
+        if column not in existing_columns:
+            await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {definition}"))
+
+
 async def _update_db_async(db_path: Path, token: "str | None", force_full: bool) -> None:
     import json
     import tempfile
@@ -198,6 +213,8 @@ async def _update_db_async(db_path: Path, token: "str | None", force_full: bool)
     # Create schema if needed
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Apply incremental schema migrations for columns added after initial release
+        await _apply_sqlite_migrations(conn)
     sf = make_session_factory(engine)
 
     # Check if we need to update (compare remote checksum with local)

@@ -1,6 +1,25 @@
 from __future__ import annotations
 from datetime import date
 
+# ── Fast webshell filenames (~21 names): highest-frequency families seen in real WP compromises
+# Sources: Sucuri SiteCheck, Wordfence Threat Intelligence, NinjaFirewall incident reports
+WEBSHELL_FILENAMES_FAST: list[str] = [
+    # Classic families — found in >80% of WordPress compromises
+    "c99.php", "c99shell.php", "r57.php", "wso.php", "alfa.php",
+    # Generic shells — extremely common in automated mass-exploitation
+    "shell.php", "cmd.php", "webshell.php", "backdoor.php",
+    # IndoXploit — dominant in SEA/South Asian attacks 2021-2025
+    "indoxploit.php",
+    # WP-impersonating names — blend into WP file tree
+    "wp.php", "wp-tmp.php", "wp-feed.php", "wp-cache.php",
+    # Camouflage names — generic enough to avoid casual inspection
+    "cache.php", "config.php", "update.php",
+    # Upload-themed — almost always dropped via file-upload exploits
+    "upload.php", "image.php",
+    # Short/random — product of automated dropper scripts
+    "1.php", "x.php",
+]
+
 # ── Common webshell filenames (families: c99, r57, WSO, b374k, P.A.S., Alfa, Godzilla)
 WEBSHELL_FILENAMES_CORE: list[str] = [
     # Direct names
@@ -41,6 +60,12 @@ _WEBSHELL_DIRS_CORE: list[str] = [
 ]
 
 # All combinations of dirs × filenames
+WEBSHELL_PATHS_FAST: list[str] = [
+    d + name
+    for d in _WEBSHELL_DIRS_CORE
+    for name in WEBSHELL_FILENAMES_FAST
+]
+
 WEBSHELL_PATHS_CORE: list[str] = [
     d + name
     for d in _WEBSHELL_DIRS_CORE
@@ -69,21 +94,26 @@ UPLOADS_PHP_NAMES: list[str] = [
     "update.php", "thumb.php", "functions.php",
 ]
 
-def _uploads_paths() -> list[str]:
-    """Generate year/month upload paths from 2020 to current year."""
+def _uploads_paths(all_years: bool = True) -> list[str]:
+    """Generate year/month upload paths.
+
+    Fast mode (all_years=False): root uploads + current year only (~273 paths).
+    Deep mode (all_years=True): root uploads + every year from 2020 (~1785 paths).
+    """
     paths: list[str] = []
     current_year = date.today().year
-    for year in range(2020, current_year + 1):
+    years = range(2020, current_year + 1) if all_years else range(current_year, current_year + 1)
+    for year in years:
         for month in range(1, 13):
             prefix = f"/wp-content/uploads/{year}/{month:02d}/"
             for name in UPLOADS_PHP_NAMES:
                 paths.append(prefix + name)
-    # Also probe root of uploads
     for name in UPLOADS_PHP_NAMES:
         paths.append("/wp-content/uploads/" + name)
     return paths
 
-UPLOADS_PROBE_PATHS: list[str] = _uploads_paths()
+UPLOADS_PROBE_PATHS_FAST: list[str] = _uploads_paths(all_years=False)
+UPLOADS_PROBE_PATHS: list[str] = _uploads_paths(all_years=True)
 
 # ── Filenames probed in mu-plugins (seen in real attacks 2024-2025, Sucuri research)
 MU_PLUGINS_NAMES: list[str] = [

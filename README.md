@@ -481,6 +481,64 @@ plecost scan https://target.com --force
 ```
 
 
+## Local Test Environment
+
+A self-contained Docker Compose environment — **Damn Vulnerable WordPress (DVWP)** — is included for local testing and development. It spins up a fully configured WordPress instance with a curated set of outdated, intentionally vulnerable plugins.
+
+Located at [`tests/dvwp/`](tests/dvwp/).
+
+### Start
+
+```bash
+cd tests/dvwp
+docker compose up -d
+docker compose logs wpcli -f   # watch setup (~60s), wait for plugin table
+```
+
+Once `wpcli` exits, the environment is ready:
+
+| URL | Credentials |
+|-----|-------------|
+| http://localhost:8765 | — |
+| http://localhost:8765/wp-admin | `admin` / `admin` |
+
+### Pre-installed vulnerable plugins
+
+| Plugin | Version | CVE |
+|--------|---------|-----|
+| wpDiscuz | 7.0.4 | CVE-2020-24186 — unauthenticated RCE via file upload (CVSS 9.8) |
+| Contact Form 7 | 5.3.1 | CVE-2020-35489 — unrestricted file upload |
+| WooCommerce | 5.0.0 | CVE-2021-32790 — multiple |
+| WooCommerce Payments | 3.9.0 | CVE-2023-28121 — unauthenticated privilege escalation (CVSS 9.8) |
+| WooCommerce Stripe Gateway | 4.3.0 | CVE-2019-15826 — order information disclosure |
+| Easy Digital Downloads | 2.11.5 | CVE-2021-39351 — stored XSS |
+| Give – Donation Plugin | 2.10.3 | CVE-2021-34634 — SQL injection |
+| YITH WooCommerce Wishlist | 2.2.9 | CVE-2021-24987 — stored XSS |
+| Ninja Forms | 3.4.34.2 | CVE-2021-34648 — unauthenticated email injection |
+| Duplicator | 1.3.26 | CVE-2020-11738 — path traversal |
+| Loginizer | 1.6.3 | CVE-2020-27615 — SQL injection |
+| Elementor | 3.1.2 | CVE-2022-1329 — authenticated RCE |
+| WP Super Cache | 1.7.1 | CVE-2021-33203 — authenticated XSS |
+| Wordfence | 7.5.0 | CVE-2021-24875 — reflected XSS |
+
+### Run plecost against it
+
+```bash
+plecost scan http://localhost:8765 -v
+plecost scan http://localhost:8765 --deep -v
+```
+
+### Reset
+
+```bash
+docker compose down -v && docker compose up -d
+```
+
+See [`tests/dvwp/README.md`](tests/dvwp/README.md) for full details.
+
+> **Warning:** For local/isolated use only. Never expose to the internet.
+
+
 ## Comparison
 
 | Feature | Plecost v4 | WPScan | Wordfence |

@@ -31,7 +31,7 @@ plecost scan -T urls.txt -o report.json        # bulk scan, save JSON
 - `plecost/cli.py` — Typer entrypoint; commands: `scan`, `explain`, `update-db`, `build-db`, `sync-db`, `modules`
 - `plecost/scanner.py` — `Scanner.run()` and `Scanner.run_many()` (public API for use as a library)
 - `plecost/engine/` — `http_client.py` (httpx async), `context.py` (shared state), `scheduler.py` (async dependency graph)
-- `plecost/modules/` — 17 detection modules; each extends `ScanModule` with `name`, `depends_on`, `async run()`
+- `plecost/modules/` — 18 detection modules; each extends `ScanModule` with `name`, `depends_on`, `async run()`
 - `plecost/database/` — SQLAlchemy async; `updater.py` (NVD full build), `incremental.py` (delta sync), `downloader.py` (from release), `store.py` (queries)
 - `plecost/database/patch_applier.py` — applies JSON patches (upserts + soft-deletes); portable SQLite/PG
 - `plecost/reporters/` — `terminal.py` (Rich), `json_reporter.py` (JSON)
@@ -40,7 +40,7 @@ plecost scan -T urls.txt -o report.json        # bulk scan, save JSON
 ## Finding IDs
 - Permanent format: `PC-{MODULE}-{NNN}` (e.g. `PC-MCFG-001`, `PC-CVE-CVE-2023-28121`)
 - Associated remediation ID: `REM-{MODULE}-{NNN}`
-- Full registry of 73 IDs in `plecost/cli.py` → `plecost explain <ID>`
+- Full registry of 79 IDs in `plecost/cli.py` → `plecost explain <ID>`
 
 ## Public API
 - `from plecost import Scanner, ScanOptions, ScanResult` — only these three are exported (`__all__`)
@@ -63,11 +63,15 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - `Scheduler(modules, on_module_start=cb, on_module_done=cb)` — called before/after each module runs
 - `VerboseDisplay` in `reporters/terminal.py` — Rich Live display wired to all four callbacks; used by `-v` CLI flag
 - Library usage stays silent: don't pass callbacks → no output
+- Progress reporting pattern: `checked = [0]` list (mutable in closure) + `finally: checked[0] += 1; ctx.report_progress(module, checked[0], total)` — same pattern as plugins/themes
+- When multiple detectors run concurrently via `asyncio.gather`, ALL wordlist-scanning detectors must call `ctx.report_progress()` — if only one does, the display freezes at 100% while the others run silently
 
 ## Repository
 - GitHub repo: `Plecost/plecost`
 - Main branch: `main`
 - CI minimum coverage: 75% (`--cov-fail-under=75`)
+- The git repo root is `plecost/` (not the parent `Projects/plecost/`) — run git commands from there
+- `plecost-db/` is a sibling project (separate repo) providing the CVE database infrastructure
 
 ## CVE Database
 - Local DB: `~/.plecost/db/plecost.db` (SQLite, SQLAlchemy async)
@@ -83,6 +87,8 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 ## Tests
 - `asyncio_mode = "auto"` in pyproject.toml — do NOT add `@pytest.mark.asyncio` manually
 - respx: use `respx.get(url).mock(return_value=httpx.Response(...))` — NOT `respx.pattern(...)`
+- respx catch-all: `respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))` — use as last route to handle unmatched URLs
+- respx: routes are matched in order — put specific mocks before the catch-all `url__regex` route
 - Coverage: use dots not slashes: `--cov=plecost.database.patch_applier` (not `plecost/database/patch_applier`)
 - Functional tests against real WordPress: `PLECOST_FUNCTIONAL_TESTS=1 pytest tests/functional/`
 - Test Docker WordPress: `docker-compose -f docker-compose.test.yml up -d` (port 8765)
@@ -102,10 +108,16 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - `ScanOptions.deep = False` by default — queries top 150 plugins + top 50 themes ordered by `active_installs DESC`
 - `ScanOptions.deep = True` (CLI: `--deep`) — full wordlist (4750+ plugins, 900+ themes)
 - `CVEStore.get_plugins_wordlist(top_n)` / `get_themes_wordlist(top_n)` accept optional limit
-- `ThemesWordlist` has `active_installs` column (added recently; existing DBs need rebuild with `plecost build-db`)
+- `ThemesWordlist` has `active_installs` column; existing DBs get it via `_apply_sqlite_migrations()` in `update-db`
+- Webshells module also respects `deep`: fast=147 paths, deep=294 paths, extended (`--module-option webshells:wordlist=extended`)=523 paths
+- `UploadsPhpDetector` fast=273 paths (current year only), deep=1785 paths (2020→current year)
 
 ## Adding a New Module
 - Create `plecost/modules/your_name.py` extending `ScanModule` with `name`, `depends_on`, `async run(ctx, http)`
+- Complex modules can be subpackages: `plecost/modules/your_name/` with `module.py` (main class), `base.py` (ABC), `wordlists.py`, and `detectors/` subpackage — export via `__init__.py`
+- Subpackage `__init__.py` must export the module class: `from plecost.modules.your_name.module import YourModule; __all__ = ["YourModule"]`
+- `asyncio.gather(..., return_exceptions=True)` — exceptions from detectors are silently ignored (project convention); do not re-raise
+- `ScanContext` useful attributes: `ctx.wordpress_version` (str|None), `ctx.plugins` (list[Plugin]), `ctx.add_plugin(plugin)`
 - Register it in `plecost/scanner.py` (instantiate and add to module list)
 - Add finding IDs to `_FINDINGS_REGISTRY` in `plecost/cli.py` (`explain` command)
 - Add module name to `_ALL_MODULE_NAMES` in `plecost/cli.py` (verbose progress display)
@@ -127,6 +139,7 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - Always call `await engine.dispose()` in a `try/finally` block in CLI commands — exceptions skip it otherwise
 - `patch_applier._apply_upserts()` batches with `session.flush()` every 2000 records; `session.commit()` happens once at end
 - `.where()` does NOT accept Python `True`/`False` as fallback conditions — build a `conditions: list` and append conditionally, then unpack with `*conditions`
+- `Base.metadata.create_all` only creates missing tables, never adds columns — schema migrations need explicit `ALTER TABLE` via `_apply_sqlite_migrations()` in `cli.py` using `PRAGMA table_info(table)` to detect missing columns
 
 ## Modules That Need the Database Store
 - Modules requiring DB access receive `store: CVEStore | None` in constructor (like `CVEsModule`)
@@ -143,6 +156,9 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 
 ## Docker
 - `.dockerignore` has `*.md` + `!README.md` — do not remove the exception or the build will fail
+
+## Finding Evidence
+- Never store raw API response data in `evidence` dict — format as human-readable strings (e.g. users list as `"  • [id:N] Name (@slug) — url"` per line)
 
 ## License
 - PolyForm Noncommercial License 1.0.0 — free for non-commercial use; commercial use requires contacting cr0hn@cr0hn.com

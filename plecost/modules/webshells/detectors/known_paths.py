@@ -4,7 +4,7 @@ from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.webshells.base import BaseDetector
-from plecost.modules.webshells.wordlists import WEBSHELL_PATHS_CORE, WEBSHELL_PATHS_EXTENDED
+from plecost.modules.webshells.wordlists import WEBSHELL_PATHS_FAST, WEBSHELL_PATHS_CORE, WEBSHELL_PATHS_EXTENDED
 
 _ALLOWED_CONTENT_TYPES = {"text/html", "text/plain", "application/x-httpd-php"}
 _PREFLIGHT_PATH = "/plecost-probe-nonexistent.php"
@@ -30,11 +30,18 @@ class KnownPathsDetector(BaseDetector):
         except Exception:
             pass
 
-        wordlist_tier = ctx.opts.module_options.get("webshells", {}).get("wordlist", "core")
-        paths = WEBSHELL_PATHS_EXTENDED if wordlist_tier == "extended" else WEBSHELL_PATHS_CORE
+        wordlist_tier = ctx.opts.module_options.get("webshells", {}).get("wordlist", "")
+        if wordlist_tier == "extended":
+            paths = WEBSHELL_PATHS_EXTENDED
+        elif wordlist_tier == "core" or ctx.opts.deep:
+            paths = WEBSHELL_PATHS_CORE
+        else:
+            paths = WEBSHELL_PATHS_FAST
 
         findings: list[Finding] = []
         sem = asyncio.Semaphore(ctx.opts.concurrency)
+        total = len(paths)
+        checked = [0]
 
         async def _probe(path: str) -> None:
             async with sem:
@@ -70,6 +77,9 @@ class KnownPathsDetector(BaseDetector):
                     ))
                 except Exception:
                     pass
+                finally:
+                    checked[0] += 1
+                    ctx.report_progress("webshells", checked[0], total)
 
         await asyncio.gather(*[_probe(p) for p in paths])
         return findings

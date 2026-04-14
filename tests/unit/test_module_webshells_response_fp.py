@@ -43,14 +43,15 @@ async def test_detects_wso_form_parameters():
 
 
 async def test_detects_b374k_string():
-    """b374k shell contains the string 'b374k' in its body."""
+    """b374k shell contains the string 'b374k' in its body.
+    Uses shell.php (present in fast wordlist) to trigger the body fingerprint."""
     ctx = ScanContext(ScanOptions(url="https://example.com"))
     ctx.is_wordpress = True
     async with respx.mock:
         respx.get("https://example.com/plecost-probe-nonexistent.php").mock(
             return_value=httpx.Response(404)
         )
-        respx.get("https://example.com/wp-content/uploads/b374k.php").mock(
+        respx.get("https://example.com/wp-content/uploads/shell.php").mock(
             return_value=httpx.Response(200, text="<html>b374k shell v3.2</html>",
                                         headers={"content-type": "text/html"})
         )
