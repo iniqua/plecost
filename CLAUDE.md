@@ -157,6 +157,15 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 ## Docker
 - `.dockerignore` has `*.md` + `!README.md` — do not remove the exception or the build will fail
 
+## DVWP Test Environment (tests/dvwp/)
+- Plugin activation under PHP 8 (`wordpress:6.6`): install all plugins first (no `--activate`), then activate in a loop with `|| true` — prevents one failure from aborting the script
+- `wpdiscuz 7.0.4`: activation hook returns "Permission Denied !!!" via wp-cli — keep installed, not activated; plecost detects it via file headers
+- `yith-woocommerce-wishlist 2.2.9`: PHP fatal on activation (curly-brace array syntax removed in PHP 8) — keep installed, not activated
+- `wordfence 7.5.0`: needs `mkdir -p /var/www/html/wp-content/wflogs` before activation or flock() fatal error
+- `wp-content/mu-plugins/` is NOT created by default — `mkdir -p` before placing fixtures
+- `wp-content/uploads/.htaccess` blocks PHP execution by default — override with `Allow from all / Satisfy Any` to test webshell detectors
+- china_chopper fixture: PHP file with no `echo` outputs 0 bytes → matches `len(body) == 0` fingerprint
+
 ## Finding Evidence
 - Never store raw API response data in `evidence` dict — format as human-readable strings (e.g. users list as `"  • [id:N] Name (@slug) — url"` per line)
 
