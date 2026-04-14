@@ -169,6 +169,14 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 ## Finding Evidence
 - Never store raw API response data in `evidence` dict — format as human-readable strings (e.g. users list as `"  • [id:N] Name (@slug) — url"` per line)
 
+## i18n Support
+- `plecost/i18n.py` — `t(key, **kwargs)` dot-notation lookup, `set_language(lang)` forced override
+- Locale files: `plecost/locales/en.json` (source of truth) + `es.json`; add languages by dropping a JSON file there
+- Language priority: `--lang` CLI flag → `PLECOST_LANG` env var → system locale → English fallback
+- Finding ID → i18n key: `PC-WPEC-001` → `"findings.pc_wpec_001.{title,description,remediation}"`; rule: `.lower().replace("-", "_")`
+- Avoid loop variable named `t` — it shadows the `t()` i18n import (use `th`, `item`, etc. instead)
+- CHANGELOG is at `../CHANGELOG.md` relative to git root (`plecost/`) — use `git add ../CHANGELOG.md`
+
 ## License
 - PolyForm Noncommercial License 1.0.0 — free for non-commercial use; commercial use requires contacting cr0hn@cr0hn.com
 - Do NOT change to MIT or any open source license without explicit authorization
