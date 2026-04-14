@@ -1,6 +1,11 @@
 ## [Unreleased] - 2026-04-14
 
 ### Added
+- `webshells` module Task 1: `KnownPathsDetector` in `plecost/modules/webshells/detectors/known_paths.py` — probes known webshell filenames across common WordPress directories, emits `PC-WSH-001` (CRITICAL, CVSS 9.8) on hit
+- Preflight catch-all guard: detects sites that return 200 for arbitrary paths and skips scan to avoid mass false positives
+- Content-type FP guard: only flags responses with `text/html`, `text/plain`, or `application/x-httpd-php` content types
+- Supports `--module-option webshells:wordlist=extended` for larger wordlist coverage
+- 4 unit tests in `tests/unit/test_module_webshells_known_paths.py`: 200/text-html hit, all-404, image content-type FP guard, catch-all site skip
 - `magecart` module: detects Magecart/card-skimming JavaScript on WooCommerce and WP eCommerce checkout pages via blocklist lookup (`PC-MGC-000` through `PC-MGC-004`)
 - `MagecartDomain` ORM model and `get_magecart_domains()` store query in `plecost/database/`
 - `MagecartInfo` dataclass in `plecost/models.py`; added `magecart` field to `ScanResult` and `ScanContext`
