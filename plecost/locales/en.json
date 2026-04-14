@@ -1,0 +1,532 @@
+{
+  "reporter": {
+    "panel": {
+      "title": "Plecost v4.0 Scan Report",
+      "url": "URL",
+      "scan_id": "Scan ID",
+      "timestamp": "Timestamp",
+      "duration": "Duration",
+      "status": "Status",
+      "blocked": "BLOCKED — target returned HTTP 403, scan aborted",
+      "wordpress": "WordPress",
+      "wp_version": "WP Version",
+      "waf": "WAF",
+      "yes": "Yes",
+      "no": "No",
+      "no_findings": "No findings.",
+      "unknown": "unknown"
+    },
+    "table": {
+      "summary": "Summary",
+      "findings": "Findings",
+      "detected_plugins": "Detected Plugins",
+      "known_vulnerabilities": "Known Vulnerabilities",
+      "detected_themes": "Detected Themes",
+      "detected_users": "Detected Users"
+    },
+    "column": {
+      "severity": "Severity",
+      "count": "Count",
+      "id": "ID",
+      "title": "Title",
+      "module": "Module",
+      "slug": "Slug",
+      "version": "Version",
+      "known_cves": "Known CVEs",
+      "cve_id": "CVE ID",
+      "cvss": "CVSS",
+      "exploit": "Exploit",
+      "affects_versions": "Affects versions",
+      "username": "Username",
+      "source": "Source"
+    },
+    "field": {
+      "description": "Description",
+      "evidence": "Evidence",
+      "remediation": "Remediation",
+      "references": "References",
+      "cvss_score": "CVSS Score"
+    }
+  },
+  "verbose": {
+    "table": {
+      "modules": "Modules",
+      "findings": "Findings ({count})"
+    },
+    "column": {
+      "module": "Module",
+      "progress": "Progress",
+      "severity": "Severity",
+      "id": "ID",
+      "title": "Title"
+    }
+  },
+  "cli": {
+    "modules": {
+      "table_title": "Available Modules",
+      "column_module": "Module",
+      "column_depends_on": "Depends On",
+      "column_description": "Description",
+      "descriptions": {
+        "fingerprint": "Detect WordPress version (9 methods)",
+        "waf": "Detect WAF/CDN (Cloudflare, Sucuri, etc.)",
+        "plugins": "Enumerate plugins (passive + brute-force)",
+        "themes": "Enumerate themes (passive + brute-force)",
+        "users": "Enumerate users (REST API, author archives)",
+        "xmlrpc": "Check XML-RPC security (pingback, multicall)",
+        "rest_api": "Check REST API exposure and misconfigs",
+        "misconfigs": "Check for exposed sensitive files",
+        "directory_listing": "Check for open directory listing",
+        "http_headers": "Check for missing security headers",
+        "ssl_tls": "Check SSL/TLS configuration",
+        "debug_exposure": "Detect debug mode and PHP exposure",
+        "content_analysis": "Detect card skimming and hardcoded secrets",
+        "auth": "Authenticated scan (requires --user --password)",
+        "cves": "Correlate found software with CVE database",
+        "woocommerce": "Detect WooCommerce and its configuration",
+        "wp_ecommerce": "Detect WP eCommerce and check for vulnerabilities",
+        "magecart": "Detect Magecart/card-skimming scripts on checkout pages",
+        "webshells": "Detect webshells and backdoors in wp-content"
+      }
+    },
+    "explain": {
+      "severity": "Severity",
+      "remediation_id": "Remediation ID",
+      "description": "Description",
+      "remediation": "Remediation",
+      "references": "References"
+    }
+  },
+  "findings": {
+    "pc_fp_001": {
+      "title": "WordPress version disclosed via meta generator tag",
+      "description": "The WordPress version is exposed in the HTML meta generator tag, allowing attackers to target known vulnerabilities for that version.",
+      "remediation": "Remove the generator meta tag. Add to functions.php: remove_action('wp_head', 'wp_generator');"
+    },
+    "pc_fp_002": {
+      "title": "WordPress version disclosed via readme.html",
+      "description": "The /readme.html file is publicly accessible and discloses the WordPress version.",
+      "remediation": "Delete /readme.html from the server root."
+    },
+    "pc_usr_001": {
+      "title": "User enumeration via REST API",
+      "description": "The WordPress REST API endpoint /wp-json/wp/v2/users exposes a list of usernames without authentication.",
+      "remediation": "Restrict the REST API users endpoint. Add to functions.php: add_filter('rest_endpoints', function($e){ unset($e['/wp/v2/users']); return $e; });"
+    },
+    "pc_usr_002": {
+      "title": "User enumeration via author archives",
+      "description": "WordPress author archive URLs (/?author=N) redirect to /author/username/, exposing valid usernames.",
+      "remediation": "Redirect /?author=N to homepage. Add rewrite rules or use a security plugin."
+    },
+    "pc_xmlrpc_001": {
+      "title": "XML-RPC endpoint is accessible",
+      "description": "The xmlrpc.php endpoint is publicly accessible. It can be abused for brute force attacks and DoS amplification.",
+      "remediation": "Disable XML-RPC if not needed. Add to .htaccess: <Files xmlrpc.php>\\nOrder Deny,Allow\\nDeny from all\\n</Files>"
+    },
+    "pc_xmlrpc_002": {
+      "title": "XML-RPC pingback.ping enabled (DoS amplification)",
+      "description": "The pingback.ping method is enabled in XML-RPC, allowing attackers to use your site as a DoS amplification vector against third parties.",
+      "remediation": "Disable pingbacks: add_filter('xmlrpc_methods', function($m){ unset($m['pingback.ping']); return $m; });"
+    },
+    "pc_xmlrpc_003": {
+      "title": "XML-RPC system.listMethods exposed",
+      "description": "system.listMethods is available, allowing attackers to enumerate all available XML-RPC methods.",
+      "remediation": "Disable XML-RPC entirely if not needed."
+    },
+    "pc_rest_001": {
+      "title": "REST API link exposed in HTML head",
+      "description": "The WordPress REST API discovery link is present in the HTML head, confirming WordPress installation.",
+      "remediation": "Remove REST API link: remove_action('wp_head', 'rest_output_link_wp_head');"
+    },
+    "pc_rest_002": {
+      "title": "REST API oEmbed exposes user information",
+      "description": "The oEmbed endpoint leaks author information.",
+      "remediation": "Disable oEmbed or restrict the endpoint."
+    },
+    "pc_rest_003": {
+      "title": "REST API CORS misconfiguration",
+      "description": "The REST API returns Access-Control-Allow-Origin: * allowing any origin to read API responses.",
+      "remediation": "Restrict CORS headers in your web server configuration."
+    },
+    "pc_mcfg_001": {
+      "title": "wp-config.php is publicly accessible",
+      "description": "wp-config.php is accessible and exposes database credentials and security keys.",
+      "remediation": "Move wp-config.php one directory above webroot or restrict with .htaccess."
+    },
+    "pc_mcfg_002": {
+      "title": "wp-config.php backup exposed",
+      "description": "A backup of wp-config.php is publicly accessible.",
+      "remediation": "Delete all backup files of wp-config.php from the server."
+    },
+    "pc_mcfg_003": {
+      "title": ".env file exposed",
+      "description": ".env file is accessible and may expose API keys and secrets.",
+      "remediation": "Restrict .env access via web server configuration."
+    },
+    "pc_mcfg_004": {
+      "title": ".git directory exposed",
+      "description": "The .git directory is accessible, potentially exposing source code and credentials.",
+      "remediation": "Deny access to .git in your web server config."
+    },
+    "pc_mcfg_005": {
+      "title": "debug.log exposed",
+      "description": "WordPress debug log is publicly accessible and may contain sensitive paths and data.",
+      "remediation": "Delete debug.log and set WP_DEBUG_LOG to false."
+    },
+    "pc_mcfg_006": {
+      "title": "SQL backup file exposed",
+      "description": "A database backup file is publicly accessible.",
+      "remediation": "Remove backup files from the webroot immediately."
+    },
+    "pc_mcfg_007": {
+      "title": "wp-admin/install.php accessible",
+      "description": "WordPress installation script is accessible.",
+      "remediation": "Restrict access to install.php after installation."
+    },
+    "pc_mcfg_008": {
+      "title": "wp-admin/upgrade.php accessible",
+      "description": "WordPress upgrade script is accessible.",
+      "remediation": "Restrict access to upgrade.php after updates."
+    },
+    "pc_mcfg_009": {
+      "title": "readme.html discloses WP version",
+      "description": "readme.html is accessible and may disclose WordPress version.",
+      "remediation": "Delete /readme.html from the server."
+    },
+    "pc_mcfg_010": {
+      "title": "license.txt accessible",
+      "description": "license.txt confirms WordPress installation.",
+      "remediation": "Delete /license.txt from the server."
+    },
+    "pc_mcfg_011": {
+      "title": "wlwmanifest.xml exposed",
+      "description": "Exposes Windows Live Writer endpoint.",
+      "remediation": "remove_action('wp_head', 'wlwmanifest_link');"
+    },
+    "pc_mcfg_012": {
+      "title": "wp-cron.php externally accessible",
+      "description": "wp-cron.php can be triggered by anyone.",
+      "remediation": "define('DISABLE_WP_CRON', true); and use real server cron."
+    },
+    "pc_dir_001": {
+      "title": "Directory listing in /wp-content/",
+      "description": "Directory listing is enabled in /wp-content/.",
+      "remediation": "Add 'Options -Indexes' to .htaccess."
+    },
+    "pc_dir_002": {
+      "title": "Directory listing in /wp-content/plugins/",
+      "description": "Plugin directory listing enabled.",
+      "remediation": "Add 'Options -Indexes' to .htaccess."
+    },
+    "pc_dir_003": {
+      "title": "Directory listing in /wp-content/themes/",
+      "description": "Theme directory listing enabled.",
+      "remediation": "Add 'Options -Indexes' to .htaccess."
+    },
+    "pc_dir_004": {
+      "title": "Directory listing in /wp-content/uploads/",
+      "description": "Uploads directory listing enabled.",
+      "remediation": "Add 'Options -Indexes' to .htaccess."
+    },
+    "pc_hdr_001": {
+      "title": "Missing HSTS header",
+      "description": "Strict-Transport-Security header is absent.",
+      "remediation": "Add: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload"
+    },
+    "pc_hdr_002": {
+      "title": "Missing X-Frame-Options",
+      "description": "X-Frame-Options header is absent, allowing clickjacking.",
+      "remediation": "Add: X-Frame-Options: SAMEORIGIN"
+    },
+    "pc_hdr_003": {
+      "title": "Missing X-Content-Type-Options",
+      "description": "X-Content-Type-Options header is absent.",
+      "remediation": "Add: X-Content-Type-Options: nosniff"
+    },
+    "pc_hdr_004": {
+      "title": "Missing Content-Security-Policy",
+      "description": "CSP header is absent.",
+      "remediation": "Implement a Content-Security-Policy header."
+    },
+    "pc_hdr_005": {
+      "title": "Missing Referrer-Policy",
+      "description": "Referrer-Policy header is absent.",
+      "remediation": "Add: Referrer-Policy: strict-origin-when-cross-origin"
+    },
+    "pc_hdr_006": {
+      "title": "Missing Permissions-Policy",
+      "description": "Permissions-Policy header is absent.",
+      "remediation": "Add a Permissions-Policy header restricting unused browser features."
+    },
+    "pc_hdr_007": {
+      "title": "Server header discloses version",
+      "description": "The Server header reveals web server software and version.",
+      "remediation": "Configure web server to suppress version info."
+    },
+    "pc_hdr_008": {
+      "title": "X-Powered-By discloses PHP version",
+      "description": "PHP version is exposed via X-Powered-By header.",
+      "remediation": "Set expose_php = Off in php.ini"
+    },
+    "pc_ssl_001": {
+      "title": "HTTP to HTTPS redirect missing",
+      "description": "The site does not redirect HTTP to HTTPS.",
+      "remediation": "Configure 301 redirect from HTTP to HTTPS in web server config."
+    },
+    "pc_ssl_002": {
+      "title": "Invalid or expired SSL certificate",
+      "description": "The SSL certificate is invalid or expired.",
+      "remediation": "Renew the SSL certificate immediately."
+    },
+    "pc_ssl_003": {
+      "title": "HSTS not configured",
+      "description": "HSTS is not configured.",
+      "remediation": "Enable HSTS in web server configuration."
+    },
+    "pc_dbg_001": {
+      "title": "WP_DEBUG active — PHP errors exposed",
+      "description": "PHP error messages are visible in responses, indicating WP_DEBUG=true.",
+      "remediation": "Set define('WP_DEBUG', false); in wp-config.php for production."
+    },
+    "pc_dbg_003": {
+      "title": "PHP version exposed via X-Powered-By",
+      "description": "PHP version is disclosed in the X-Powered-By response header.",
+      "remediation": "Set expose_php = Off in php.ini"
+    },
+    "pc_cnt_001": {
+      "title": "Potential card skimming script",
+      "description": "A script with card skimming patterns was detected.",
+      "remediation": "Investigate and remove the suspicious script immediately. Check for site compromise."
+    },
+    "pc_cnt_002": {
+      "title": "Suspicious external iframe",
+      "description": "An external iframe from an unexpected domain was found.",
+      "remediation": "Review all external iframes. Remove unauthorized ones."
+    },
+    "pc_cnt_003": {
+      "title": "Hardcoded API key in page source",
+      "description": "An API key pattern was found in public page source.",
+      "remediation": "Move secrets to server-side config. Never expose keys in client-side code."
+    },
+    "pc_waf_001": {
+      "title": "WAF/CDN detected",
+      "description": "A WAF or CDN was detected. Some findings may be incomplete.",
+      "remediation": "No action needed. WAF is a positive security control."
+    },
+    "pc_auth_001": {
+      "title": "Successful authentication",
+      "description": "Successfully authenticated with provided credentials.",
+      "remediation": "Change default credentials. Use a strong unique password."
+    },
+    "pc_auth_002": {
+      "title": "Open user registration enabled",
+      "description": "Anyone can register an account.",
+      "remediation": "Disable in Settings > General > Membership."
+    },
+    "pc_wc_000": {
+      "title": "WooCommerce installation summary",
+      "description": "A summary of the WooCommerce installation was collected.",
+      "remediation": "Review WooCommerce configuration and harden as needed."
+    },
+    "pc_wc_001": {
+      "title": "WooCommerce detected via Store API",
+      "description": "WooCommerce was detected on this site via the Store API endpoint.",
+      "remediation": "No action required unless WooCommerce is not intentionally installed."
+    },
+    "pc_wc_002": {
+      "title": "WooCommerce version disclosed via readme.txt",
+      "description": "The WooCommerce plugin readme.txt file is publicly accessible and discloses the WooCommerce version.",
+      "remediation": "Delete or restrict access to wp-content/plugins/woocommerce/readme.txt."
+    },
+    "pc_wc_003": {
+      "title": "WooCommerce REST API namespaces exposed",
+      "description": "The WooCommerce REST API namespaces are publicly listed, confirming WooCommerce installation and revealing available API versions.",
+      "remediation": "Restrict the REST API namespace discovery endpoint or require authentication."
+    },
+    "pc_wc_004": {
+      "title": "WooCommerce REST API: customer list exposed without authentication",
+      "description": "The WooCommerce REST API /wc/v3/customers endpoint returns customer data without requiring authentication, exposing PII.",
+      "remediation": "Require authentication for the WooCommerce REST API. Review WooCommerce > Settings > Advanced > REST API."
+    },
+    "pc_wc_005": {
+      "title": "WooCommerce REST API: order list exposed without authentication",
+      "description": "The WooCommerce REST API /wc/v3/orders endpoint returns order data without requiring authentication.",
+      "remediation": "Require authentication for the WooCommerce REST API."
+    },
+    "pc_wc_006": {
+      "title": "WooCommerce REST API: coupon list exposed without authentication",
+      "description": "The WooCommerce REST API /wc/v3/coupons endpoint returns coupon codes without requiring authentication.",
+      "remediation": "Require authentication for the WooCommerce REST API."
+    },
+    "pc_wc_007": {
+      "title": "WooCommerce REST API: system status exposed without authentication",
+      "description": "The WooCommerce REST API /wc/v3/system_status endpoint returns detailed system information without authentication.",
+      "remediation": "Require authentication for the WooCommerce REST API."
+    },
+    "pc_wc_008": {
+      "title": "WooCommerce logs directory listing enabled",
+      "description": "Directory listing is enabled in /wp-content/uploads/wc-logs/, exposing WooCommerce log files.",
+      "remediation": "Disable directory listing and restrict access to the wc-logs directory."
+    },
+    "pc_wc_009": {
+      "title": "WooCommerce uploads directory accessible",
+      "description": "The WooCommerce uploads directory is publicly accessible and may expose sensitive files.",
+      "remediation": "Add an .htaccess or nginx rule to restrict direct file access in the uploads directory."
+    },
+    "pc_wc_010": {
+      "title": "WooCommerce Payments plugin detected",
+      "description": "The WooCommerce Payments plugin was detected on this site.",
+      "remediation": "Keep WooCommerce Payments updated to the latest version."
+    },
+    "pc_wc_011": {
+      "title": "WooCommerce Stripe Gateway plugin detected",
+      "description": "The WooCommerce Stripe Gateway plugin was detected on this site.",
+      "remediation": "Keep the Stripe Gateway plugin updated to the latest version."
+    },
+    "pc_wc_012": {
+      "title": "WooCommerce system status retrieved (authenticated)",
+      "description": "WooCommerce system status was successfully retrieved using authenticated API credentials.",
+      "remediation": "No action required. Review system status for any misconfigurations."
+    },
+    "pc_wc_013": {
+      "title": "WooCommerce payment gateway configuration exposed (authenticated)",
+      "description": "WooCommerce payment gateway configuration was retrieved via authenticated API, potentially exposing API keys and secrets.",
+      "remediation": "Restrict API key permissions and rotate any exposed credentials."
+    },
+    "pc_wc_020": {
+      "title": "CVE-2023-28121: WooCommerce Payments authentication bypass",
+      "description": "CVE-2023-28121 (CVSS 9.8): A critical authentication bypass vulnerability in WooCommerce Payments allows unauthenticated attackers to impersonate any user, including administrators.",
+      "remediation": "Update WooCommerce Payments to version 5.6.2 or later immediately."
+    },
+    "pc_wc_021": {
+      "title": "CVE-2023-34000: WooCommerce Stripe Gateway IDOR (PII disclosure)",
+      "description": "CVE-2023-34000 (CVSS 7.5): An Insecure Direct Object Reference (IDOR) vulnerability in the WooCommerce Stripe Gateway plugin allows unauthenticated attackers to access other users' PII.",
+      "remediation": "Update the WooCommerce Stripe Gateway plugin to version 7.4.1 or later."
+    },
+    "pc_wpec_000": {
+      "title": "WP eCommerce: installation summary",
+      "description": "Summary of the WP eCommerce plugin analysis.",
+      "remediation": "See individual findings for remediation details."
+    },
+    "pc_wpec_001": {
+      "title": "WP eCommerce detected",
+      "description": "The WP eCommerce (wp-e-commerce) plugin is installed and active.",
+      "remediation": "WP eCommerce is abandoned. Consider migrating to WooCommerce."
+    },
+    "pc_wpec_002": {
+      "title": "WP eCommerce: version exposed via readme.txt",
+      "description": "The WP eCommerce version is publicly accessible via readme.txt.",
+      "remediation": "Block access to readme.txt via web server rules."
+    },
+    "pc_wpec_003": {
+      "title": "WP eCommerce: abandoned plugin with unpatched CVEs",
+      "description": "WP eCommerce has not received updates since 2020 (last version: 3.15.1). All current installations are vulnerable to CVE-2024-1514 (SQL Injection via ChronoPay callback) and CVE-2026-1235 (PHP Object Injection), with no patch available.",
+      "remediation": "Uninstall WP eCommerce immediately and migrate to an actively maintained alternative such as WooCommerce."
+    },
+    "pc_wpec_004": {
+      "title": "WP eCommerce: ChronoPay payment gateway detected",
+      "description": "The ChronoPay payment gateway is installed in WP eCommerce.",
+      "remediation": "Verify that the ChronoPay gateway is securely configured."
+    },
+    "pc_wpec_005": {
+      "title": "WP eCommerce: directory listing enabled in plugin directory",
+      "description": "Directory listing is enabled in the WP eCommerce plugin directory, exposing its file structure.",
+      "remediation": "Disable directory listing on the web server."
+    },
+    "pc_wpec_006": {
+      "title": "WP eCommerce: uploads directory accessible",
+      "description": "The WP eCommerce uploads directory is publicly accessible.",
+      "remediation": "Add an .htaccess file denying direct access to the wpsc/ directory."
+    },
+    "pc_wpec_007": {
+      "title": "WP eCommerce: digital downloads directory exposed",
+      "description": "The digital products directory is publicly accessible, exposing paid download files.",
+      "remediation": "Configure the web server to deny direct access to the wpsc/digital/ directory."
+    },
+    "pc_wpec_008": {
+      "title": "WP eCommerce: database backup script accessible",
+      "description": "The db-backup.php script in the WP eCommerce admin panel is accessible without authentication.",
+      "remediation": "Block direct access to files in wpsc-admin/ via web server rules."
+    },
+    "pc_wpec_009": {
+      "title": "WP eCommerce: log viewer accessible",
+      "description": "The display-log.php log viewer in WP eCommerce is accessible without authentication.",
+      "remediation": "Block direct access to files in wpsc-admin/ via web server rules."
+    },
+    "pc_wpec_010": {
+      "title": "WP eCommerce: ChronoPay callback endpoint exposed",
+      "description": "The ChronoPay callback endpoint responds without signature verification.",
+      "remediation": "Verify ChronoPay configuration and apply signature validation on callbacks."
+    },
+    "pc_wpec_020": {
+      "title": "CVE-2024-1514: WP eCommerce ChronoPay SQL Injection",
+      "description": "The ChronoPay callback endpoint is vulnerable to SQL Injection (CVE-2024-1514).",
+      "remediation": "Uninstall WP eCommerce. No patch is available."
+    },
+    "pc_wpec_021": {
+      "title": "CVE-2026-1235: WP eCommerce PHP Object Injection",
+      "description": "The WP eCommerce AJAX endpoint is vulnerable to PHP Object Injection (CVE-2026-1235).",
+      "remediation": "Uninstall WP eCommerce. No patch is available."
+    },
+    "pc_mgc_000": {
+      "title": "Magecart scan summary",
+      "description": "The Magecart detection module ran on the eCommerce checkout pages. This finding summarizes what was scanned.",
+      "remediation": "No action required. Review other PC-MGC-* findings for actionable issues."
+    },
+    "pc_mgc_001": {
+      "title": "Known Magecart domain script on checkout page",
+      "description": "A script from a known Magecart card-skimming domain was found loading on a checkout page. This is a strong indicator of a supply-chain compromise targeting payment card data.",
+      "remediation": "Immediately remove the malicious script. Audit your theme and plugin files for injected code. Reset all WordPress credentials and rotate payment API keys. Notify your payment processor."
+    },
+    "pc_mgc_002": {
+      "title": "Known dropper domain script on checkout page",
+      "description": "A script from a known dropper domain was found on a checkout page. Dropper scripts typically load secondary payloads, including card skimmers.",
+      "remediation": "Immediately remove the malicious script and audit all JavaScript on the checkout flow. Check for secondary payloads or additional injections."
+    },
+    "pc_mgc_003": {
+      "title": "Known exfiltrator domain script on checkout page",
+      "description": "A script from a known data exfiltration domain was found on a checkout page. Exfiltrator scripts send captured data (including payment card details) to attacker-controlled servers.",
+      "remediation": "Remove the script immediately. Review all external script sources on the checkout page. Implement Content Security Policy (CSP) to restrict script origins."
+    },
+    "pc_mgc_004": {
+      "title": "Known Magecart domain script on non-checkout page",
+      "description": "A script from a known Magecart-related domain was found on a non-checkout page. While lower risk than checkout exposure, this may indicate site compromise.",
+      "remediation": "Investigate the script source. Remove if unauthorized. Check if the domain appears on checkout pages as well."
+    },
+    "pc_wsh_001": {
+      "title": "Known webshell path is accessible",
+      "description": "A file matching a known webshell filename was found accessible via HTTP.",
+      "remediation": "Remove the file immediately. Audit all wp-content directories. Rotate all credentials."
+    },
+    "pc_wsh_100": {
+      "title": "PHP file executable in wp-content/uploads",
+      "description": "A PHP file is accessible and executable inside wp-content/uploads, which should never execute PHP.",
+      "remediation": "Remove the file. Add .htaccess to uploads/ to deny PHP execution."
+    },
+    "pc_wsh_150": {
+      "title": "Suspicious PHP file in wp-content/mu-plugins",
+      "description": "A PHP file matching a known backdoor name was found in must-use plugins directory.",
+      "remediation": "Review and remove unexpected files from wp-content/mu-plugins/."
+    },
+    "pc_wsh_200": {
+      "title": "Webshell family fingerprint matched in HTTP response",
+      "description": "The response from a PHP file matches a known webshell family signature.",
+      "remediation": "The site is compromised. Take offline, remove webshell, audit all files, rotate all credentials."
+    },
+    "pc_wsh_250": {
+      "title": "WordPress core file has been modified",
+      "description": "A WordPress core file does not match the official checksum for the installed version.",
+      "remediation": "Verify if the modification is authorized. If not, restore the file from a clean WP installation."
+    },
+    "pc_wsh_300": {
+      "title": "Unrecognized plugin detected via WordPress REST API",
+      "description": "The WordPress REST API reports an active plugin that was not detected during passive scanning.",
+      "remediation": "Verify the plugin is intentionally installed. If unknown, remove it and inspect for malicious code."
+    },
+    "pc_pre_001": {
+      "title": "Target blocked — HTTP 403 on pre-flight probe",
+      "description": "The target URL returned HTTP 403 on the initial probe. The scan was aborted.",
+      "remediation": "Check if the target is accessible and you have authorization to scan it."
+    }
+  }
+}
