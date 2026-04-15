@@ -39,6 +39,17 @@ class XMLRPCModule(ScanModule):
         except Exception:
             return
 
+        ctx.add_finding(Finding(
+            id="PC-XMLRPC-001", remediation_id="REM-XMLRPC-001",
+            title="XML-RPC endpoint is accessible",
+            severity=Severity.MEDIUM,
+            description="The xmlrpc.php endpoint is publicly accessible.",
+            evidence={"url": xmlrpc_url, "status_code": r.status_code},
+            remediation="Disable XML-RPC if not needed.",
+            references=["https://kinsta.com/blog/xmlrpc-php/"],
+            cvss_score=5.3, module=self.name
+        ))
+
         # ---------------------------------------------------------
         # ACTIVE GUARDRAIL TEST: Rate Limiting & Brute Force
         # ---------------------------------------------------------
@@ -67,7 +78,6 @@ class XMLRPCModule(ScanModule):
                 blocked_on_attempt = attempt
                 break
 
-        # Generate the appropriate finding based on the guardrail test
         if not is_rate_limited:
             ctx.add_finding(Finding(
                 id="PC-XMLRPC-005", remediation_id="REM-XMLRPC-005",
