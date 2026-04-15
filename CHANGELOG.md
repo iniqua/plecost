@@ -1,3 +1,11 @@
+## [4.2.2] — 2026-04-15
+
+### Fixed
+- **webshells / uploads_php**: `UploadsPhpDetector` now performs a baseline probe against a non-existent path (`__plecost_probe_xyz__.php`) before scanning the wordlist. On soft-200 servers (those that return HTTP 200 for any path), responses matching the baseline body are skipped as false positives, eliminating hundreds of duplicate CRITICAL findings.
+- **webshells / mu_plugins**: `MuPluginsDetector` applies the same soft-200 baseline probe strategy against `wp-content/mu-plugins/`, preventing mass-duplicate findings on servers that return 200 for all paths.
+- **plugins**: passive detection of plugin slugs from the homepage HTML no longer creates false-positive "unknown version" findings. When the active wordlist scan confirms a plugin does not exist (soft-200 content mismatch or 404), the slug is now removed from the found set so it is not reported.
+- **terminal / VerboseDisplay**: `_render()` no longer renders the full module list in a fixed-height table, which caused the last modules (magecart, webshells) to be clipped at small terminal heights. The display now shows at most the 12 most recent module rows with a compact `done/total` header line (using `box=None`), ensuring running and recently-completed modules are always visible.
+
 ## [4.2.1] — 2026-04-14
 
 ### Fixed

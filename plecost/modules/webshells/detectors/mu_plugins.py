@@ -7,6 +7,7 @@ from plecost.modules.webshells.base import BaseDetector
 from plecost.modules.webshells.wordlists import MU_PLUGINS_NAMES
 
 _MU_PLUGINS_BASE = "/wp-content/mu-plugins/"
+_BASELINE_NAME = "__plecost_probe_xyz__.php"
 
 
 class MuPluginsDetector(BaseDetector):
@@ -25,12 +26,26 @@ class MuPluginsDetector(BaseDetector):
         findings: list[Finding] = []
         sem = asyncio.Semaphore(ctx.opts.concurrency)
 
+        # Baseline probe: detect soft-200 environments where the server returns
+        # HTTP 200 for any path (including non-existent files).
+        baseline_body: str | None = None
+        try:
+            probe = await http.get(ctx.url + _MU_PLUGINS_BASE + _BASELINE_NAME)
+            if probe.status_code == 200:
+                baseline_body = probe.text
+        except Exception:
+            pass
+
         async def _probe(name: str) -> None:
             async with sem:
                 try:
                     url = ctx.url + _MU_PLUGINS_BASE + name
                     r = await http.get(url)
                     if r.status_code != 200:
+                        return
+                    # In a soft-200 environment, skip if the response body is
+                    # identical to the baseline (false positive).
+                    if baseline_body is not None and r.text == baseline_body:
                         return
                     findings.append(Finding(
                         id="PC-WSH-150",

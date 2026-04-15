@@ -6,6 +6,8 @@ from plecost.models import Finding, Severity
 from plecost.modules.webshells.base import BaseDetector
 from plecost.modules.webshells.wordlists import UPLOADS_PROBE_PATHS, UPLOADS_PROBE_PATHS_FAST
 
+_BASELINE_PATH = "/wp-content/uploads/__plecost_probe_xyz__.php"
+
 
 class UploadsPhpDetector(BaseDetector):
     """
@@ -25,12 +27,26 @@ class UploadsPhpDetector(BaseDetector):
         total = len(paths)
         checked = [0]
 
+        # Baseline probe: detect soft-200 environments where the server returns
+        # HTTP 200 for any path (including non-existent files).
+        baseline_body: str | None = None
+        try:
+            probe = await http.get(ctx.url + _BASELINE_PATH)
+            if probe.status_code == 200:
+                baseline_body = probe.text
+        except Exception:
+            pass
+
         async def _probe(path: str) -> None:
             async with sem:
                 try:
                     url = ctx.url + path
                     r = await http.get(url)
                     if r.status_code != 200:
+                        return
+                    # In a soft-200 environment, skip if the response body is
+                    # identical to the baseline (false positive).
+                    if baseline_body is not None and r.text == baseline_body:
                         return
                     findings.append(Finding(
                         id="PC-WSH-100",

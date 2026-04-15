@@ -82,6 +82,13 @@ class PluginsModule(ScanModule):
                             # readme.txt "Stable tag" is authoritative; always prefer it
                             # over the ?ver= picked up from passive HTML scanning
                             found[slug] = ver
+                    elif baseline_is_soft_200 and slug in found:
+                        # In a soft-200 environment the server returns 200 for
+                        # everything, so the only way to confirm a plugin is absent
+                        # is failing the content validation above (exists=False).
+                        # Remove the passive-only detection to avoid "unknown version"
+                        # false positives caused by CDN links or injected HTML paths.
+                        del found[slug]
                 except Exception:
                     pass
                 finally:

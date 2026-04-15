@@ -231,12 +231,29 @@ class VerboseDisplay:
         if self._live:
             self._live.update(self._render())
 
+    _MAX_VISIBLE_MODULES = 12
+
     def _render(self) -> Group:
-        mod_table = Table(title=t("verbose.table.modules"), box=box.SIMPLE)
-        mod_table.add_column("", width=3)
-        mod_table.add_column(t("verbose.column.module"))
-        mod_table.add_column(t("verbose.column.progress"), width=14)
-        for name, state in self._modules.items():
+        total_modules = len(self._modules)
+        done_count = sum(1 for s in self._modules.values() if s == "done")
+
+        # Collect active (running) modules first, then recent pending/done to fill up to limit
+        running = [(n, s) for n, s in self._modules.items() if s == "running"]
+        others = [(n, s) for n, s in self._modules.items() if s != "running"]
+
+        # Show running modules + most recent others, up to MAX_VISIBLE_MODULES
+        visible = running + others
+        visible = visible[-self._MAX_VISIBLE_MODULES:]
+
+        summary_line = (
+            f"[dim]{t('verbose.table.modules')}:[/dim] "
+            f"[green]{done_count}[/green][dim]/{total_modules} done[/dim]"
+        )
+        mod_table = Table(title=summary_line, box=None, show_header=True, padding=(0, 1))
+        mod_table.add_column("", width=3, no_wrap=True)
+        mod_table.add_column(t("verbose.column.module"), no_wrap=True)
+        mod_table.add_column(t("verbose.column.progress"), width=14, no_wrap=True)
+        for name, state in visible:
             progress_str = ""
             if state == "running" and name in self._progress:
                 cur, tot = self._progress[name]
