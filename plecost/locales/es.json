@@ -133,6 +133,21 @@
       "description": "system.listMethods está disponible, permitiendo a atacantes enumerar todos los métodos XML-RPC disponibles.",
       "remediation": "Deshabilitar XML-RPC completamente si no es necesario."
     },
+    "pc_xmlrpc_004": {
+      "title": "XML-RPC system.multicall habilitado (Amplificación de fuerza bruta)",
+      "description": "El método system.multicall está habilitado en XML-RPC, permitiendo a los atacantes eludir los límites de velocidad y realizar ataques masivos de fuerza bruta enviando miles de credenciales en una sola petición.",
+      "remediation": "Deshabilitar system.multicall o restringir el acceso a XML-RPC completamente."
+    },
+    "pc_xmlrpc_005": {
+      "title": "Protección contra Fuerza Bruta en XML-RPC Ausente",
+      "description": "El endpoint xmlrpc.php es accesible y no parece aplicar límites de tasa (rate limiting) en los intentos fallidos de autenticación. Procesó con éxito múltiples intentos de inicio de sesión fallidos consecutivos.",
+      "remediation": "Implementar limitación de tasa a través de un WAF, plugin de seguridad o Fail2Ban, o deshabilitar XML-RPC completamente."
+    },
+    "pc_xmlrpc_info": {
+      "title": "Protecciones XML-RPC Activas",
+      "description": "El endpoint xmlrpc.php es accesible, pero las defensas activas (WAF/Limitación de tasa) bloquearon con éxito los intentos repetidos de autenticación.",
+      "remediation": "No se requiere acción inmediata. Las defensas están funcionando como se esperaba."
+    },
     "pc_rest_001": {
       "title": "Enlace REST API expuesto en cabecera HTML",
       "description": "El enlace de descubrimiento REST API de WordPress está presente en la cabecera HTML, confirmando la instalación de WordPress.",
