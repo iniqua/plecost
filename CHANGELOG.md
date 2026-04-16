@@ -1,3 +1,9 @@
+## [Unreleased] — 2026-04-16
+
+### Fixed
+- **pre-flight / SSL**: cuando httpx no puede verificar el certificado SSL del objetivo, el error ya no se silencia con `except Exception: pass`. Ahora se detecta explícitamente (`ConnectError`/`TransportError` con "ssl"/"certificate" en el mensaje), se aborta el escaneo y se emite el finding `PC-PRE-002` con el mensaje de error y la instrucción de reintento `--no-verify-ssl`. Antes, todos los métodos de detección de WordPress fallaban silenciosamente y plecost reportaba "WordPress: No" sin ninguna indicación del problema real.
+- **contract tests**: añadidos `PC-PRE-001` y `PC-PRE-002` a `KNOWN_FINDING_IDS` en `tests/contract/test_finding_ids.py`.
+
 ## [4.2.2] — 2026-04-15
 
 ### Fixed

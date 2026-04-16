@@ -155,6 +155,7 @@ class Scanner:
 
     async def _check_access(self, ctx: ScanContext, http: PlecostHTTPClient) -> bool:
         """Pre-flight: probe the target URL. Returns True (blocked) if access is denied."""
+        import httpx as _httpx
         try:
             r = await http.get(ctx.url + "/")
             if r.status_code == 403:
@@ -172,6 +173,29 @@ class Scanner:
                     remediation=(
                         "Try scanning from a different IP, use --proxy to route through a "
                         "different exit node, or use --user-agent to change the User-Agent string."
+                    ),
+                    references=[],
+                    cvss_score=None,
+                    module="pre-flight",
+                ))
+                return True
+        except (_httpx.ConnectError, _httpx.TransportError) as e:
+            err = str(e).lower()
+            if any(kw in err for kw in ("ssl", "tls", "certificate")):
+                ctx.blocked = True
+                ctx.add_finding(Finding(
+                    id="PC-PRE-002", remediation_id="REM-PRE-002",
+                    title="SSL certificate verification failed",
+                    severity=Severity.INFO,
+                    description=(
+                        f"The target {ctx.url} has an SSL/TLS certificate that could not be "
+                        f"verified: {e}. Plecost aborted the scan to avoid false negatives. "
+                        "All detection methods would silently fail with an unverified certificate."
+                    ),
+                    evidence={"url": ctx.url + "/", "error": str(e)},
+                    remediation=(
+                        "Re-run with --no-verify-ssl to skip certificate verification and continue "
+                        "scanning: plecost scan <url> --no-verify-ssl"
                     ),
                     references=[],
                     cvss_score=None,

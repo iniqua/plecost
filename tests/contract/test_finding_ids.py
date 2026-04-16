@@ -19,6 +19,7 @@ KNOWN_FINDING_IDS = [
     "PC-SSL-001", "PC-SSL-002", "PC-SSL-003",
     "PC-DBG-001", "PC-DBG-003",
     "PC-CNT-001", "PC-CNT-002", "PC-CNT-003",
+    "PC-PRE-001", "PC-PRE-002",
     "PC-WAF-001",
     "PC-WC-000", "PC-WC-001", "PC-WC-002", "PC-WC-003",
     "PC-WC-004", "PC-WC-005", "PC-WC-006", "PC-WC-007",
