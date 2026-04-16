@@ -1,4 +1,4 @@
-## [Unreleased] — 2026-04-16
+## [4.2.3] — 2026-04-16
 
 ### Added (PR #36 — ffr4nz)
 - **xmlrpc**: detección activa de rate limiting / guardrails — plecost envía 5 intentos de login consecutivos contra `xmlrpc.php`; si ninguno recibe 403/429/406 ni corte de conexión, emite `PC-XMLRPC-005` HIGH ("Brute-Force Protection Missing"); si se detecta bloqueo, emite `PC-XMLRPC-006` INFO ("Guardrails Active")
@@ -9,8 +9,6 @@
 - `PC-XMLRPC-INFO` renombrado a `PC-XMLRPC-006` para cumplir el patrón `PC-[A-Z]+-\d{3}`
 - `data=` → `content=` en llamadas httpx dentro de `xmlrpc.py` (elimina DeprecationWarning)
 - Añadidos `PC-XMLRPC-004`, `PC-XMLRPC-005`, `PC-XMLRPC-006` a `KNOWN_FINDING_IDS` en contrato de tests
-
-## [Unreleased] — 2026-04-16
 
 ### Fixed
 - **pre-flight / SSL auto-retry**: cuando httpx no puede verificar el certificado SSL del objetivo, plecost ahora reintenta automáticamente con `verify=False` sin intervención del usuario. Se emite un finding informativo `PC-PRE-002` para notificar que el certificado no pudo verificarse, pero el escaneo continúa normalmente. Antes, todos los métodos de detección de WordPress fallaban silenciosamente con `except Exception: pass` y plecost reportaba "WordPress: No" sin ninguna indicación del problema real.

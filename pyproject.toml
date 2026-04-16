@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "plecost"
-version = "4.2.2"
+version = "4.2.3"
 description = "The best black-box WordPress security scanner"
 readme = "README.md"
 license = {text = "PolyForm-Noncommercial-1.0.0"}
