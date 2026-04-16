@@ -14,6 +14,7 @@ class ScanContext:
     ) -> None:
         self.opts = opts
         self.url = opts.url.rstrip("/")
+        self._ssl_verify_failed: bool = False
         self.is_wordpress: bool = False
         self.wordpress_version: str | None = None
         self.waf_detected: str | None = None

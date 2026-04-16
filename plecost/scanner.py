@@ -1,4 +1,5 @@
 from __future__ import annotations
+import dataclasses
 import time
 import uuid
 from collections.abc import Callable
@@ -133,10 +134,22 @@ class Scanner:
 
         try:
             scheduler = Scheduler(modules, on_module_start=self._on_module_start, on_module_done=self._on_module_done)
-            async with PlecostHTTPClient(self._opts) as http:
+            scan_opts = self._opts
+            async with PlecostHTTPClient(scan_opts) as http:
                 blocked = await self._check_access(ctx, http)
                 if not blocked:
                     await scheduler.run(ctx, http)
+                elif ctx._ssl_verify_failed:
+                    # SSL verification failed — auto-retry without certificate verification
+                    ctx.blocked = False
+                    ctx._ssl_verify_failed = False
+                    scan_opts = dataclasses.replace(scan_opts, verify_ssl=False)
+            if not ctx.blocked and scan_opts is not self._opts:
+                # Re-run with SSL disabled
+                async with PlecostHTTPClient(scan_opts) as http:
+                    blocked = await self._check_access(ctx, http)
+                    if not blocked:
+                        await scheduler.run(ctx, http)
         finally:
             if store is not None:
                 await store.dispose()
@@ -182,20 +195,20 @@ class Scanner:
         except (_httpx.ConnectError, _httpx.TransportError) as e:
             err = str(e).lower()
             if any(kw in err for kw in ("ssl", "tls", "certificate")):
-                ctx.blocked = True
+                ctx._ssl_verify_failed = True
                 ctx.add_finding(Finding(
                     id="PC-PRE-002", remediation_id="REM-PRE-002",
-                    title="SSL certificate verification failed",
+                    title="SSL certificate verification failed — retrying without verification",
                     severity=Severity.INFO,
                     description=(
                         f"The target {ctx.url} has an SSL/TLS certificate that could not be "
-                        f"verified: {e}. Plecost aborted the scan to avoid false negatives. "
-                        "All detection methods would silently fail with an unverified certificate."
+                        f"verified ({e}). Plecost is automatically retrying with SSL "
+                        "verification disabled."
                     ),
                     evidence={"url": ctx.url + "/", "error": str(e)},
                     remediation=(
-                        "Re-run with --no-verify-ssl to skip certificate verification and continue "
-                        "scanning: plecost scan <url> --no-verify-ssl"
+                        "The site's certificate is not trusted by the system CA bundle. "
+                        "Use --no-verify-ssl explicitly to suppress this notice."
                     ),
                     references=[],
                     cvss_score=None,
