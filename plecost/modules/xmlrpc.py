@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio  # <-- Add this import
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
@@ -8,6 +9,15 @@ _LIST_METHODS_PAYLOAD = """<?xml version="1.0"?>
 <methodCall>
   <methodName>system.listMethods</methodName>
   <params></params>
+</methodCall>"""
+
+_AUTH_TEST_PAYLOAD = """<?xml version="1.0" encoding="UTF-8"?>
+<methodCall>
+  <methodName>wp.getUsersBlogs</methodName>
+  <params>
+    <param><value><string>plecost_dummy_user</string></value></param>
+    <param><value><string>plecost_dummy_pass</string></value></param>
+  </params>
 </methodCall>"""
 
 
@@ -33,21 +43,70 @@ class XMLRPCModule(ScanModule):
             id="PC-XMLRPC-001", remediation_id="REM-XMLRPC-001",
             title="XML-RPC endpoint is accessible",
             severity=Severity.MEDIUM,
-            description="The xmlrpc.php endpoint is publicly accessible, enabling brute-force and DDoS amplification attacks.",
+            description="The xmlrpc.php endpoint is publicly accessible.",
             evidence={"url": xmlrpc_url, "status_code": r.status_code},
-            remediation="Disable XML-RPC if not needed. Add to .htaccess: <Files xmlrpc.php>\\nOrder Deny,Allow\\nDeny from all\\n</Files>",
-            references=["https://www.wordfence.com/learn/xmlrpc-php/"],
+            remediation="Disable XML-RPC if not needed.",
+            references=["https://kinsta.com/blog/xmlrpc-php/"],
             cvss_score=5.3, module=self.name
         ))
 
-        # Check system.listMethods
+        # ---------------------------------------------------------
+        # ACTIVE GUARDRAIL TEST: Rate Limiting & Brute Force
+        # ---------------------------------------------------------
+        is_rate_limited = False
+        blocked_status = None
+        blocked_on_attempt = 0
+
+        headers = {'Content-Type': 'application/xml'}
+
+        for attempt in range(1, 6):
+            try:
+                r_auth = await http.post(xmlrpc_url, data=_AUTH_TEST_PAYLOAD, headers=headers)
+
+                # If we get a WAF/Security block
+                if r_auth.status_code in [403, 429, 406]:
+                    is_rate_limited = True
+                    blocked_status = r_auth.status_code
+                    blocked_on_attempt = attempt
+                    break
+
+                # Small delay to simulate typical login attempts
+                await asyncio.sleep(0.5)
+            except Exception:
+                # Connection dropped completely (often Fail2Ban behavior)
+                is_rate_limited = True
+                blocked_on_attempt = attempt
+                break
+
+        if not is_rate_limited:
+            ctx.add_finding(Finding(
+                id="PC-XMLRPC-005", remediation_id="REM-XMLRPC-005",
+                title="XML-RPC Brute-Force Protection Missing",
+                severity=Severity.HIGH,
+                description="The xmlrpc.php endpoint is accessible and does not appear to enforce rate limiting on failed authentication attempts. It successfully processed 5 consecutive failed logins.",
+                evidence={"url": xmlrpc_url, "test_attempts": 5, "status": "No block detected"},
+                remediation="Implement rate limiting (e.g., Fail2Ban, WAF) or disable XML-RPC entirely.",
+                references=["https://kinsta.com/blog/xmlrpc-php/#xmlrpc-brute-force-attacks"],
+                cvss_score=7.5, module=self.name
+            ))
+        else:
+            # Optional: Add an informational finding that guardrails ARE active
+            ctx.add_finding(Finding(
+                id="PC-XMLRPC-INFO", remediation_id="",
+                title="XML-RPC Guardrails Active",
+                severity=Severity.INFO,
+                description=f"The xmlrpc.php endpoint is accessible, but active defenses (WAF/Rate Limiting) blocked repeated authentication attempts on attempt {blocked_on_attempt}.",
+                evidence={"url": xmlrpc_url, "blocked_on_attempt": blocked_on_attempt, "status_code": blocked_status},
+                remediation="No immediate action required, but consider disabling XML-RPC if it is completely unused.",
+                references=[], cvss_score=0.0, module=self.name
+            ))
+
+        # ---------------------------------------------------------
+        # Standard Payload Tests (listMethods, pingback, multicall)
+        # ---------------------------------------------------------
         try:
-            r = await http.post(
-                xmlrpc_url,
-                content=_LIST_METHODS_PAYLOAD,
-                headers={"Content-Type": "text/xml"}
-            )
-            if r.status_code == 200 and "<methodResponse>" in r.text:
+            r = await http.post(xmlrpc_url, data=_LIST_METHODS_PAYLOAD, headers=headers)
+            if "methodResponse" in r.text:
                 ctx.add_finding(Finding(
                     id="PC-XMLRPC-003", remediation_id="REM-XMLRPC-003",
                     title="XML-RPC system.listMethods exposed",
@@ -68,6 +127,19 @@ class XMLRPCModule(ScanModule):
                         evidence={"url": xmlrpc_url, "method": "pingback.ping"},
                         remediation="Disable pingbacks: add_filter('xmlrpc_methods', function($m){ unset($m['pingback.ping']); return $m; });",
                         references=["https://www.imperva.com/learn/ddos/wordpress-pingback-ddos/"],
+                        cvss_score=7.5, module=self.name
+                    ))
+
+                # Check for system.multicall
+                if "system.multicall" in r.text:
+                    ctx.add_finding(Finding(
+                        id="PC-XMLRPC-004", remediation_id="REM-XMLRPC-004",
+                        title="XML-RPC system.multicall enabled (Brute-force amplification)",
+                        severity=Severity.HIGH,
+                        description="The system.multicall method is enabled, allowing attackers to bypass rate limits by sending thousands of credentials in a single request.",
+                        evidence={"url": xmlrpc_url, "method": "system.multicall"},
+                        remediation="Disable system.multicall: add_filter('xmlrpc_methods', function($m){ unset($m['system.multicall']); return $m; });",
+                        references=["https://kinsta.com/blog/xmlrpc-php/#xmlrpc-brute-force-attacks"],
                         cvss_score=7.5, module=self.name
                     ))
         except Exception:
