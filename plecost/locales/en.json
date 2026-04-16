@@ -143,7 +143,7 @@
       "description": "The xmlrpc.php endpoint is accessible and does not appear to enforce rate limiting on failed authentication attempts. It successfully processed consecutive failed logins.",
       "remediation": "Implement rate limiting via a WAF, security plugin, or Fail2Ban, or disable XML-RPC entirely."
     },
-    "pc_xmlrpc_info": {
+    "pc_xmlrpc_006": {
       "title": "XML-RPC Guardrails Active",
       "description": "The xmlrpc.php endpoint is accessible, but active defenses (WAF/Rate Limiting) successfully blocked repeated authentication attempts.",
       "remediation": "No immediate action required. Defenses are working as expected."

@@ -1,5 +1,5 @@
 from __future__ import annotations
-import asyncio  # <-- Add this import
+import asyncio
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
@@ -61,7 +61,7 @@ class XMLRPCModule(ScanModule):
 
         for attempt in range(1, 6):
             try:
-                r_auth = await http.post(xmlrpc_url, data=_AUTH_TEST_PAYLOAD, headers=headers)
+                r_auth = await http.post(xmlrpc_url, content=_AUTH_TEST_PAYLOAD, headers=headers)
 
                 # If we get a WAF/Security block
                 if r_auth.status_code in [403, 429, 406]:
@@ -92,7 +92,7 @@ class XMLRPCModule(ScanModule):
         else:
             # Optional: Add an informational finding that guardrails ARE active
             ctx.add_finding(Finding(
-                id="PC-XMLRPC-INFO", remediation_id="",
+                id="PC-XMLRPC-006", remediation_id="REM-XMLRPC-006",
                 title="XML-RPC Guardrails Active",
                 severity=Severity.INFO,
                 description=f"The xmlrpc.php endpoint is accessible, but active defenses (WAF/Rate Limiting) blocked repeated authentication attempts on attempt {blocked_on_attempt}.",
@@ -105,7 +105,7 @@ class XMLRPCModule(ScanModule):
         # Standard Payload Tests (listMethods, pingback, multicall)
         # ---------------------------------------------------------
         try:
-            r = await http.post(xmlrpc_url, data=_LIST_METHODS_PAYLOAD, headers=headers)
+            r = await http.post(xmlrpc_url, content=_LIST_METHODS_PAYLOAD, headers=headers)
             if "methodResponse" in r.text:
                 ctx.add_finding(Finding(
                     id="PC-XMLRPC-003", remediation_id="REM-XMLRPC-003",

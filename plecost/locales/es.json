@@ -143,7 +143,7 @@
       "description": "El endpoint xmlrpc.php es accesible y no parece aplicar límites de tasa (rate limiting) en los intentos fallidos de autenticación. Procesó con éxito múltiples intentos de inicio de sesión fallidos consecutivos.",
       "remediation": "Implementar limitación de tasa a través de un WAF, plugin de seguridad o Fail2Ban, o deshabilitar XML-RPC completamente."
     },
-    "pc_xmlrpc_info": {
+    "pc_xmlrpc_006": {
       "title": "Protecciones XML-RPC Activas",
       "description": "El endpoint xmlrpc.php es accesible, pero las defensas activas (WAF/Limitación de tasa) bloquearon con éxito los intentos repetidos de autenticación.",
       "remediation": "No se requiere acción inmediata. Las defensas están funcionando como se esperaba."
