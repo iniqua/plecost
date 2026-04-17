@@ -1,3 +1,13 @@
+## [Unreleased] — 2026-04-17
+
+### Docs
+- **README**: añadido índice (Table of Contents) al principio del documento
+- **README**: sección "Comparison" movida justo después de "What is Plecost?" para mayor visibilidad
+- **README**: tabla comparativa frente a WPScan completamente reescrita y ampliada — cubre ahora 5 dimensiones (arquitectura técnica, capacidades de escaneo, detección de vulnerabilidades, salida e integración, independencia de datos) con más de 50 características comparadas
+- **README**: añadida sección narrativa "Data Independence" explicando las limitaciones del tier gratuito de WPScan (25 tokens/día) frente al modelo local de Plecost
+- **README**: módulo `webshells` añadido a la tabla de Detection Modules (faltaba)
+- **README**: contador de módulos corregido a 18
+
 ## [4.2.3] — 2026-04-16
 
 ### Added (PR #36 — ffr4nz)

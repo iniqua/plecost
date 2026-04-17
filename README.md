@@ -11,17 +11,133 @@
   [![License: PolyForm NC](https://img.shields.io/badge/License-PolyForm%20NC%201.0-lightgrey)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 </div>
 
+---
+
+## Table of Contents
+
+- [What is Plecost?](#what-is-plecost)
+- [Plecost vs WPScan](#plecost-vs-wpscan)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [CVE Database](#cve-database)
+- [Scanning](#scanning)
+- [Detection Modules](#detection-modules)
+- [WooCommerce Security](#woocommerce-security)
+- [WP eCommerce Security](#wp-ecommerce-security)
+- [Output Formats](#output-formats)
+- [Library Usage](#library-usage)
+- [Environment Variables](#environment-variables)
+- [Architecture](#architecture)
+- [Troubleshooting](#troubleshooting)
+- [Local Test Environment](#local-test-environment)
+- [License](#license)
+
+---
+
 ## What is Plecost?
 
 Plecost detects vulnerabilities in WordPress installations — core, plugins, and themes — and correlates findings against a daily-updated local CVE database. It runs as a CLI tool, a Python library, or inside task queues like Celery, with a consistent and automation-friendly output format.
 
-**Where Plecost differs from alternatives like WPScan:**
+**No Ruby. No API key. No subscription. No data sent to third parties on every scan.**
 
-- **No Ruby, no API key, no subscription.** Pure Python, ships with its own CVE database updated daily via GitHub Actions.
-- **Library-first design.** `from plecost import Scanner` works the same as the CLI — no subprocess wrapping needed.
-- **Fully async.** Built on `httpx` and `asyncio`; modules run in parallel across a dependency graph for maximum speed.
-- **Stable finding IDs.** Every finding has a permanent ID (`PC-CVE-CVE-2023-28121`, `PC-MCFG-009`) safe to track in ticketing systems and dashboards.
-- **SQLite or PostgreSQL.** Local SQLite by default; swap to PostgreSQL for shared team deployments.
+
+## Plecost vs WPScan
+
+Plecost was built from scratch to fix the limitations teams hit in production when using WPScan: API rate caps, external data dependencies, no library API, no async architecture, and a narrow detection surface.
+
+### At a Glance
+
+| Capability | Plecost v4 | WPScan |
+|---|:---:|:---:|
+| **Language / runtime** | Python 3.11+ | Ruby |
+| **Async concurrent scanning** | ✅ httpx + asyncio | ❌ |
+| **Python library API** | ✅ `from plecost import Scanner` | ❌ |
+| **API key required** | ❌ never | ⚠️ required for CVE data |
+| **CVE data — free tier limit** | ✅ unlimited (local DB) | ❌ 25 API tokens/day |
+| **Offline scanning (CVEs included)** | ✅ | ❌ |
+| **Data sent to third parties on scan** | ❌ none | ⚠️ every request |
+| **Docker native** | ✅ | ✅ |
+| **Celery / task queue compatible** | ✅ | ❌ |
+| **PostgreSQL support (shared team)** | ✅ | ❌ |
+
+### Scanning Capabilities
+
+| Capability | Plecost v4 | WPScan |
+|---|:---:|:---:|
+| Fast mode (top 150 plugins / 50 themes) | ✅ | ❌ |
+| Deep mode (4,750+ plugins / 900+ themes) | ✅ | ✅ |
+| Configurable concurrency (10–50 requests) | ✅ | ✅ |
+| Stealth mode (random UA + passive only) | ✅ | ✅ |
+| Aggressive mode (50 parallel requests) | ✅ | ✅ |
+| Authenticated scans | ✅ | ✅ |
+| Proxy support (HTTP + SOCKS5) | ✅ | ✅ |
+| Bulk scan (multiple URLs from file) | ✅ | ❌ |
+| Pre-flight 403 detection (aborts cleanly) | ✅ | ❌ |
+| Per-module options (`--module-option`) | ✅ | ❌ |
+| Run / skip individual modules | ✅ | ✅ |
+| Selective module list (`--modules`) | ✅ | ❌ |
+| Auto-retry with SSL verification disabled | ✅ | ❌ |
+
+### Vulnerability Detection
+
+| Capability | Plecost v4 | WPScan |
+|---|:---:|:---:|
+| WordPress core fingerprinting | ✅ (meta, readme, RSS, wp-login) | ✅ |
+| Plugin detection — passive HTML | ✅ | ✅ |
+| Plugin detection — active wordlist | ✅ 4,750+ slugs | ✅ |
+| Theme detection — passive HTML | ✅ | ✅ |
+| Theme detection — active wordlist | ✅ 900+ themes | ✅ |
+| CVE correlation (core + plugins + themes) | ✅ local DB, daily NVD sync | ✅ API |
+| Exploit availability flag per CVE | ✅ | ✅ |
+| CVSS scores per finding | ✅ | ✅ |
+| WAF / CDN detection | ✅ 7 providers | ⚠️ limited |
+| User enumeration — REST API | ✅ | ✅ |
+| User enumeration — author archives | ✅ | ✅ |
+| XML-RPC — access, pingback DoS, method list | ✅ 3 checks | ⚠️ basic |
+| REST API — disclosure, oEmbed, CORS | ✅ 3 checks | ❌ |
+| HTTP security headers | ✅ 8 checks (HSTS, CSP, X-Frame…) | ❌ |
+| SSL / TLS misconfiguration | ✅ 3 checks | ❌ |
+| Misconfiguration (wp-config, .env, .git…) | ✅ 12 checks | ⚠️ partial |
+| Directory listing (wp-content subdirs) | ✅ | ❌ |
+| Debug mode / PHP version disclosure | ✅ | ❌ |
+| Open user registration | ✅ | ❌ |
+| Content / card skimmer analysis | ✅ scripts, iframes, hardcoded keys | ❌ |
+| Webshell detection | ✅ 147–523 paths | ❌ |
+| Malicious upload detection (PHP in uploads) | ✅ | ❌ |
+| **WooCommerce dedicated module** | ✅ 22 checks | ❌ |
+| **WP eCommerce dedicated module** | ✅ 22 checks | ❌ |
+| Semi-active eCommerce CVE probes | ✅ boolean-only, no time-based | ❌ |
+| WooCommerce REST API auth bypass | ✅ CVE-2023-28121 | ❌ |
+| WooCommerce IDOR / PII disclosure | ✅ CVE-2023-34000 | ❌ |
+
+### Output and Integration
+
+| Capability | Plecost v4 | WPScan |
+|---|:---:|:---:|
+| Rich terminal output (color-coded) | ✅ | ✅ |
+| JSON output (stable schema) | ✅ | ✅ |
+| Verbose real-time progress (`-v`) | ✅ | ✅ |
+| Quiet mode (HIGH + CRITICAL only) | ✅ | ❌ |
+| **Stable permanent finding IDs** | ✅ 79 IDs (`PC-MOD-NNN`) | ❌ |
+| `plecost explain <ID>` — per-finding remediation | ✅ | ❌ |
+| Safe to track findings in JIRA / ticketing | ✅ IDs never change | ❌ |
+| Remediation ID per finding (`REM-MOD-NNN`) | ✅ | ❌ |
+| i18n / multilingual output | ✅ EN + ES | ❌ |
+| Included vulnerable test environment (DVWP) | ✅ Docker Compose | ❌ |
+
+### Data Independence
+
+> WPScan sends every scan to `wpscan.com` to look up CVE data. On the free tier you get **25 API tokens per day** — enough for a handful of targets. Plecost keeps the entire CVE database locally, updated daily via GitHub Actions with no per-scan network call to any third-party API.
+
+| | Plecost v4 | WPScan |
+|---|:---:|:---:|
+| Local CVE database (SQLite / PostgreSQL) | ✅ | ❌ |
+| Data sent externally on each scan | ❌ none | ✅ to wpscan.com |
+| CVE updates mechanism | GitHub Actions, NVD API v2 | SaaS subscription |
+| Daily incremental patch download | ✅ (< 100 KB/day) | — |
+| First-run full database download | ✅ `plecost update-db` | — |
+| Works fully air-gapped after DB download | ✅ | ❌ |
+| SHA256 integrity check before download | ✅ | ❌ |
 
 
 ## Quick Start
@@ -205,7 +321,7 @@ plecost scan https://target.com --quiet
 
 ## Detection Modules
 
-Plecost runs **16 async modules** in parallel, wired through an explicit dependency graph. Modules without interdependencies run concurrently from the start; `cves` waits for `plugins` and `themes` to complete before correlating results against the local database.
+Plecost runs **18 async modules** in parallel, wired through an explicit dependency graph. Modules without interdependencies run concurrently from the start; `cves` waits for `plugins` and `themes` to complete before correlating results against the local database.
 
 | Module | What it checks | Finding IDs |
 |--------|----------------|-------------|
@@ -224,6 +340,7 @@ Plecost runs **16 async modules** in parallel, wired through an explicit depende
 | `content_analysis` | Card skimming scripts, suspicious iframes, hardcoded API keys | PC-CNT-001/002/003 |
 | `auth` | Authenticated checks: login verification, open user registration | PC-AUTH-001/002 |
 | `cves` | CVE correlation for core + plugins + themes against local DB | PC-CVE-{CVE-ID} |
+| `webshells` | Webshell detection across upload paths (147–523 paths depending on mode) | PC-WS-NNN |
 | `woocommerce` | WooCommerce-specific security checks (see below) | PC-WC-000–021 |
 | `wp_ecommerce` | WP eCommerce-specific security checks (see below) | PC-WPEC-000–021 |
 
@@ -537,24 +654,6 @@ docker compose down -v && docker compose up -d
 See [`tests/dvwp/README.md`](tests/dvwp/README.md) for full details.
 
 > **Warning:** For local/isolated use only. Never expose to the internet.
-
-
-## Comparison
-
-| Feature | Plecost v4 | WPScan | Wordfence |
-|---------|-----------|--------|-----------|
-| Python library API | Yes | No | No |
-| Async (httpx) | Yes | No | No |
-| No API key required | Yes | No (CVEs need API) | No |
-| WAF detection (7 providers) | Yes | Yes | No |
-| Plugin brute-force | Yes | Yes | No |
-| CVE correlation (daily updates) | Yes | Yes | Yes |
-| Content / skimmer analysis | Yes | No | Yes |
-| WooCommerce dedicated checks | Yes | No | No |
-| Stable finding IDs | Yes | No | No |
-| Docker native | Yes | Yes | No |
-| Celery / library compatible | Yes | No | No |
-| PostgreSQL support | Yes | No | No |
 
 
 ## License
