@@ -8,24 +8,30 @@ This document is the authoritative reference for the JSON object produced by `pl
 
 ```
 ScanResult {
-  scan_id:           string          -- UUID v4. Unique identifier for this scan run.
-  url:               string          -- Canonical target URL (trailing slash stripped).
-  timestamp:         string          -- ISO 8601 UTC datetime when the scan started.
-  duration_seconds:  number          -- Wall-clock seconds the scan took (float).
-  is_wordpress:      boolean         -- true if WordPress was positively identified.
-  wordpress_version: string | null   -- Detected WP version (e.g. "6.6.2"), or null.
-  blocked:           boolean         -- true if the target returned 403 on pre-flight probe.
-  waf_detected:      string | null   -- WAF product name (e.g. "Cloudflare"), or null.
-  summary:           ScanSummary     -- Finding counts by severity.
-  findings:          Finding[]       -- Security findings (ordered by insertion, not severity).
-  plugins:           Plugin[]        -- Detected WordPress plugins.
-  themes:            Theme[]         -- Detected WordPress themes.
-  users:             User[]          -- Detected WordPress user accounts.
-  woocommerce:       WooCommerceInfo | null  -- WooCommerce details, or null if not detected.
-  wp_ecommerce:      WPECommerceInfo | null  -- WP eCommerce details, or null if not detected.
-  magecart:          MagecartInfo | null     -- Magecart scan results, or null if not run.
+  scan_id:                string          -- UUID v4. Unique identifier for this scan run.
+  url:                    string          -- Canonical target URL (trailing slash stripped).
+  timestamp:              string          -- ISO 8601 UTC datetime when the scan started.
+  duration_seconds:       number          -- Wall-clock seconds the scan took (float).
+  is_wordpress:           boolean         -- true if WordPress was positively identified.
+  wordpress_version:      string | null   -- Detected WP version (e.g. "6.6.2"), or null.
+  blocked:                boolean         -- true if the target returned 403 on pre-flight probe.
+  waf_detected:           string | null   -- WAF product name (e.g. "Cloudflare"), or null.
+  summary:                ScanSummary     -- Finding counts by severity.
+  findings:               Finding[]       -- Security findings (ordered by insertion, not severity).
+  findings_by_category:   object          -- Same findings grouped by category string (see Category taxonomy).
+                                          --   Keys are category strings; values are Finding[] arrays.
+                                          --   Only present when using JSONReporter (CLI --output flag or
+                                          --   JSONReporter.to_string()). NOT included by ScanResult.to_json().
+  plugins:                Plugin[]        -- Detected WordPress plugins.
+  themes:                 Theme[]         -- Detected WordPress themes.
+  users:                  User[]          -- Detected WordPress user accounts.
+  woocommerce:            WooCommerceInfo | null  -- WooCommerce details, or null if not detected.
+  wp_ecommerce:           WPECommerceInfo | null  -- WP eCommerce details, or null if not detected.
+  magecart:               MagecartInfo | null     -- Magecart scan results, or null if not run.
 }
 ```
+
+> **`findings_by_category` availability**: this key is injected by `JSONReporter` (used by `plecost scan --output`). If you call `ScanResult.to_json()` directly (library usage), this key is absent. Always prefer the CLI output or `JSONReporter` when building integrations.
 
 ### Blocked scan
 
@@ -63,6 +69,8 @@ Finding {
   references:       string[]      -- List of URLs with additional context (may be empty).
   cvss_score:       number | null -- CVSS v3 base score (0.0–10.0), or null if not applicable.
   module:           string        -- Module that emitted this finding (see Module names below).
+  category:         string        -- Semantic category (see Category taxonomy below).
+                                  --   Auto-derived from `id`; stable across releases.
 }
 ```
 
@@ -106,6 +114,44 @@ Finding {
 | `magecart`         | Magecart/skimmer script detection              |
 | `webshells`        | Uploaded PHP webshell detection                |
 | `cves`             | CVE matching against detected component versions|
+
+### Category taxonomy
+
+`category` is a fine-grained semantic label, independent of `module`. Multiple modules can produce the same category.
+
+| `category`                | Meaning / examples                                              |
+|---------------------------|-----------------------------------------------------------------|
+| `ssl_certificate`         | Invalid or expired SSL certificate                              |
+| `ssl_redirect`            | HTTP→HTTPS redirect missing                                     |
+| `hsts`                    | HSTS not configured (HDR or SSL module)                         |
+| `clickjacking`            | X-Frame-Options header absent                                   |
+| `content_security_policy` | Content-Security-Policy header absent                           |
+| `http_headers`            | Other missing security headers (nosniff, Referrer-Policy, etc.) |
+| `version_disclosure`      | WP/PHP/server version exposed in headers, meta tags or files    |
+| `credentials_exposed`     | wp-config.php, .env or backup with credentials accessible       |
+| `source_code_exposed`     | .git directory publicly accessible                              |
+| `debug_exposure`          | WP_DEBUG active, debug.log accessible                           |
+| `backup_files`            | SQL backup or archive files accessible                          |
+| `admin_scripts`           | install.php / upgrade.php accessible                            |
+| `directory_listing`       | Open directory listing in wp-content or subdirectories          |
+| `user_enumeration`        | WordPress usernames leaked via REST API or author archives       |
+| `xmlrpc`                  | XML-RPC endpoint enabled (brute-force / DoS amplification risk) |
+| `rest_api_exposure`       | REST API leaking data or users without authentication           |
+| `attack_surface`          | Unnecessary attack surface enabled (e.g. wp-cron external)     |
+| `cve`                     | CVE matched against a detected plugin/theme version             |
+| `open_registration`       | User registration open to the public                            |
+| `authentication`          | Authentication result (successful login with supplied creds)    |
+| `woocommerce_detection`   | WooCommerce presence, version or API namespace disclosed        |
+| `woocommerce_api_exposure`| WooCommerce REST API endpoints returning data unauthenticated   |
+| `woocommerce_cve`         | CVE in WooCommerce or its official extensions                   |
+| `wp_ecommerce`            | WP eCommerce plugin detected or misconfigured                   |
+| `wp_ecommerce_cve`        | CVE in WP eCommerce plugin                                      |
+| `card_skimmer`            | Magecart-style skimmer script or known malicious domain         |
+| `suspicious_content`      | Unexpected iframe or hardcoded API key in page source           |
+| `webshell`                | Uploaded PHP webshell detected in uploads directory             |
+| `waf_detected`            | WAF or CDN identified                                           |
+| `infrastructure`          | Infrastructure-level findings (pre-flight block)                |
+| `other`                   | Finding ID not matched by any rule (should not occur normally)  |
 
 ### Evidence object schemas (by module)
 
@@ -297,9 +343,20 @@ All fields are always present in the JSON (no field is omitted). Nullable fields
       "remediation": "Verify the target is accessible from your IP. Consider using --proxy or contacting the site owner.",
       "references": [],
       "cvss_score": null,
-      "module": "pre-flight"
+      "module": "pre-flight",
+      "category": "infrastructure"
     }
   ],
+  "findings_by_category": {
+    "infrastructure": [
+      {
+        "id": "PC-PRE-001",
+        "category": "infrastructure",
+        "severity": "CRITICAL",
+        "..."
+      }
+    ]
+  },
   "plugins": [],
   "themes": [],
   "users": [],
@@ -336,7 +393,8 @@ All fields are always present in the JSON (no field is omitted). Nullable fields
       "remediation": "Remove the generator meta tag. Add to functions.php: remove_action('wp_head', 'wp_generator');",
       "references": ["https://wordpress.org/support/article/hardening-wordpress/"],
       "cvss_score": null,
-      "module": "fingerprint"
+      "module": "fingerprint",
+      "category": "version_disclosure"
     },
     {
       "id": "PC-CVE-CVE-2023-28121",
@@ -354,9 +412,28 @@ All fields are always present in the JSON (no field is omitted). Nullable fields
         "https://developer.woocommerce.com/2023/07/12/critical-vulnerability-in-woocommerce-payments/"
       ],
       "cvss_score": 9.8,
-      "module": "cves"
+      "module": "cves",
+      "category": "cve"
     }
   ],
+  "findings_by_category": {
+    "cve": [
+      {
+        "id": "PC-CVE-CVE-2023-28121",
+        "category": "cve",
+        "severity": "CRITICAL",
+        "..."
+      }
+    ],
+    "version_disclosure": [
+      {
+        "id": "PC-FP-001",
+        "category": "version_disclosure",
+        "severity": "LOW",
+        "..."
+      }
+    ]
+  },
   "plugins": [
     {
       "slug": "woocommerce-payments",
@@ -451,3 +528,21 @@ Check `blocked == true` or `waf_detected != null`.
 
 **"What version of WordPress is running?"**
 Read `wordpress_version`. May be `null` if version could not be determined even though `is_wordpress == true`.
+
+**"Show me all SSL/TLS issues grouped together."**
+Use `findings_by_category["ssl_certificate"]`, `findings_by_category["ssl_redirect"]`, and `findings_by_category["hsts"]`. Or filter `findings[]` where `category` starts with `"ssl_"` or equals `"hsts"`.
+
+**"Show me all findings in a specific dashboard section."**
+Read directly from `findings_by_category["<category>"]`. Keys are only present when at least one finding exists for that category — always guard with a null/key check.
+
+**"Group all credential and secret exposure issues."**
+Check `findings_by_category["credentials_exposed"]` and `findings_by_category["source_code_exposed"]`.
+
+**"Are there any signs of compromise (webshells, skimmers)?"**
+Check `findings_by_category["webshell"]`, `findings_by_category["card_skimmer"]`, and `findings_by_category["suspicious_content"]`.
+
+**"What outdated or vulnerable software is installed?"**
+Check `findings_by_category["cve"]` for version-matched CVEs, plus `findings_by_category["woocommerce_cve"]` and `findings_by_category["wp_ecommerce_cve"]`.
+
+**"Enumerate all category keys present in this scan."**
+Read `Object.keys(findings_by_category)` — only categories with at least one finding appear as keys.
