@@ -4,6 +4,7 @@ from collections import defaultdict
 from dataclasses import asdict
 from datetime import datetime
 from enum import Enum
+from typing import Any
 from plecost.models import ScanResult
 
 
@@ -15,8 +16,8 @@ def _default(obj: object) -> object:
     raise TypeError(f"Not serializable: {type(obj)}")
 
 
-def _build_findings_by_category(data: dict) -> dict:
-    grouped: dict[str, list] = defaultdict(list)
+def _build_findings_by_category(data: dict[str, Any]) -> dict[str, list[Any]]:
+    grouped: dict[str, list[Any]] = defaultdict(list)
     for finding in data.get("findings", []):
         grouped[finding.get("category", "other")].append(finding)
     return dict(sorted(grouped.items()))
