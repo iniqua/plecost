@@ -14,6 +14,87 @@ class Severity(str, Enum):
     INFO = "INFO"
 
 
+_CATEGORY_EXACT: dict[str, str] = {
+    # credentials / secrets
+    "PC-MCFG-001": "credentials_exposed",
+    "PC-MCFG-002": "credentials_exposed",
+    "PC-MCFG-003": "credentials_exposed",
+    # source code
+    "PC-MCFG-004": "source_code_exposed",
+    # debug
+    "PC-MCFG-005": "debug_exposure",
+    "PC-DBG-001":  "debug_exposure",
+    # backups
+    "PC-MCFG-006": "backup_files",
+    # admin scripts
+    "PC-MCFG-007": "admin_scripts",
+    "PC-MCFG-008": "admin_scripts",
+    # version disclosure
+    "PC-MCFG-009": "version_disclosure",
+    "PC-MCFG-010": "version_disclosure",
+    "PC-MCFG-011": "version_disclosure",
+    "PC-HDR-007":  "version_disclosure",
+    "PC-HDR-008":  "version_disclosure",
+    "PC-DBG-003":  "version_disclosure",
+    "PC-FP-001":   "version_disclosure",
+    "PC-FP-002":   "version_disclosure",
+    # attack surface
+    "PC-MCFG-012": "attack_surface",
+    # http security headers
+    "PC-HDR-001": "hsts",
+    "PC-HDR-002": "clickjacking",
+    "PC-HDR-003": "http_headers",
+    "PC-HDR-004": "content_security_policy",
+    "PC-HDR-005": "http_headers",
+    "PC-HDR-006": "http_headers",
+    # ssl/tls
+    "PC-SSL-001": "ssl_redirect",
+    "PC-SSL-002": "ssl_certificate",
+    "PC-SSL-003": "hsts",
+    # authentication
+    "PC-AUTH-001": "authentication",
+    "PC-AUTH-002": "open_registration",
+    # woocommerce
+    "PC-WC-004": "woocommerce_api_exposure",
+    "PC-WC-005": "woocommerce_api_exposure",
+    "PC-WC-006": "woocommerce_api_exposure",
+    "PC-WC-007": "woocommerce_api_exposure",
+    "PC-WC-013": "woocommerce_api_exposure",
+    "PC-WC-020": "woocommerce_cve",
+    "PC-WC-021": "woocommerce_cve",
+    # wp-ecommerce cves
+    "PC-WPEC-020": "wp_ecommerce_cve",
+    "PC-WPEC-021": "wp_ecommerce_cve",
+    # content / malicious code
+    "PC-CNT-001": "card_skimmer",
+    "PC-CNT-002": "suspicious_content",
+    "PC-CNT-003": "suspicious_content",
+}
+
+_CATEGORY_PREFIXES: list[tuple[str, str]] = [
+    ("PC-DIR-",   "directory_listing"),
+    ("PC-USR-",   "user_enumeration"),
+    ("PC-XMLRPC-","xmlrpc"),
+    ("PC-REST-",  "rest_api_exposure"),
+    ("PC-WAF-",   "waf_detected"),
+    ("PC-WC-",    "woocommerce_detection"),
+    ("PC-WPEC-",  "wp_ecommerce"),
+    ("PC-MGC-",   "card_skimmer"),
+    ("PC-WSH-",   "webshell"),
+    ("PC-CVE-",   "cve"),
+    ("PC-PRE-",   "infrastructure"),
+]
+
+
+def derive_finding_category(finding_id: str) -> str:
+    if finding_id in _CATEGORY_EXACT:
+        return _CATEGORY_EXACT[finding_id]
+    for prefix, category in _CATEGORY_PREFIXES:
+        if finding_id.startswith(prefix):
+            return category
+    return "other"
+
+
 @dataclass
 class Finding:
     id: str                      # "PC-MCFG-001" — stable permanent ID
@@ -26,6 +107,11 @@ class Finding:
     references: list[str]
     cvss_score: float | None
     module: str
+    category: str = field(default="")
+
+    def __post_init__(self) -> None:
+        if not self.category:
+            self.category = derive_finding_category(self.id)
 
 
 @dataclass
