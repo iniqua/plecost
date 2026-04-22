@@ -1,9 +1,9 @@
-## [Unreleased] — 2026-04-22
+## [4.2.4] — 2026-04-22
 
 ### Added
 - **`Finding.category`**: nuevo campo auto-derivado del ID del finding — categoría semántica de grano fino (p.ej. `ssl_certificate`, `credentials_exposed`, `webshell`, `cve`…). Se calcula automáticamente en `__post_init__` sin necesidad de tocar ningún módulo existente. Función pública `derive_finding_category(id)` exportable.
 - **`findings_by_category`** en JSON reporter: el JSON de salida incluye ahora un bloque `findings_by_category` con los findings agrupados por categoría, además de la lista plana `findings` (retrocompatible).
-- **Taxonomía de 23 categorías**: `ssl_certificate`, `ssl_redirect`, `hsts`, `clickjacking`, `content_security_policy`, `http_headers`, `version_disclosure`, `credentials_exposed`, `source_code_exposed`, `debug_exposure`, `backup_files`, `admin_scripts`, `directory_listing`, `user_enumeration`, `xmlrpc`, `rest_api_exposure`, `cve`, `open_registration`, `woocommerce_api_exposure`, `woocommerce_cve`, `wp_ecommerce`, `card_skimmer`, `suspicious_content`, `webshell`, `waf_detected`, `infrastructure`, `authentication`, `attack_surface`.
+- **Taxonomía de 28 categorías**: `ssl_certificate`, `ssl_redirect`, `hsts`, `clickjacking`, `content_security_policy`, `http_headers`, `version_disclosure`, `credentials_exposed`, `source_code_exposed`, `debug_exposure`, `backup_files`, `admin_scripts`, `directory_listing`, `user_enumeration`, `xmlrpc`, `rest_api_exposure`, `cve`, `open_registration`, `woocommerce_api_exposure`, `woocommerce_cve`, `wp_ecommerce`, `wp_ecommerce_cve`, `card_skimmer`, `suspicious_content`, `webshell`, `waf_detected`, `infrastructure`, `authentication`, `attack_surface`.
 
 ## [Unreleased] — 2026-04-17
 
