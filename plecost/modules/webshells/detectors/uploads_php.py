@@ -33,6 +33,7 @@ class UploadsPhpDetector(BaseDetector):
             http,
             ctx.url + _PROBE_A,
             ctx.url + _PROBE_B,
+            tolerance=_TOLERANCE,
         )
 
         async def _probe(path: str) -> None:
