@@ -1,4 +1,4 @@
-## [Unreleased] — 2026-04-27
+## [4.2.5] — 2026-04-27
 
 ### Added
 - **`BaseDetector._detect_catch_all()`**: nuevo método compartido que detecta servidores catch-all mediante doble probe + comparación de tamaño con tolerancia del 5%. Previene falsos positivos masivos en sitios Hugo/Cloudflare/SPA que devuelven HTTP 200 para cualquier path.
