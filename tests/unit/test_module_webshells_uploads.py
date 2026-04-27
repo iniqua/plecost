@@ -54,3 +54,51 @@ async def test_no_finding_when_uploads_returns_403():
             detector = UploadsPhpDetector()
             findings = await detector.detect(ctx, http)
     assert findings == []
+
+
+async def test_no_finding_cloudflare_catch_all():
+    """Cloudflare/Hugo catch-all: todos los paths devuelven 200 con tamaño similar."""
+    ctx = ScanContext(ScanOptions(url="https://example.com"))
+    ctx.is_wordpress = True
+    large_body_a = b"x" * 18125
+    large_body_b = b"x" * 18131  # +6 bytes por CF-Ray ID
+    async with respx.mock:
+        respx.get(
+            "https://example.com/wp-content/uploads/__plecost_probe_a__.php"
+        ).mock(return_value=httpx.Response(200, content=large_body_a))
+        respx.get(
+            "https://example.com/wp-content/uploads/__plecost_probe_b__.php"
+        ).mock(return_value=httpx.Response(200, content=large_body_b))
+        # Todos los paths del wordlist devuelven tamaño similar al catch-all
+        respx.route(url__regex=r".*").mock(
+            return_value=httpx.Response(200, content=b"x" * 18128)
+        )
+        async with PlecostHTTPClient(ctx.opts) as http:
+            findings = await UploadsPhpDetector().detect(ctx, http)
+    assert findings == []
+
+
+async def test_reports_php_despite_catch_all_when_size_differs():
+    """Catch-all activo pero un path devuelve respuesta de tamaño muy distinto (webshell real)."""
+    ctx = ScanContext(ScanOptions(url="https://example.com"))
+    ctx.is_wordpress = True
+    webshell_body = b"<?php system($_GET['c']); ?>"  # ~27 bytes, muy distinto de 18125
+    async with respx.mock:
+        respx.get(
+            "https://example.com/wp-content/uploads/__plecost_probe_a__.php"
+        ).mock(return_value=httpx.Response(200, content=b"x" * 18125))
+        respx.get(
+            "https://example.com/wp-content/uploads/__plecost_probe_b__.php"
+        ).mock(return_value=httpx.Response(200, content=b"x" * 18131))
+        respx.get("https://example.com/wp-content/uploads/shell.php").mock(
+            return_value=httpx.Response(200, content=webshell_body)
+        )
+        # El resto del wordlist devuelve el HTML catch-all
+        respx.route(url__regex=r".*").mock(
+            return_value=httpx.Response(200, content=b"x" * 18128)
+        )
+        async with PlecostHTTPClient(ctx.opts) as http:
+            findings = await UploadsPhpDetector().detect(ctx, http)
+    assert any(f.id == "PC-WSH-100" for f in findings)
+    hit_urls = [f.evidence["url"] for f in findings if f.id == "PC-WSH-100"]
+    assert any("shell.php" in u for u in hit_urls)

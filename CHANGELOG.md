@@ -1,3 +1,11 @@
+## [Unreleased] — 2026-04-27
+
+### Fixed
+- **`UploadsPhpDetector`**: reemplazada comparación exacta de cuerpo (`r.text == baseline_body`) por detección de catch-all basada en tamaño con tolerancia del 5%. Usa el nuevo método `BaseDetector._detect_catch_all()` con dos probes (`__plecost_probe_a__.php` / `__plecost_probe_b__.php`) para detectar servidores Cloudflare/Hugo que inyectan Ray IDs dinámicos por petición, eliminando hasta 273 falsos positivos.
+
+### Tests
+- Añadidos dos nuevos tests en `tests/unit/test_module_webshells_uploads.py`: `test_no_finding_cloudflare_catch_all` y `test_reports_php_despite_catch_all_when_size_differs`.
+
 ## [4.2.4] — 2026-04-22
 
 ### Added
