@@ -7,7 +7,9 @@ from plecost.modules.webshells.base import BaseDetector
 from plecost.modules.webshells.wordlists import MU_PLUGINS_NAMES
 
 _MU_PLUGINS_BASE = "/wp-content/mu-plugins/"
-_BASELINE_NAME = "__plecost_probe_xyz__.php"
+_PROBE_A = "/wp-content/mu-plugins/__plecost_probe_a__.php"
+_PROBE_B = "/wp-content/mu-plugins/__plecost_probe_b__.php"
+_TOLERANCE = 0.05
 
 
 class MuPluginsDetector(BaseDetector):
@@ -26,15 +28,11 @@ class MuPluginsDetector(BaseDetector):
         findings: list[Finding] = []
         sem = asyncio.Semaphore(ctx.opts.concurrency)
 
-        # Baseline probe: detect soft-200 environments where the server returns
-        # HTTP 200 for any path (including non-existent files).
-        baseline_body: str | None = None
-        try:
-            probe = await http.get(ctx.url + _MU_PLUGINS_BASE + _BASELINE_NAME)
-            if probe.status_code == 200:
-                baseline_body = probe.text
-        except Exception:
-            pass
+        catch_all_size = await self._detect_catch_all(
+            http,
+            ctx.url + _PROBE_A,
+            ctx.url + _PROBE_B,
+        )
 
         async def _probe(name: str) -> None:
             async with sem:
@@ -43,10 +41,11 @@ class MuPluginsDetector(BaseDetector):
                     r = await http.get(url)
                     if r.status_code != 200:
                         return
-                    # In a soft-200 environment, skip if the response body is
-                    # identical to the baseline (false positive).
-                    if baseline_body is not None and r.text == baseline_body:
-                        return
+                    if catch_all_size is not None:
+                        hit_size = len(r.content)
+                        max_s = max(hit_size, catch_all_size)
+                        if max_s == 0 or abs(hit_size - catch_all_size) / max_s < _TOLERANCE:
+                            return
                     findings.append(Finding(
                         id="PC-WSH-150",
                         remediation_id="REM-WSH-150",
