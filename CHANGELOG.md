@@ -1,12 +1,16 @@
 ## [Unreleased] — 2026-04-27
 
+### Added
+- **`BaseDetector._detect_catch_all()`**: nuevo método compartido que detecta servidores catch-all mediante doble probe + comparación de tamaño con tolerancia del 5%. Previene falsos positivos masivos en sitios Hugo/Cloudflare/SPA que devuelven HTTP 200 para cualquier path.
+
 ### Fixed
-- **`MuPluginsDetector`**: reemplazada comparación exacta de cuerpo (`r.text == baseline_body`) por detección de catch-all basada en tamaño con tolerancia del 5%. Usa el nuevo método `BaseDetector._detect_catch_all()` con dos probes (`__plecost_probe_a__.php` / `__plecost_probe_b__.php`) para detectar servidores Cloudflare que inyectan Ray IDs dinámicos por petición, eliminando falsos positivos en entornos catch-all.
-- **`UploadsPhpDetector`**: reemplazada comparación exacta de cuerpo (`r.text == baseline_body`) por detección de catch-all basada en tamaño con tolerancia del 5%. Usa el nuevo método `BaseDetector._detect_catch_all()` con dos probes (`__plecost_probe_a__.php` / `__plecost_probe_b__.php`) para detectar servidores Cloudflare/Hugo que inyectan Ray IDs dinámicos por petición, eliminando hasta 273 falsos positivos.
+- **`UploadsPhpDetector`**: reemplazada comparación exacta de cuerpo (`r.text == baseline_body`) por `_detect_catch_all()`. Elimina hasta 273 × PC-WSH-100 falsos positivos en sitios Cloudflare con contenido dinámico por petición (Ray IDs).
+- **`MuPluginsDetector`**: reemplazada comparación exacta de cuerpo por `_detect_catch_all()`. Elimina hasta 25 × PC-WSH-150 falsos positivos en las mismas condiciones.
 
 ### Tests
-- Añadidos dos nuevos tests en `tests/unit/test_module_webshells_mu_plugins.py`: `test_no_finding_cloudflare_catch_all` y `test_reports_php_despite_catch_all_when_size_differs`.
-- Añadidos dos nuevos tests en `tests/unit/test_module_webshells_uploads.py`: `test_no_finding_cloudflare_catch_all` y `test_reports_php_despite_catch_all_when_size_differs`.
+- Creado `tests/unit/test_webshells_base_detector.py` con 7 tests unitarios del helper `_detect_catch_all`.
+- Añadidos 2 tests en `tests/unit/test_module_webshells_uploads.py`: escenario Cloudflare catch-all y webshell real con tamaño diferente.
+- Añadidos 2 tests en `tests/unit/test_module_webshells_mu_plugins.py`: ídem.
 
 ## [4.2.4] — 2026-04-22
 
