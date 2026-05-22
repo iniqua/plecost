@@ -98,12 +98,12 @@
     }
   },
   "findings": {
-    "pc_fp_001": {
+    "pc_wp_001": {
       "title": "Versión de WordPress expuesta via meta generator",
       "description": "La versión de WordPress está expuesta en la etiqueta meta generator del HTML, permitiendo a atacantes dirigir ataques a vulnerabilidades conocidas de esa versión.",
       "remediation": "Eliminar la etiqueta meta generator. Añadir a functions.php: remove_action('wp_head', 'wp_generator');"
     },
-    "pc_fp_002": {
+    "pc_wp_002": {
       "title": "Versión de WordPress expuesta via readme.html",
       "description": "El archivo /readme.html es accesible públicamente y expone la versión de WordPress.",
       "remediation": "Eliminar /readme.html del servidor."

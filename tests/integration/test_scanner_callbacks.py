@@ -50,7 +50,7 @@ async def test_scanner_fires_on_finding_callback():
         scanner = Scanner(opts, on_finding=on_finding)
         result = await scanner.run()
 
-    # PC-FP-001 is the fingerprint finding — at least one finding should have been forwarded
+    # PC-WP-001 is the fingerprint finding — at least one finding should have been forwarded
     assert len(findings_received) >= 1
     assert all(isinstance(f, Finding) for f in findings_received)
     # Findings delivered via callback must match those in the result

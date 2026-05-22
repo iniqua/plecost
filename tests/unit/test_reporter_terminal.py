@@ -10,7 +10,7 @@ def make_result():
         scan_id="abc", url="https://example.com", timestamp=datetime.now(),
         duration_seconds=3.1, is_wordpress=True, wordpress_version="6.4.2",
         plugins=[], themes=[], users=[], waf_detected=None,
-        findings=[Finding("PC-FP-001", "REM-FP-001", "Version disclosure",
+        findings=[Finding("PC-WP-001", "REM-WP-001", "Version disclosure",
                           Severity.LOW, "WP found", {}, "Remove tag", [], None, "fingerprint")],
         summary=ScanSummary(low=1)
     )
@@ -23,7 +23,7 @@ def test_terminal_reporter_outputs_url():
     output = buf.getvalue()
     assert "https://example.com" in output
     assert "6.4.2" in output
-    assert "PC-FP-001" in output
+    assert "PC-WP-001" in output
 
 
 def test_verbose_display_tracks_module_state():
@@ -53,8 +53,8 @@ def test_verbose_display_accumulates_findings():
     console = Console(file=buf, no_color=True)
     display = VerboseDisplay(console, module_names=["fingerprint"])
 
-    finding = Finding("PC-FP-001", "REM-FP-001", "Version disclosure",
+    finding = Finding("PC-WP-001", "REM-WP-001", "Version disclosure",
                       Severity.LOW, "WP found", {}, "Remove tag", [], None, "fingerprint")
     display.on_finding(finding)
     assert len(display._findings) == 1
-    assert display._findings[0].id == "PC-FP-001"
+    assert display._findings[0].id == "PC-WP-001"

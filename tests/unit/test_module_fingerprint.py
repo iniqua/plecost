@@ -55,7 +55,7 @@ async def test_adds_version_disclosure_finding(ctx):
         respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
         async with PlecostHTTPClient(ctx.opts) as http:
             await FingerprintModule().run(ctx, http)
-    assert any(f.id == "PC-FP-001" for f in ctx.findings)
+    assert any(f.id == "PC-WP-001" for f in ctx.findings)
 
 
 # ---------------------------------------------------------------------------

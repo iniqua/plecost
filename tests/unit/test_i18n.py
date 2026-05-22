@@ -67,5 +67,5 @@ def test_t_interpolation():
 
 def test_t_finding_key():
     i18n.set_language("en")
-    result = i18n.t("findings.pc_fp_001.title")
+    result = i18n.t("findings.pc_wp_001.title")
     assert "WordPress" in result

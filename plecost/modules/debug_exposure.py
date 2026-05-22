@@ -6,7 +6,6 @@ from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
 
 _PHP_ERROR_RE = re.compile(r'<b>(Notice|Warning|Fatal error|Parse error)</b>:', re.I)
-_PHP_VER_RE = re.compile(r'PHP/(\d+\.\d+\.\d+)', re.I)
 
 
 class DebugExposureModule(ScanModule):
@@ -34,15 +33,3 @@ class DebugExposureModule(ScanModule):
                 cvss_score=5.3, module=self.name
             ))
 
-        # PC-DBG-003: PHP version in X-Powered-By
-        powered_by = r.headers.get("x-powered-by", "")
-        if powered_by and "php" in powered_by.lower():
-            ctx.add_finding(Finding(
-                id="PC-DBG-003", remediation_id="REM-DBG-003",
-                title="PHP version exposed via X-Powered-By header",
-                severity=Severity.MEDIUM,
-                description=f"PHP version is disclosed in X-Powered-By header: {powered_by}",
-                evidence={"header": "X-Powered-By", "value": powered_by},
-                remediation="Set expose_php = Off in php.ini.",
-                references=[], cvss_score=None, module=self.name
-            ))

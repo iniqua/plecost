@@ -440,26 +440,26 @@ def modules_list(
 
 
 def _finding_key(finding_id: str) -> str:
-    """Convert 'PC-FP-001' → 'pc_fp_001' for i18n key lookup."""
+    """Convert 'PC-WP-001' → 'pc_wp_001' for i18n key lookup."""
     return finding_id.lower().replace("-", "_")
 
 
 _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
-    "PC-FP-001": {
+    "PC-WP-001": {
         "title": "WordPress version disclosed via meta generator tag",
         "severity": "LOW",
         "description": "The WordPress version is exposed in the HTML meta generator tag, allowing attackers to target known vulnerabilities for that version.",
         "remediation": "Remove the generator meta tag. Add to functions.php: remove_action('wp_head', 'wp_generator');",
         "references": ["https://wordpress.org/support/article/hardening-wordpress/"],
-        "remediation_id": "REM-FP-001",
+        "remediation_id": "REM-WP-001",
     },
-    "PC-FP-002": {
+    "PC-WP-002": {
         "title": "WordPress version disclosed via readme.html",
         "severity": "LOW",
         "description": "The /readme.html file is publicly accessible and discloses the WordPress version.",
         "remediation": "Delete /readme.html from the server root.",
         "references": ["https://wordpress.org/support/article/hardening-wordpress/"],
-        "remediation_id": "REM-FP-002",
+        "remediation_id": "REM-WP-002",
     },
     "PC-USR-001": {
         "title": "User enumeration via REST API",

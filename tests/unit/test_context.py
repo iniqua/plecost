@@ -5,14 +5,14 @@ from plecost.models import ScanOptions, Finding, Severity, Plugin
 def test_context_stores_findings():
     ctx = ScanContext(ScanOptions(url="https://example.com"))
     finding = Finding(
-        id="PC-FP-001", remediation_id="REM-FP-001",
+        id="PC-WP-001", remediation_id="REM-WP-001",
         title="Test", severity=Severity.HIGH, description="d",
         evidence={}, remediation="r", references=[], cvss_score=None,
         module="fingerprint"
     )
     ctx.add_finding(finding)
     assert len(ctx.findings) == 1
-    assert ctx.findings[0].id == "PC-FP-001"
+    assert ctx.findings[0].id == "PC-WP-001"
 
 
 def test_context_stores_plugins():
@@ -31,21 +31,21 @@ def test_context_on_finding_callback():
     calls = []
     ctx = ScanContext(ScanOptions(url="https://example.com"), on_finding=calls.append)
     finding = Finding(
-        id="PC-FP-001", remediation_id="REM-FP-001",
+        id="PC-WP-001", remediation_id="REM-WP-001",
         title="Test", severity=Severity.HIGH, description="d",
         evidence={}, remediation="r", references=[], cvss_score=None,
         module="fingerprint"
     )
     ctx.add_finding(finding)
     assert len(calls) == 1
-    assert calls[0].id == "PC-FP-001"
+    assert calls[0].id == "PC-WP-001"
 
 
 def test_context_no_callback_does_not_fail():
     """ScanContext works normally without callback."""
     ctx = ScanContext(ScanOptions(url="https://example.com"))
     finding = Finding(
-        id="PC-FP-002", remediation_id="REM-FP-002",
+        id="PC-WP-002", remediation_id="REM-WP-002",
         title="Test2", severity=Severity.LOW, description="d",
         evidence={}, remediation="r", references=[], cvss_score=None,
         module="fingerprint"

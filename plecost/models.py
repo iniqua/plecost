@@ -36,8 +36,8 @@ _CATEGORY_EXACT: dict[str, str] = {
     "PC-HDR-007":  "version_disclosure",
     "PC-HDR-008":  "version_disclosure",
     "PC-DBG-003":  "version_disclosure",
-    "PC-FP-001":   "version_disclosure",
-    "PC-FP-002":   "version_disclosure",
+    "PC-WP-001":   "version_disclosure",
+    "PC-WP-002":   "version_disclosure",
     # attack surface
     "PC-MCFG-012": "attack_surface",
     # http security headers

@@ -13,7 +13,7 @@ def result():
         duration_seconds=5.2, is_wordpress=True, wordpress_version="6.4.2",
         plugins=[], themes=[], users=[], waf_detected="Cloudflare",
         findings=[Finding(
-            id="PC-FP-001", remediation_id="REM-FP-001",
+            id="PC-WP-001", remediation_id="REM-WP-001",
             title="Version disclosed", severity=Severity.LOW,
             description="WP 6.4.2 found", evidence={"url": "https://example.com"},
             remediation="Remove meta tag", references=[], cvss_score=None, module="fingerprint"
@@ -29,7 +29,7 @@ def test_json_reporter_creates_valid_json(result, tmp_path):
     assert data["url"] == "https://example.com"
     assert data["wordpress_version"] == "6.4.2"
     assert len(data["findings"]) == 1
-    assert data["findings"][0]["id"] == "PC-FP-001"
+    assert data["findings"][0]["id"] == "PC-WP-001"
     assert data["summary"]["low"] == 1
 
 

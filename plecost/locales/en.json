@@ -98,12 +98,12 @@
     }
   },
   "findings": {
-    "pc_fp_001": {
+    "pc_wp_001": {
       "title": "WordPress version disclosed via meta generator tag",
       "description": "The WordPress version is exposed in the HTML meta generator tag, allowing attackers to target known vulnerabilities for that version.",
       "remediation": "Remove the generator meta tag. Add to functions.php: remove_action('wp_head', 'wp_generator');"
     },
-    "pc_fp_002": {
+    "pc_wp_002": {
       "title": "WordPress version disclosed via readme.html",
       "description": "The /readme.html file is publicly accessible and discloses the WordPress version.",
       "remediation": "Delete /readme.html from the server root."

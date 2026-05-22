@@ -50,7 +50,7 @@ class FingerprintModule(ScanModule):
                 ctx.is_wordpress = True
                 ctx.wordpress_version = m.group(1)
                 ctx.add_finding(Finding(
-                    id="PC-FP-001", remediation_id="REM-FP-001",
+                    id="PC-WP-001", remediation_id="REM-WP-001",
                     title="WordPress version disclosed via meta generator tag",
                     severity=Severity.LOW,
                     description=f"WordPress version {m.group(1)} found in meta generator tag.",
@@ -78,7 +78,7 @@ class FingerprintModule(ScanModule):
                     ctx.is_wordpress = True
                     ctx.wordpress_version = m.group(1)
                     ctx.add_finding(Finding(
-                        id="PC-FP-002", remediation_id="REM-FP-002",
+                        id="PC-WP-002", remediation_id="REM-WP-002",
                         title="WordPress version disclosed via readme.html",
                         severity=Severity.LOW,
                         description=f"WordPress version {m.group(1)} found in /readme.html.",

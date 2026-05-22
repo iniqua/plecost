@@ -30,7 +30,7 @@ async def test_full_scan_detects_wordpress_and_plugin():
     assert result.is_wordpress is True
     assert result.wordpress_version == "6.4.2"
     assert any(p.slug == "woocommerce" for p in result.plugins)
-    assert any(f.id == "PC-FP-001" for f in result.findings)
+    assert any(f.id == "PC-WP-001" for f in result.findings)
 
 
 @pytest.mark.asyncio

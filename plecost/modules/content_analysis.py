@@ -10,6 +10,27 @@ _IFRAME_RE = re.compile(r'<iframe[^>]+src=["\']https?://([^"\']+)["\']', re.I)
 _SECRET_RE = re.compile(r'api[_-]?key\s*[=:]\s*["\'][A-Za-z0-9]{20,}', re.I)
 _SCRIPT_SRC_RE = re.compile(r'<script[^>]+src=["\']([^"\']+)["\']', re.I)
 
+# Domains that are legitimate and should not trigger PC-CNT-002
+_TRUSTED_IFRAME_DOMAINS = frozenset({
+    "google.com", "www.google.com", "maps.google.com",
+    "googletagmanager.com", "www.googletagmanager.com",
+    "googleapis.com", "www.googleapis.com", "apis.google.com",
+    "youtube.com", "www.youtube.com", "youtu.be", "youtube-nocookie.com",
+    "vimeo.com", "player.vimeo.com",
+    "facebook.com", "www.facebook.com",
+    "twitter.com", "platform.twitter.com", "x.com",
+    "linkedin.com", "www.linkedin.com",
+    "instagram.com", "www.instagram.com",
+    "recaptcha.net", "www.recaptcha.net",
+    "open.spotify.com",
+    "calendly.com",
+    "typeform.com",
+})
+
+
+def _is_trusted_domain(domain: str) -> bool:
+    return any(domain == t or domain.endswith("." + t) for t in _TRUSTED_IFRAME_DOMAINS)
+
 
 class ContentAnalysisModule(ScanModule):
     name = "content_analysis"
@@ -39,11 +60,11 @@ class ContentAnalysisModule(ScanModule):
                 ))
                 break
 
-        # PC-CNT-002: Suspicious iframes
+        # PC-CNT-002: Suspicious iframes (skip trusted CDNs and analytics services)
         domain = re.sub(r'^https?://', '', ctx.url).split('/')[0]
         for m in _IFRAME_RE.finditer(r.text):
             iframe_domain = m.group(1).split('/')[0]
-            if iframe_domain != domain and not iframe_domain.endswith(domain):
+            if iframe_domain != domain and not iframe_domain.endswith(domain) and not _is_trusted_domain(iframe_domain):
                 ctx.add_finding(Finding(
                     id="PC-CNT-002", remediation_id="REM-CNT-002",
                     title="Suspicious external iframe detected",

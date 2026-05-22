@@ -8,7 +8,7 @@ from plecost.models import (
 
 def test_finding_id_format():
     f = Finding(
-        id="PC-FP-001", remediation_id="REM-FP-001",
+        id="PC-WP-001", remediation_id="REM-WP-001",
         title="Test", severity=Severity.HIGH,
         description="desc", evidence={}, remediation="fix",
         references=[], cvss_score=None, module="fingerprint"

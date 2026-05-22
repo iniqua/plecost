@@ -5,7 +5,7 @@ This test must NEVER be broken — IDs are permanent and used in dashboards.
 import re
 
 KNOWN_FINDING_IDS = [
-    "PC-FP-001", "PC-FP-002",
+    "PC-WP-001", "PC-WP-002",
     "PC-USR-001", "PC-USR-002",
     "PC-AUTH-001", "PC-AUTH-002",
     "PC-XMLRPC-001", "PC-XMLRPC-002", "PC-XMLRPC-003",

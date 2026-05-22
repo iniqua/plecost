@@ -74,8 +74,8 @@ async def test_php_fatal_error_detected(ctx):
     assert any(f.id == "PC-DBG-001" for f in ctx.findings)
 
 
-async def test_x_powered_by_reveals_php(ctx):
-    """PC-DBG-003 is added when X-Powered-By header contains PHP."""
+async def test_x_powered_by_php_not_reported_by_debug_module(ctx):
+    """PC-DBG-003 is retired from debug_exposure — PHP header is covered by PC-HDR-008 in http_headers."""
     async with respx.mock:
         respx.get("https://example.com/").mock(
             return_value=httpx.Response(
@@ -87,39 +87,12 @@ async def test_x_powered_by_reveals_php(ctx):
         async with PlecostHTTPClient(ctx.opts) as http:
             await DebugExposureModule().run(ctx, http)
 
-    assert any(f.id == "PC-DBG-003" for f in ctx.findings)
-
-
-async def test_x_powered_by_no_php(ctx):
-    """No PC-DBG-003 when X-Powered-By header does not contain PHP."""
-    async with respx.mock:
-        respx.get("https://example.com/").mock(
-            return_value=httpx.Response(
-                200,
-                headers={"x-powered-by": "Express"},
-                text="<html></html>",
-            )
-        )
-        async with PlecostHTTPClient(ctx.opts) as http:
-            await DebugExposureModule().run(ctx, http)
-
+    # debug_exposure no longer emits PC-DBG-003; http_headers module emits PC-HDR-008 instead
     assert not any(f.id == "PC-DBG-003" for f in ctx.findings)
 
 
-async def test_no_x_powered_by_header(ctx):
-    """No PC-DBG-003 when X-Powered-By header is absent."""
-    async with respx.mock:
-        respx.get("https://example.com/").mock(
-            return_value=httpx.Response(200, text="<html></html>")
-        )
-        async with PlecostHTTPClient(ctx.opts) as http:
-            await DebugExposureModule().run(ctx, http)
-
-    assert not any(f.id == "PC-DBG-003" for f in ctx.findings)
-
-
-async def test_both_debug_and_php_header(ctx):
-    """Both PC-DBG-001 and PC-DBG-003 are added when both conditions are present."""
+async def test_both_debug_and_php_header_only_dbg001(ctx):
+    """When PHP errors and X-Powered-By are both present, only PC-DBG-001 is emitted by debug_exposure."""
     html = "<html><body><b>Warning</b>: Division by zero</body></html>"
     async with respx.mock:
         respx.get("https://example.com/").mock(
@@ -134,4 +107,4 @@ async def test_both_debug_and_php_header(ctx):
 
     ids = {f.id for f in ctx.findings}
     assert "PC-DBG-001" in ids
-    assert "PC-DBG-003" in ids
+    assert "PC-DBG-003" not in ids  # moved to PC-HDR-008 in http_headers module
