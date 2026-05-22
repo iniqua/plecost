@@ -1,3 +1,13 @@
+## [4.2.8] — 2026-05-22
+
+### Fixed (CVE DB)
+- **CVE-2024-1733 (PC-CVE-CVE-2024-1733)**: corregido mapeo incorrecto — el CVE pertenece al plugin `word-replacer-ultra` (Word Replacer Pro), no a `wordfence`. El normalizador upstream usó la URL de Wordfence Threat Intel de las referencias para inferir el slug, en vez del plugin afectado real.
+- **CVE-2022-1546 (PC-CVE-CVE-2022-1546)**: eliminado mapeo incorrecto — el CVE pertenece a "WooCommerce - Product Importer", no a `woocommerce-products-filter` (HUSKY). Ambos plugins comparten parte del nombre pero son software distinto.
+- **Nuevo mecanismo `local_patches.py`**: correcciones locales persistentes que se aplican al final de `plecost update-db`, permitiendo corregir entradas incorrectas del upstream sin esperar a un nuevo `full.json`.
+
+### Tests (CVE DB)
+- Añadido `tests/unit/test_database_local_patches.py` con 5 tests para el mecanismo de correcciones locales (AC-1 a AC-5).
+
 ## [4.2.7] — 2026-05-06
 
 ### Fixed
