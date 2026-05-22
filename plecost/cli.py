@@ -213,13 +213,23 @@ async def _clean_low_confidence_records(sf: "async_sessionmaker[AsyncSession]") 
             select(PluginsWordlist.slug)
             .union(select(ThemesWordlist.slug))
         )
-        stmt = delete(NormalizedVuln).where(
-            NormalizedVuln.match_confidence == 0.5,
-            NormalizedVuln.slug.notin_(known_slugs_q),
+        # Count before delete (rowcount from async delete is not reliably typed)
+        count_result = await session.execute(
+            select(NormalizedVuln).where(
+                NormalizedVuln.match_confidence == 0.5,
+                NormalizedVuln.slug.notin_(known_slugs_q),
+            )
         )
-        result = await session.execute(stmt)
+        to_delete = count_result.scalars().all()
+        deleted = len(to_delete)
+        await session.execute(
+            delete(NormalizedVuln).where(
+                NormalizedVuln.match_confidence == 0.5,
+                NormalizedVuln.slug.notin_(known_slugs_q),
+            )
+        )
         await session.commit()
-        return result.rowcount
+        return deleted
 
 
 async def _update_db_async(db_path: Path, token: "str | None", force_full: bool) -> None:
