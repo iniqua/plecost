@@ -1,5 +1,11 @@
 ## [4.2.8] — 2026-05-22
 
+### Fixed (SSLTLSModule)
+- **`SSLTLSModule` (PC-SSL-003)**: eliminado finding duplicado de HSTS ausente. El módulo `ssl_tls` emitía `PC-SSL-003` (LOW) por el mismo header `Strict-Transport-Security` que ya detecta `http_headers` como `PC-HDR-001` (MEDIUM). El check HSTS se elimina de `ssl_tls` — la responsabilidad de los headers HTTP pertenece exclusivamente al módulo `http_headers`. `PC-SSL-003` se retira del uso activo pero se mantiene en el registro de IDs por compatibilidad.
+
+### Tests (SSLTLSModule)
+- Añadido `test_ssl_tls_does_not_emit_pc_ssl_003` en `tests/unit/test_module_ssl_tls.py`.
+
 ### Fixed (MisconfigsModule)
 - **`MisconfigsModule` (PC-MCFG-003)**: eliminado falso positivo de `.env` expuesto en WordPress con soft-404. WordPress intercepta peticiones a rutas inexistentes devolviendo la página del sitio con HTTP 200 y `Content-Type: text/html`. El check ahora descarta la respuesta si: (1) el `Content-Type` contiene `text/html` para archivos de texto plano (`.env`, `.git/HEAD`, `debug.log`, `backup.sql`, `wp-config.php.bak`), o (2) la URL final tras seguir redirects difiere de la URL solicitada.
 

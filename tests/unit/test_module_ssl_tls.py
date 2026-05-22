@@ -137,12 +137,13 @@ async def test_ssl_no_redirect_adds_finding(ctx):
     assert any(f.id == "PC-SSL-001" for f in ctx.findings)
 
 
-async def test_hsts_missing_adds_finding(ctx):
-    """PC-SSL-003 is added when HSTS header is absent from an HTTPS response."""
+async def test_ssl_tls_does_not_emit_pc_ssl_003(ctx):
+    """ssl_tls module must not emit PC-SSL-003 — that's http_headers' responsibility."""
     async with respx.mock:
-        # Response with no HSTS header
+        # HTTPS site without HSTS header
         respx.get("https://example.com/").mock(
-            return_value=httpx.Response(200, text="<html></html>")
+            return_value=httpx.Response(200, headers={"content-type": "text/html"})
+            # No strict-transport-security header
         )
         async with PlecostHTTPClient(ctx.opts) as http:
             with patch("plecost.modules.ssl_tls.httpx.AsyncClient") as mock_client_cls:
@@ -156,7 +157,8 @@ async def test_hsts_missing_adds_finding(ctx):
 
                 await SSLTLSModule().run(ctx, http)
 
-    assert any(f.id == "PC-SSL-003" for f in ctx.findings)
+    assert not any(f.id == "PC-SSL-003" for f in ctx.findings), \
+        "PC-SSL-003 debe ser responsabilidad exclusiva de http_headers, no de ssl_tls"
 
 
 async def test_http_url_skips_ssl_checks(ctx_http):

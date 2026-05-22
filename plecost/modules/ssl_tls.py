@@ -61,18 +61,3 @@ class SSLTLSModule(ScanModule):
         except Exception:
             pass
 
-        # Check HSTS
-        try:
-            r = await http.get(ctx.url + "/")
-            if "strict-transport-security" not in {k.lower() for k in r.headers.keys()}:
-                ctx.add_finding(Finding(
-                    id="PC-SSL-003", remediation_id="REM-SSL-003",
-                    title="HSTS (Strict-Transport-Security) header not set",
-                    severity=Severity.LOW,
-                    description="HSTS header is missing from HTTPS response.",
-                    evidence={"url": ctx.url + "/"},
-                    remediation="Add: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload",
-                    references=[], cvss_score=None, module=self.name
-                ))
-        except Exception:
-            pass
