@@ -243,9 +243,26 @@ plecost scan https://target.com
 
 ## CVE Detection Engine
 
+> **v4.4: CVE engine reliability — 15 database bugs fixed, per-window sync checkpointing, Rich markup escaping.**
+>
 > **v4.3: New multi-stage normalization pipeline — from 70% false positive rate to under 5%.**
 
 Plecost's CVE detection has always used a local database built from NVD data. What changed in v4.3 is *how* NVD vulnerability records are mapped to WordPress plugin slugs — the step where previous tools (including earlier Plecost versions) silently generate false positives.
+
+### What's new in v4.4
+
+v4.4 is a reliability release focused on the CVE database engine:
+
+- **Rejected CVEs now rehabilitable**: re-upserting a previously-deleted CVE removes it from the suppression list automatically (G2-003)
+- **Upsert-wins-delete in same patch**: a CVE listed in both `upsert[]` and `delete[]` of the same daily patch is kept, not suppressed (G2-002)
+- **Date poisoning fixed**: malformed dates in patch files no longer corrupt `last_patch_date`, which previously caused all subsequent patches to be silently ignored (G-002)
+- **Batch deduplication**: duplicate `(cve_id, slug)` pairs within a single patch no longer cause `IntegrityError` rollbacks (G-012)
+- **theme.vulns populated**: the CVE module now surfaces known vulnerabilities for detected themes, matching what it already did for plugins (G2-005)
+- **Single `rejected_ids` query per scan**: previously, `SELECT rejected_cves` was executed once per plugin (300+ queries in fast-scan mode); now fetched once and reused (G-016)
+- **`run_many()` respects custom DB**: bulk scans (`-T urls.txt`) now correctly use a custom `--db` path instead of falling back to the default location (G2-001)
+- **Incremental sync checkpointing**: `sync-db` now saves progress after each completed 90-day NVD window; a transient HTTP 429 no longer forces a full re-sync from scratch (AC-13)
+- **NVD 429 retry with backoff**: rate-limit responses from the NVD API trigger automatic retry with exponential backoff instead of silent data loss (AC-14)
+- **44 new tests**: `_is_affected()` boundary coverage, `find_all_by_slug()`, `rejected_cves` filtering, end-to-end CVE pipeline integration tests; total coverage 84.4%
 
 ### The Problem with Fuzzy Matching
 
@@ -287,7 +304,7 @@ The 12 remaining findings were all independently verified as true positives via 
 ```
 $ plecost scan https://target.com
 
-  Plecost v4.1 — WordPress Security Scanner
+  Plecost v4.4 — WordPress Security Scanner
   Target: https://target.com
 
   WordPress 6.4.2 detected  |  WAF: Cloudflare

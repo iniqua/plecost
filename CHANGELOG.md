@@ -1,4 +1,4 @@
-## [Unreleased] — 2026-05-22
+## [4.4.0] — 2026-05-23
 
 ### Fixed
 - **CVE Engine — rejected_cves rehabilitación**: `_apply_upserts()` ahora elimina de `rejected_cves` antes de reinsertar un CVE, evitando que CVEs rehabilitados queden suprimidos permanentemente (G2-003)
