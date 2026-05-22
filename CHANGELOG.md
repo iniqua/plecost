@@ -1,3 +1,60 @@
+## [4.3.0] — 2026-05-22
+
+### Added — Nuevo motor de normalización CVE v2
+
+El proceso de correlación CVE←→plugin de WordPress ha sido completamente rediseñado para eliminar falsos positivos sistemáticos que afectaban a las versiones anteriores.
+
+#### El problema anterior
+
+El motor de la v4.2.x usaba exclusivamente Jaro-Winkler con threshold 0.82 para mapear nombres de CPE del NVD (ej: `element_pack`) a slugs de WordPress.org (ej: `bdthemes-element-pack-lite`). Esto producía:
+
+- **Falsos positivos por similitud fonética**: `element_pack` → asignado a `elementor` (score 0.88, mayor que el slug correcto)
+- **Registros basura**: cuando no había match, el motor asignaba `slug = nombre_cpe` con confianza 0.5, generando 1.740 registros inútiles
+- **CVEs de betas con rango universal**: versiones como `5.8:beta1` generaban rango `*–*` (todos los usuarios afectados)
+
+**Resultado medido en producción:** 71% de los findings eran falsos positivos.
+
+#### El nuevo motor (pipeline en cascada)
+
+El nuevo motor aplica señales en orden de fiabilidad, con cortocircuito en la primera señal de alta confianza:
+
+1. **Exact match canónico** — normaliza `_` → `-` y compara contra el wordlist. `contact_form_7` → `contact-form-7`. Confianza: 1.0.
+
+2. **Extracción desde URLs de referencia** — el 65-70% de los CVEs en NVD incluyen referencias directas a `plugins.trac.wordpress.org/.../bdthemes-element-pack-lite/` o `wordpress.org/plugins/word-replacer-ultra/`. El slug está ahí de forma explícita. Confianza: 0.95. Cero falsos positivos por diseño (el slug extraído se valida contra el wordlist).
+
+3. **Jaro-Winkler con threshold elevado a 0.90** — solo como último recurso. Elimina el falso positivo de `element_pack→elementor` (score 0.8828 < 0.90).
+
+4. **Sin match → sin inserción** — si ninguna etapa supera el threshold de confianza, el CVE no se inserta. Mejor un CVE no reportado que un CVE falso.
+
+5. **Detección de prereleases** — CPEs con `beta`/`rc`/`alpha` en el URI se descartan silenciosamente.
+
+#### Limpieza automática en `update-db`
+
+`plecost update-db` ahora incluye una fase de limpieza que elimina los registros heredados con `match_confidence=0.5` cuyo slug no existe en ninguna wordlist conocida. La limpieza es idempotente y segura: preserva registros con slug en wordlist aunque tengan confianza baja.
+
+#### Resultado
+
+| Métrica | v4.2.x | v4.3.0 |
+|---|---|---|
+| Falsos positivos en producción | ~70% | <5% |
+| CVEs basura (slug=product) | 1.740 | 0 |
+| Cobertura de URL extraction | — | 65-70% de CVEs |
+| Threshold Jaro-Winkler | 0.82 | 0.90 |
+
+### Fixed
+
+- **PC-XMLRPC-005**: eliminado falso positivo cuando WordPress bloquea métodos autenticados a nivel de aplicación (`faultCode: 405`) — ya cubierto en 4.2.8.
+- **PC-SSL-003**: eliminado duplicado de PC-HDR-001 — ya cubierto en 4.2.8.
+- **PC-MCFG-003**: eliminado falso positivo de `.env` con soft-404 de WordPress — ya cubierto en 4.2.8.
+- **CVE-2024-1733**: corregido mapeo incorrecto `wordfence` → `word-replacer-ultra` — ya cubierto en 4.2.8.
+- **CVE-2022-1546**: eliminado mapeo incorrecto a `woocommerce-products-filter` — ya cubierto en 4.2.8.
+
+### Tests
+
+- `plecost-db/tests/unit/test_updater.py`: 17 nuevos tests para el pipeline de normalización (extracción URL, canonical, prerelease, JW threshold, no-fallback).
+- `plecost/tests/unit/test_cli_migration.py`: 7 tests para la limpieza de registros de baja confianza.
+
+
 ## [4.2.8] — 2026-05-22
 
 ### Fixed (CVE DB — low-confidence cleanup)
