@@ -96,7 +96,11 @@ class CVEStore:
                 return False
             if end_e and iv >= end_e:
                 return False
-            # If no ranges are defined, assume affected (rare but possible)
+            # If no ranges are defined we cannot determine which versions are
+            # affected — do NOT report to avoid flooding with historical CVEs
+            # (e.g. WordPress 1.x CVEs from 2004 matching WP 7.0).
+            if all(r is None for r in [start_i, start_e, end_i, end_e]):
+                return False
             return True
         except InvalidVersion:
             return False
