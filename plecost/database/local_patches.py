@@ -49,8 +49,9 @@ async def apply_local_corrections(
 
 def _load_corrections() -> list[dict[str, Any]]:
     """Load correction entries from the bundled corrections.json file."""
-    data = json.loads(_CORRECTIONS_FILE.read_text(encoding="utf-8"))
-    return data.get("corrections", [])
+    data: dict[str, Any] = json.loads(_CORRECTIONS_FILE.read_text(encoding="utf-8"))
+    corrections: list[dict[str, Any]] = data.get("corrections", [])
+    return corrections
 
 
 async def _delete_by_cve_slug(
@@ -58,12 +59,21 @@ async def _delete_by_cve_slug(
 ) -> int:
     """Delete a single (cve_id, slug) row. Returns number of rows deleted (0 or 1)."""
     result = await session.execute(
+        select(NormalizedVuln).where(
+            NormalizedVuln.cve_id == cve_id,
+            NormalizedVuln.slug == slug,
+        )
+    )
+    row = result.scalar_one_or_none()
+    if row is None:
+        return 0
+    await session.execute(
         delete(NormalizedVuln).where(
             NormalizedVuln.cve_id == cve_id,
             NormalizedVuln.slug == slug,
         )
     )
-    return result.rowcount
+    return 1
 
 
 async def _upsert_entry(session: AsyncSession, entry: dict[str, Any]) -> None:
