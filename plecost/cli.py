@@ -256,47 +256,46 @@ async def _update_db_async(db_path: Path, token: "str | None", force_full: bool)
         await _apply_sqlite_migrations(conn)
     sf = make_session_factory(engine)
 
-    # Clean up legacy low-confidence records from the old normalization pipeline
-    deleted = await _clean_low_confidence_records(sf)
-    if deleted > 0:
-        console.print(f"[dim]Cleaned {deleted} low-confidence records from previous pipeline.[/dim]")
-
-    # Check if we need to update (compare remote checksum with local)
+    # AC-11: single try/finally guarantees engine.dispose() on all exit paths,
+    # including exceptions raised inside _clean_low_confidence_records.
     try:
-        remote_checksum = await fetch_remote_index_checksum(token)
-    except httpx.HTTPStatusError as e:
-        if e.response.status_code == 404:
-            console.print(
-                "[red]CVE patch database not found on GitHub.[/red]\n"
-                "[dim]The 'db-patches' release may not exist yet. "
-                "Run 'plecost build-db' to create the initial database, "
-                "then publish it to GitHub releases.[/dim]"
-            )
-        elif e.response.status_code == 401:
-            console.print(
-                "[red]GitHub authentication failed (401).[/red]\n"
-                "[dim]Check your --token or GITHUB_TOKEN environment variable.[/dim]"
-            )
-        elif e.response.status_code >= 500:
-            console.print(
-                f"[red]GitHub server error ({e.response.status_code}). Try again later.[/red]"
-            )
-        else:
-            console.print(f"[red]GitHub returned {e.response.status_code}: {e}[/red]")
-        await engine.dispose()
-        return
-    except httpx.ConnectError:
-        console.print(
-            "[red]Cannot connect to GitHub. Check your internet connection.[/red]"
-        )
-        await engine.dispose()
-        return
-    except Exception as e:
-        console.print(f"[yellow]Warning: cannot reach GitHub releases: {e}[/yellow]")
-        await engine.dispose()
-        return
+        # Clean up legacy low-confidence records from the old normalization pipeline
+        deleted = await _clean_low_confidence_records(sf)
+        if deleted > 0:
+            console.print(f"[dim]Cleaned {deleted} low-confidence records from previous pipeline.[/dim]")
 
-    try:
+        # Check if we need to update (compare remote checksum with local)
+        try:
+            remote_checksum = await fetch_remote_index_checksum(token)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                console.print(
+                    "[red]CVE patch database not found on GitHub.[/red]\n"
+                    "[dim]The 'db-patches' release may not exist yet. "
+                    "Run 'plecost build-db' to create the initial database, "
+                    "then publish it to GitHub releases.[/dim]"
+                )
+            elif e.response.status_code == 401:
+                console.print(
+                    "[red]GitHub authentication failed (401).[/red]\n"
+                    "[dim]Check your --token or GITHUB_TOKEN environment variable.[/dim]"
+                )
+            elif e.response.status_code >= 500:
+                console.print(
+                    f"[red]GitHub server error ({e.response.status_code}). Try again later.[/red]"
+                )
+            else:
+                console.print(f"[red]GitHub returned {e.response.status_code}: {e}[/red]")
+            return
+        except httpx.ConnectError:
+            console.print(
+                "[red]Cannot connect to GitHub. Check your internet connection.[/red]"
+            )
+            return
+        except Exception as e:
+            console.print(f"[yellow]Warning: cannot reach GitHub releases: {e}[/yellow]")
+            return
+
         # Load local stored checksum from db_metadata
         local_checksum = await _get_metadata(sf, "index_checksum")
 

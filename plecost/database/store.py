@@ -41,7 +41,8 @@ class CVEStore:
         if db_url.startswith("sqlite"):
             # Extract path from sqlite+aiosqlite:///path or sqlite:///path
             path = db_url.split("///", 1)[-1]
-            if path and not os.path.exists(path):
+            # AC-7: skip existence check for in-memory databases
+            if path and path != ":memory:" and not os.path.exists(path):
                 raise FileNotFoundError(
                     f"CVE database not found at {path}. Run 'plecost update-db' to download it."
                 )
@@ -53,16 +54,24 @@ class CVEStore:
         if self._engine is not None:
             await self._engine.dispose()
 
-    async def find(
-        self, software_type: str, slug: str, installed_version: str
-    ) -> list[VulnerabilityRecord]:
+    async def get_rejected_ids(self) -> set[str]:
+        """Return all cve_ids present in rejected_cves."""
         async with self._sf() as session:
-            # Get rejected CVE IDs to filter them out
-            rejected_result = await session.execute(
-                select(RejectedCve.cve_id)
-            )
-            rejected_ids = set(rejected_result.scalars().all())
+            result = await session.execute(select(RejectedCve.cve_id))
+            return set(result.scalars().all())
 
+    async def find(
+        self,
+        software_type: str,
+        slug: str,
+        installed_version: str,
+        rejected_ids: set[str] | None = None,
+    ) -> list[VulnerabilityRecord]:
+        # AC-10: if rejected_ids not supplied, fetch them (backwards-compatible)
+        if rejected_ids is None:
+            rejected_ids = await self.get_rejected_ids()
+
+        async with self._sf() as session:
             result = await session.execute(
                 select(NormalizedVuln).where(
                     NormalizedVuln.software_type == software_type,
@@ -126,13 +135,17 @@ class CVEStore:
         )
 
     async def find_all_by_slug(
-        self, software_type: str, slug: str
+        self,
+        software_type: str,
+        slug: str,
+        rejected_ids: set[str] | None = None,
     ) -> list[VulnerabilityRecord]:
         """Return all known CVEs for a slug, regardless of installed version."""
-        async with self._sf() as session:
-            rejected_result = await session.execute(select(RejectedCve.cve_id))
-            rejected_ids = set(rejected_result.scalars().all())
+        # AC-10: if rejected_ids not supplied, fetch them (backwards-compatible)
+        if rejected_ids is None:
+            rejected_ids = await self.get_rejected_ids()
 
+        async with self._sf() as session:
             conditions = [
                 NormalizedVuln.software_type == software_type,
                 NormalizedVuln.slug == slug,

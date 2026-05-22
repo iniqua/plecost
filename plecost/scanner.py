@@ -83,6 +83,7 @@ class Scanner:
                 deep=self._opts.deep,
                 output=self._opts.output,
                 module_options=self._opts.module_options,
+                db_url=self._opts.db_url,  # AC-8: propagate db_url to each per-target scan
             )
             scanner = Scanner(opts)
             result = await scanner.run()

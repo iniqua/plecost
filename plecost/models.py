@@ -150,6 +150,7 @@ class Theme:
     url: str
     outdated: bool = False
     active: bool = True
+    vulns: list[PluginVuln] = field(default_factory=list)
 
 
 @dataclass

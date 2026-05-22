@@ -1,4 +1,5 @@
 from __future__ import annotations
+from rich.markup import escape as markup_escape
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, PluginVuln, Severity
@@ -23,21 +24,25 @@ class CVEsModule(ScanModule):
     async def run(self, ctx: ScanContext, http: PlecostHTTPClient | None) -> None:
         if not ctx.is_wordpress and not ctx.opts.force:
             return
+        # AC-10: fetch rejected_ids once and reuse across all find() / find_all_by_slug() calls
+        rejected_ids = await self._store.get_rejected_ids()
         # Check core
         if ctx.wordpress_version:
-            for vuln in await self._store.find("core", "wordpress", ctx.wordpress_version):
+            for vuln in await self._store.find("core", "wordpress", ctx.wordpress_version, rejected_ids):
                 ctx.add_finding(self._make_finding(vuln))
         # Check plugins
         for plugin in ctx.plugins:
-            all_vulns = await self._store.find_all_by_slug("plugin", plugin.slug)
+            all_vulns = await self._store.find_all_by_slug("plugin", plugin.slug, rejected_ids)
             plugin.vulns = [self._to_plugin_vuln(v) for v in all_vulns]
             if plugin.version:
-                for vuln in await self._store.find("plugin", plugin.slug, plugin.version):
+                for vuln in await self._store.find("plugin", plugin.slug, plugin.version, rejected_ids):
                     ctx.add_finding(self._make_finding(vuln))
-        # Check themes
+        # AC-9: Check themes (both vuln list and findings)
         for theme in ctx.themes:
+            all_vulns = await self._store.find_all_by_slug("theme", theme.slug, rejected_ids)
+            theme.vulns = [self._to_plugin_vuln(v) for v in all_vulns]
             if theme.version:
-                for vuln in await self._store.find("theme", theme.slug, theme.version):
+                for vuln in await self._store.find("theme", theme.slug, theme.version, rejected_ids):
                     ctx.add_finding(self._make_finding(vuln))
 
     def _to_plugin_vuln(self, vuln: VulnerabilityRecord) -> PluginVuln:
@@ -67,9 +72,9 @@ class CVEsModule(ScanModule):
         return Finding(
             id=f"PC-CVE-{vuln.cve_id}",
             remediation_id=f"REM-CVE-{vuln.cve_id}",
-            title=f"{vuln.title} ({vuln.cve_id})",
+            title=f"{markup_escape(vuln.title)} ({markup_escape(vuln.cve_id)})",
             severity=sev,
-            description=f"{vuln.description}.{exploit_note} Affects versions {version_range}.",
+            description=f"{markup_escape(vuln.description)}.{exploit_note} Affects versions {version_range}.",
             evidence={"cve_id": vuln.cve_id, "software": vuln.software_slug,
                       "version_range": version_range},
             remediation=vuln.remediation,

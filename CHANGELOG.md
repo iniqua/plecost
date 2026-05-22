@@ -1,3 +1,26 @@
+## [Unreleased] — 2026-05-22
+
+### Fixed
+- **CVE Engine — rejected_cves rehabilitación**: `_apply_upserts()` ahora elimina de `rejected_cves` antes de reinsertar un CVE, evitando que CVEs rehabilitados queden suprimidos permanentemente (G2-003)
+- **CVE Engine — upsert-wins-delete**: En un patch donde el mismo CVE aparece en `upsert[]` y `delete[]`, el upsert tiene prioridad — el CVE no queda blacklisted (G2-002)
+- **CVE Engine — validación de fecha ISO 8601**: `_update_last_patch_date()` valida el formato antes de comparar; fechas malformadas ya no envenenan `last_patch_date` (G-002)
+- **CVE Engine — deduplicación de batch**: duplicados `(cve_id, slug)` en el mismo patch se colapsan antes del procesamiento, evitando `IntegrityError` por batch (G-012)
+- **CVE Engine — validación extendida**: `_validate_patch()` rechaza `slug=""` y severidades inválidas; `has_exploit=None` y `references=None` se coercionan a valores seguros (G-011, G2-009, G2-010, G2-014)
+- **CVE Engine — blacklist de CVEs no existentes**: `_apply_deletes()` solo añade a `rejected_cves` si el CVE existe en `normalized_vulns` (G-007)
+- **CVE Engine — SELECT mínimo en deletes**: La verificación de existencia en `_apply_deletes()` usa `SELECT cve_id LIMIT 1` en vez de cargar el objeto ORM completo (CB-3)
+- **CVEStore — `:memory:` sin FileNotFoundError**: `CVEStore.from_url(":memory:")` ya no lanza `FileNotFoundError` (G-001)
+- **Scanner — db_url en run_many()**: `run_many()` propaga `db_url` a cada scan individual, evitando que escaneos bulk ignoren la DB custom (G2-001)
+- **CVEsModule — theme.vulns populado**: El módulo CVE ahora popula `theme.vulns` con `find_all_by_slug("theme", ...)`, igual que hace con plugins (G2-005)
+- **CVEsModule — rejected_ids fetch-once**: `get_rejected_ids()` se llama una sola vez al inicio del módulo, eliminando 300+ queries redundantes en modo fast-scan (G-016)
+- **Terminal reporter — Rich markup escaping**: Campos CVE externos (title, description) se escapan antes de interpolarse en markup Rich, evitando inyección de etiquetas (CA-2)
+- **CLI — engine.dispose() en try/finally**: `engine.dispose()` se llama aunque `_clean_low_confidence_records()` lance una excepción (G3-001)
+
+### Tests
+- 44 nuevos tests: cobertura completa de `_is_affected()` (6 branches), `find_all_by_slug()`, filtrado `rejected_cves`, wordlists, pipeline CVE end-to-end (2 integration tests)
+- Cobertura total: 84.39% (threshold 75%)
+
+---
+
 ## [4.3.0] — 2026-05-22
 
 ### Added — Nuevo motor de normalización CVE v2

@@ -3,6 +3,7 @@ from importlib.metadata import version as pkg_version
 from rich import box
 from rich.console import Console, Group
 from rich.live import Live
+from rich.markup import escape as markup_escape
 from rich.table import Table
 from rich.panel import Panel
 from plecost.models import Finding, ScanResult, Severity
@@ -85,7 +86,7 @@ class TerminalReporter:
             findings_table.add_row(
                 finding.id,
                 f"[{color}]{finding.severity.value}[/{color}]",
-                finding.title,
+                markup_escape(finding.title),
                 finding.module,
             )
 
@@ -175,24 +176,24 @@ class TerminalReporter:
         detail.add_column("Field", style="bold", no_wrap=True, width=14)
         detail.add_column("Value")
 
-        detail.add_row(t("reporter.field.description"), finding.description)
+        detail.add_row(t("reporter.field.description"), markup_escape(finding.description))
 
         first = True
         for key, val in finding.evidence.items():
             label = t("reporter.field.evidence") if first else ""
-            detail.add_row(label, f"[bold]{key}:[/bold] {val}")
+            detail.add_row(label, f"[bold]{markup_escape(str(key))}:[/bold] {markup_escape(str(val))}")
             first = False
 
-        detail.add_row(t("reporter.field.remediation"), finding.remediation)
+        detail.add_row(t("reporter.field.remediation"), markup_escape(finding.remediation))
 
         if finding.references:
             for i, ref in enumerate(finding.references):
-                detail.add_row(t("reporter.field.references") if i == 0 else "", ref)
+                detail.add_row(t("reporter.field.references") if i == 0 else "", markup_escape(ref))
 
         if finding.cvss_score is not None:
             detail.add_row(t("reporter.field.cvss_score"), str(finding.cvss_score))
 
-        title = f"[{color}]{finding.id}[/{color}]  [{color}]{finding.severity.value}[/{color}]  {finding.title}"
+        title = f"[{color}]{finding.id}[/{color}]  [{color}]{finding.severity.value}[/{color}]  {markup_escape(finding.title)}"
         self._console.print(Panel(detail, title=title, title_align="left"))
 
 
@@ -273,6 +274,6 @@ class VerboseDisplay:
         find_table.add_column(t("verbose.column.title"))
         for f in self._findings[-20:]:
             color = _SEVERITY_COLORS.get(f.severity, "white")
-            find_table.add_row(f"[{color}]{f.severity.value}[/{color}]", f.id, f.title)
+            find_table.add_row(f"[{color}]{f.severity.value}[/{color}]", f.id, markup_escape(f.title))
 
         return Group(mod_table, find_table)
