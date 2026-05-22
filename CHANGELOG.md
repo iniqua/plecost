@@ -1,5 +1,11 @@
 ## [4.2.8] — 2026-05-22
 
+### Fixed (XMLRPCModule)
+- **`XMLRPCModule` (PC-XMLRPC-005)**: eliminado falso positivo en detección de brute-force protection. Cuando WordPress deshabilita los métodos autenticados vía filtro `xmlrpc_enabled`, devuelve HTTP 200 con `faultCode: 405` en el cuerpo XML — no un HTTP 403/429 de WAF. El detector ahora parsea el `faultCode` XML: `405` = método desactivado a nivel de aplicación (protección real → PC-XMLRPC-006), `403` = credenciales incorrectas pero método funcional (sin protección → PC-XMLRPC-005).
+
+### Tests (XMLRPCModule)
+- Añadidos 3 tests en `tests/unit/test_module_xmlrpc.py`: `test_wp_application_level_protection_no_005_finding`, `test_wrong_credentials_emits_005`, `test_http_403_block_emits_006`.
+
 ### Fixed (SSLTLSModule)
 - **`SSLTLSModule` (PC-SSL-003)**: eliminado finding duplicado de HSTS ausente. El módulo `ssl_tls` emitía `PC-SSL-003` (LOW) por el mismo header `Strict-Transport-Security` que ya detecta `http_headers` como `PC-HDR-001` (MEDIUM). El check HSTS se elimina de `ssl_tls` — la responsabilidad de los headers HTTP pertenece exclusivamente al módulo `http_headers`. `PC-SSL-003` se retira del uso activo pero se mantiene en el registro de IDs por compatibilidad.
 

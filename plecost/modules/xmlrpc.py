@@ -1,9 +1,19 @@
 from __future__ import annotations
 import asyncio
+import re
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
+
+# Regex to extract faultCode from WordPress XML-RPC fault responses.
+# WordPress uses <int> or <i4> for faultCode values.
+# faultCode=405 → method disabled via xmlrpc_enabled filter (application-level protection)
+# faultCode=403 → wrong credentials but method is functional (no protection)
+_FAULT_CODE_RE = re.compile(
+    r'<name>faultCode</name>\s*<value>\s*<(?:int|i4)>\s*(-?\d+)',
+    re.S
+)
 
 _LIST_METHODS_PAYLOAD = """<?xml version="1.0"?>
 <methodCall>
@@ -63,12 +73,27 @@ class XMLRPCModule(ScanModule):
             try:
                 r_auth = await http.post(xmlrpc_url, content=_AUTH_TEST_PAYLOAD, headers=headers)
 
-                # If we get a WAF/Security block
+                # If we get a WAF/Security block via HTTP status
                 if r_auth.status_code in [403, 429, 406]:
                     is_rate_limited = True
                     blocked_status = r_auth.status_code
                     blocked_on_attempt = attempt
                     break
+
+                # WordPress can disable authenticated methods via the xmlrpc_enabled filter.
+                # In that case the server returns HTTP 200 (or 405) with a fault XML body
+                # containing faultCode=405 — NOT a WAF block.
+                # faultCode=405 → method disabled at application level → real protection
+                # faultCode=403 → wrong credentials, method is functional → no protection
+                if not is_rate_limited and "faultCode" in r_auth.text:
+                    m = _FAULT_CODE_RE.search(r_auth.text)
+                    if m:
+                        fault_code = int(m.group(1))
+                        if fault_code == 405:
+                            is_rate_limited = True
+                            blocked_status = fault_code
+                            blocked_on_attempt = attempt
+                            break
 
                 # Small delay to simulate typical login attempts
                 await asyncio.sleep(0.5)
@@ -91,12 +116,21 @@ class XMLRPCModule(ScanModule):
             ))
         else:
             # Optional: Add an informational finding that guardrails ARE active
+            if blocked_status == 405:
+                protection_type = "WordPress application-level (methods disabled via xmlrpc_enabled filter)"
+            else:
+                protection_type = "WAF/Rate-limiter"
             ctx.add_finding(Finding(
                 id="PC-XMLRPC-006", remediation_id="REM-XMLRPC-006",
                 title="XML-RPC Guardrails Active",
                 severity=Severity.INFO,
                 description=f"The xmlrpc.php endpoint is accessible, but active defenses (WAF/Rate Limiting) blocked repeated authentication attempts on attempt {blocked_on_attempt}.",
-                evidence={"url": xmlrpc_url, "blocked_on_attempt": blocked_on_attempt, "status_code": blocked_status},
+                evidence={
+                    "url": xmlrpc_url,
+                    "blocked_on_attempt": blocked_on_attempt,
+                    "status_code": blocked_status,
+                    "protection_type": protection_type,
+                },
                 remediation="No immediate action required, but consider disabling XML-RPC if it is completely unused.",
                 references=[], cvss_score=0.0, module=self.name
             ))
