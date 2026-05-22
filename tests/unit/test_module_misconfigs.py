@@ -27,14 +27,74 @@ async def test_detects_wp_config_exposed(ctx):
 
 
 async def test_detects_env_file(ctx):
+    """AC-2 (existing): /.env returns 200 with text/plain content → emits PC-MCFG-003."""
     async with respx.mock:
         respx.get("https://example.com/.env").mock(
-            return_value=httpx.Response(200, text="DB_PASSWORD=secret")
+            return_value=httpx.Response(
+                200, text="DB_PASSWORD=secret",
+                headers={"content-type": "text/plain"}
+            )
         )
         respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
         async with PlecostHTTPClient(ctx.opts) as http:
             await MisconfigsModule().run(ctx, http)
     assert any(f.id == "PC-MCFG-003" for f in ctx.findings)
+
+
+async def test_env_soft404_html_response_no_finding(ctx):
+    """AC-1: /.env returns 200 + Content-Type text/html (WordPress soft-404) → NO PC-MCFG-003."""
+    async with respx.mock:
+        respx.get("https://example.com/.env").mock(
+            return_value=httpx.Response(
+                200,
+                text="<html><body>Envios y devoluciones</body></html>",
+                headers={"content-type": "text/html; charset=utf-8"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert not any(f.id == "PC-MCFG-003" for f in ctx.findings)
+
+
+async def test_env_plaintext_response_emits_finding(ctx):
+    """AC-2: /.env returns 200 + Content-Type text/plain with env-like content → SÍ PC-MCFG-003."""
+    async with respx.mock:
+        respx.get("https://example.com/.env").mock(
+            return_value=httpx.Response(
+                200,
+                text="APP_KEY=base64:abc123\nDB_PASSWORD=supersecret\n",
+                headers={"content-type": "text/plain"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert any(f.id == "PC-MCFG-003" for f in ctx.findings)
+
+
+async def test_env_redirect_to_different_url_no_finding(ctx):
+    """AC-3: /.env redirects to a different URL → NO PC-MCFG-003 (soft-404 redirect detection)."""
+    async with respx.mock:
+        # httpx follows the redirect automatically; the final response URL will be the destination.
+        # We mock the destination URL directly so httpx sees a 200 at the redirected location.
+        respx.get("https://example.com/.env").mock(
+            return_value=httpx.Response(
+                301,
+                headers={"location": "https://example.com/envios-y-devoluciones/"},
+            )
+        )
+        respx.get("https://example.com/envios-y-devoluciones/").mock(
+            return_value=httpx.Response(
+                200,
+                text="<html><body>Envios y devoluciones page</body></html>",
+                headers={"content-type": "text/html; charset=utf-8"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert not any(f.id == "PC-MCFG-003" for f in ctx.findings)
 
 
 async def test_no_findings_if_all_404(ctx):
