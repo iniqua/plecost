@@ -1,5 +1,12 @@
 ## [4.2.8] — 2026-05-22
 
+### Fixed (MisconfigsModule)
+- **`MisconfigsModule` (PC-MCFG-003)**: eliminado falso positivo de `.env` expuesto en WordPress con soft-404. WordPress intercepta peticiones a rutas inexistentes devolviendo la página del sitio con HTTP 200 y `Content-Type: text/html`. El check ahora descarta la respuesta si: (1) el `Content-Type` contiene `text/html` para archivos de texto plano (`.env`, `.git/HEAD`, `debug.log`, `backup.sql`, `wp-config.php.bak`), o (2) la URL final tras seguir redirects difiere de la URL solicitada.
+
+### Tests (MisconfigsModule)
+- Añadidos 3 tests en `tests/unit/test_module_misconfigs.py`: `test_env_soft404_html_response_no_finding`, `test_env_plaintext_response_emits_finding`, `test_env_redirect_to_different_url_no_finding`.
+- Actualizado `test_detects_env_file` para incluir `Content-Type: text/plain` en el mock.
+
 ### Fixed (CVE DB)
 - **CVE-2024-1733 (PC-CVE-CVE-2024-1733)**: corregido mapeo incorrecto — el CVE pertenece al plugin `word-replacer-ultra` (Word Replacer Pro), no a `wordfence`. El normalizador upstream usó la URL de Wordfence Threat Intel de las referencias para inferir el slug, en vez del plugin afectado real.
 - **CVE-2022-1546 (PC-CVE-CVE-2022-1546)**: eliminado mapeo incorrecto — el CVE pertenece a "WooCommerce - Product Importer", no a `woocommerce-products-filter` (HUSKY). Ambos plugins comparten parte del nombre pero son software distinto.
