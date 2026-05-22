@@ -1,4 +1,5 @@
 from __future__ import annotations
+from importlib.metadata import version as pkg_version
 from rich import box
 from rich.console import Console, Group
 from rich.live import Live
@@ -6,6 +7,11 @@ from rich.table import Table
 from rich.panel import Panel
 from plecost.models import Finding, ScanResult, Severity
 from plecost.i18n import t
+
+try:
+    _PLECOST_VERSION = pkg_version("plecost")
+except Exception:
+    _PLECOST_VERSION = "unknown"
 
 _SEVERITY_COLORS = {
     Severity.CRITICAL: "bold red",
@@ -48,7 +54,7 @@ class TerminalReporter:
             if r.waf_detected:
                 lines.append(f"[bold cyan]{t('reporter.panel.waf')}:[/bold cyan] {r.waf_detected}")
 
-        self._console.print(Panel("\n".join(lines), title=f"[bold]{t('reporter.panel.title')}[/bold]"))
+        self._console.print(Panel("\n".join(lines), title=f"[bold]{t('reporter.panel.title', version=_PLECOST_VERSION)}[/bold]"))
 
         # Summary table
         s = r.summary

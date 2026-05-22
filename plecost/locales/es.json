@@ -1,7 +1,7 @@
 {
   "reporter": {
     "panel": {
-      "title": "Plecost v4.0 — Informe de Escaneo",
+      "title": "Plecost v{version} — Informe de Escaneo",
       "url": "URL",
       "scan_id": "ID de Escaneo",
       "timestamp": "Fecha/Hora",

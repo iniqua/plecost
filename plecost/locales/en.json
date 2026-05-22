@@ -1,7 +1,7 @@
 {
   "reporter": {
     "panel": {
-      "title": "Plecost v4.0 Scan Report",
+      "title": "Plecost v{version} Scan Report",
       "url": "URL",
       "scan_id": "Scan ID",
       "timestamp": "Timestamp",
