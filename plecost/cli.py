@@ -197,6 +197,31 @@ async def _apply_sqlite_migrations(conn: Any) -> None:
             await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {definition}"))
 
 
+async def _clean_low_confidence_records(sf: "async_sessionmaker[AsyncSession]") -> int:
+    """
+    Remove normalized_vulns records where match_confidence=0.5 and slug is not
+    in any known wordlist. These are fallback records from the old pipeline that
+    map CVEs to non-existent WordPress slugs, causing false positives.
+    Returns the number of records deleted.
+    """
+    from sqlalchemy import delete, select
+    from plecost.database.models import NormalizedVuln, PluginsWordlist, ThemesWordlist
+
+    async with sf() as session:
+        # Subquery: slugs present in either wordlist
+        known_slugs_q = (
+            select(PluginsWordlist.slug)
+            .union(select(ThemesWordlist.slug))
+        )
+        stmt = delete(NormalizedVuln).where(
+            NormalizedVuln.match_confidence == 0.5,
+            NormalizedVuln.slug.notin_(known_slugs_q),
+        )
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.rowcount
+
+
 async def _update_db_async(db_path: Path, token: "str | None", force_full: bool) -> None:
     import json
     import tempfile
@@ -220,6 +245,11 @@ async def _update_db_async(db_path: Path, token: "str | None", force_full: bool)
         # Apply incremental schema migrations for columns added after initial release
         await _apply_sqlite_migrations(conn)
     sf = make_session_factory(engine)
+
+    # Clean up legacy low-confidence records from the old normalization pipeline
+    deleted = await _clean_low_confidence_records(sf)
+    if deleted > 0:
+        console.print(f"[dim]Cleaned {deleted} low-confidence records from previous pipeline.[/dim]")
 
     # Check if we need to update (compare remote checksum with local)
     try:

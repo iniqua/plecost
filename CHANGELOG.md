@@ -1,5 +1,13 @@
 ## [4.2.8] — 2026-05-22
 
+### Fixed (CVE DB — low-confidence cleanup)
+- **`_clean_low_confidence_records()`**: nueva función ejecutada automáticamente al inicio de `plecost update-db`. Elimina los registros de `normalized_vulns` donde `match_confidence=0.5` y el slug no existe en ninguna wordlist conocida (`plugins_wordlist` ni `themes_wordlist`). El pipeline antiguo generaba ~1.740 registros de fallback donde `slug=cpe_product_name` para CVEs que no tenían un mapeo a WordPress — estos producían falsos positivos durante el escaneo. La limpieza es idempotente: si no hay registros que eliminar, no emite ningún mensaje.
+
+### Tests (CVE DB — low-confidence cleanup)
+- Añadido `tests/unit/test_cli_migration.py` con 7 tests que cubren los AC-1 a AC-4: eliminación de orphans, preservación de slugs en wordlist (plugins y themes), preservación de registros con confianza alta, idempotencia, BD vacía y escenario mixto.
+
+
+
 ### Fixed (XMLRPCModule)
 - **`XMLRPCModule` (PC-XMLRPC-005)**: eliminado falso positivo en detección de brute-force protection. Cuando WordPress deshabilita los métodos autenticados vía filtro `xmlrpc_enabled`, devuelve HTTP 200 con `faultCode: 405` en el cuerpo XML — no un HTTP 403/429 de WAF. El detector ahora parsea el `faultCode` XML: `405` = método desactivado a nivel de aplicación (protección real → PC-XMLRPC-006), `403` = credenciales incorrectas pero método funcional (sin protección → PC-XMLRPC-005).
 
