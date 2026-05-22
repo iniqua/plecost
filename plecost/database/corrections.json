@@ -1,0 +1,38 @@
+{
+  "version": "1",
+  "description": "Local corrections for known wrong CVE mappings in the upstream database",
+  "corrections": [
+    {
+      "action": "delete_by_cve_slug",
+      "cve_id": "CVE-2024-1733",
+      "slug": "wordfence",
+      "reason": "CVE-2024-1733 belongs to word-replacer-ultra (Word Replacer Pro), not wordfence"
+    },
+    {
+      "action": "upsert",
+      "cve_id": "CVE-2024-1733",
+      "software_type": "plugin",
+      "slug": "word-replacer-ultra",
+      "cpe_vendor": "charlestsmith",
+      "cpe_product": "word_replacer_pro",
+      "match_confidence": 1.0,
+      "cvss_score": 5.3,
+      "severity": "MEDIUM",
+      "title": "word_replacer_pro: CVE-2024-1733",
+      "description": "The Word Replacer Pro plugin for WordPress is vulnerable to unauthorized modification of data due to a missing capability check on the word_replacer_ultra() function in all versions up to, and including, 1.0. This makes it possible for unauthenticated attackers to update arbitrary content on the affected WordPress site.",
+      "remediation": "Update the plugin/theme to the latest version.",
+      "references": [
+        "https://plugins.trac.wordpress.org/browser/word-replacer-ultra/trunk/inc/word-replacer-ultra-ajax.php#L16",
+        "https://www.wordfence.com/threat-intel/vulnerabilities/id/1da53718-c2a2-45d0-ad43-daff3c68342d?source=cve"
+      ],
+      "has_exploit": false,
+      "published_at": "2024-03-16T06:15:13.010"
+    },
+    {
+      "action": "delete_by_cve_slug",
+      "cve_id": "CVE-2022-1546",
+      "slug": "woocommerce-products-filter",
+      "reason": "CVE-2022-1546 belongs to WooCommerce Product Importer plugin, not HUSKY (woocommerce-products-filter)"
+    }
+  ]
+}

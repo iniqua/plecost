@@ -311,6 +311,14 @@ async def _update_db_async(db_path: Path, token: "str | None", force_full: bool)
             if not is_first_run:
                 console.print("[green]No new patches available.[/green]")
 
+        # Apply local corrections for known wrong upstream mappings
+        from plecost.database.local_patches import apply_local_corrections
+        upserted_c, deleted_c = await apply_local_corrections(sf)
+        if upserted_c or deleted_c:
+            console.print(
+                f"[dim]Local corrections applied: {upserted_c} upserted, {deleted_c} corrected.[/dim]"
+            )
+
         # Save remote checksum locally
         await _set_metadata(sf, "index_checksum", remote_checksum)
         console.print(f"[green]CVE database updated at {db_path}[/green]")
