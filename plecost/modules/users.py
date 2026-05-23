@@ -50,7 +50,8 @@ class UsersModule(ScanModule):
             all_users: list[dict] = list(users_data)
 
             # Paginate through remaining pages (AC-1: sequential iteration)
-            total_pages = int(r.headers.get("X-WP-TotalPages", 1))
+            # F-2: cap total_pages to avoid unbounded requests from malicious server
+            total_pages = min(int(r.headers.get("X-WP-TotalPages", 1)), 100)
             for page in range(2, total_pages + 1):
                 try:
                     rp = await http.get(f"{ctx.url}/wp-json/wp/v2/users?per_page=100&page={page}")
@@ -83,7 +84,7 @@ class UsersModule(ScanModule):
                 id="PC-USR-001", remediation_id="REM-USR-001",
                 title="User enumeration via REST API",
                 severity=Severity.MEDIUM,
-                description=f"REST API exposes {len(all_users)} user(s): {[u.get('slug') for u in all_users]}",
+                description=f"REST API exposes {len(all_users)} user(s): {', '.join(u.get('slug', '?') for u in all_users)}",
                 evidence={"url": f"{ctx.url}/wp-json/wp/v2/users", "users": users_formatted},
                 remediation="Restrict REST API user endpoint. Add to functions.php: add_filter('rest_endpoints', function($e){ unset($e['/wp/v2/users']); return $e; });",
                 references=["https://www.wordfence.com/learn/wordpress-rest-api/"],
@@ -132,7 +133,7 @@ class UsersModule(ScanModule):
                 id="PC-USR-002", remediation_id="REM-USR-002",
                 title="User enumeration via author archives",
                 severity=Severity.MEDIUM,
-                description=f"Author archives expose usernames: {found_users}",
+                description=f"Author archives expose usernames: {', '.join(found_users)}",
                 evidence={"users": "\n".join(f"  • {u}" for u in found_users)},
                 remediation="Redirect /?author=N requests to homepage. Add rewrite rules in .htaccess or nginx config.",
                 references=[],
@@ -203,11 +204,13 @@ class UsersModule(ScanModule):
                 name = (creator_el.text or "").strip()
                 if name and name not in creators:
                     creators.append(name)
-                    # dc:creator is display_name, not username — store as display_name
-                    if not any(u.display_name == name for u in ctx.users):
+                    # dc:creator is display_name, not username — synthesize username
+                    # F-4: dedup by synthesized username, not display_name
+                    synthesized_username = name.lower().replace(" ", "")
+                    if not any(u.username.lower() == synthesized_username.lower() for u in ctx.users):
                         ctx.add_user(User(
                             id=None,
-                            username=name.lower().replace(" ", ""),
+                            username=synthesized_username,
                             display_name=name,
                             source="rss_feed",
                         ))

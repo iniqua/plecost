@@ -35,6 +35,7 @@ Findings (AC-14):
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from plecost.engine.context import ScanContext
@@ -139,14 +140,15 @@ class BruteForceModule(ScanModule):
             return
 
         # ---------------------------------------------------------------- #
+        # Check for 2FA (AC-12) — only called when there are usernames     #
+        # F-7: moved AFTER the early return for no users                   #
+        # ---------------------------------------------------------------- #
+        has_2fa = await self._check_2fa(ctx, http)
+
+        # ---------------------------------------------------------------- #
         # Build password list (AC-9, AC-10)                                #
         # ---------------------------------------------------------------- #
         passwords = await self._build_password_list(ctx, usernames)
-
-        # ---------------------------------------------------------------- #
-        # Check for 2FA (AC-12)                                            #
-        # ---------------------------------------------------------------- #
-        has_2fa = await self._check_2fa(ctx, http)
 
         # ---------------------------------------------------------------- #
         # Brute force loop                                                  #
@@ -204,8 +206,9 @@ class BruteForceModule(ScanModule):
         # Emit findings                                                     #
         # ---------------------------------------------------------------- #
         if rate_limited and not found_credentials:
+            # F-3: use PC-BRU-007 for rate-limiting (distinct from PC-BRU-003 = no users)
             ctx.add_finding(Finding(
-                id="PC-BRU-003", remediation_id="REM-BRU-003",
+                id="PC-BRU-007", remediation_id="REM-BRU-007",
                 title="Brute force stopped — rate limiting detected",
                 severity=Severity.INFO,
                 description="The brute force attempt was stopped because the target appears to be rate-limiting login attempts.",
@@ -380,9 +383,16 @@ class BruteForceModule(ScanModule):
 
 
 def _load_wordlist(path: str, limit: int) -> list[str]:
-    """Load a wordlist file synchronously (called via asyncio.to_thread)."""
+    """Load a wordlist file synchronously (called via asyncio.to_thread).
+
+    F-1: Validates the path is a regular file before opening to prevent
+    path traversal attacks (e.g. --brute-force-wordlist /etc/shadow).
+    """
+    resolved = Path(path).resolve()
+    if not resolved.is_file():
+        raise ValueError(f"Wordlist path is not a regular file: {path}")
     passwords: list[str] = []
-    with open(path, encoding="utf-8", errors="ignore") as fh:
+    with resolved.open(encoding="utf-8", errors="ignore") as fh:
         for line in fh:
             pw = line.rstrip("\n\r")
             if pw:

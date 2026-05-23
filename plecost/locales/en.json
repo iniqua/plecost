@@ -154,15 +154,10 @@
       "description": "Brute force completed without finding valid credentials.",
       "remediation": "Continue enforcing strong password policies and account lockout."
     },
-    "pc_bru_005": {
-      "title": "Brute force rate limit detected",
+    "pc_bru_007": {
+      "title": "Brute force stopped — rate limiting detected",
       "description": "The target rate-limited or blocked brute force login attempts.",
-      "remediation": "Rate limiting is a positive security control."
-    },
-    "pc_bru_006": {
-      "title": "Brute force wordlist loaded from external file",
-      "description": "An external wordlist was loaded for the brute force module.",
-      "remediation": "No action required."
+      "remediation": "Rate limiting is a positive security control. Ensure it is properly configured."
     },
     "pc_xmlrpc_001": {
       "title": "XML-RPC endpoint is accessible",
