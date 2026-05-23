@@ -27,6 +27,7 @@ from plecost.modules.wp_ecommerce import WPECommerceModule
 from plecost.modules.magecart import MagecartModule
 from plecost.modules.webshells import WebshellsModule
 from plecost.modules.cves import CVEsModule
+from plecost.modules.brute_force import BruteForceModule
 from plecost.modules.base import ScanModule
 from plecost.models import Finding
 
@@ -83,7 +84,11 @@ class Scanner:
                 deep=self._opts.deep,
                 output=self._opts.output,
                 module_options=self._opts.module_options,
-                db_url=self._opts.db_url,  # AC-8: propagate db_url to each per-target scan
+                db_url=self._opts.db_url,
+                # AC-17: propagate brute force fields to each per-target scan
+                brute_force=self._opts.brute_force,
+                brute_force_wordlist=self._opts.brute_force_wordlist,
+                brute_force_combine=self._opts.brute_force_combine,
             )
             scanner = Scanner(opts)
             result = await scanner.run()
@@ -129,6 +134,7 @@ class Scanner:
             WPECommerceModule(),
             MagecartModule(store),  # store puede ser None si DB no disponible
             WebshellsModule(),
+            BruteForceModule(),
         ]
         if cve_mod:
             modules.append(cve_mod)
