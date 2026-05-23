@@ -22,6 +22,7 @@ _ALL_MODULE_NAMES = [
     "wp_ecommerce",
     "magecart",
     "webshells",
+    "brute_force",
 ]
 
 
@@ -69,6 +70,9 @@ def scan(
         ),
     ),
     lang: Optional[str] = typer.Option(None, "--lang", "-L", help="Language for output (en, es). Overrides PLECOST_LANG env var and system locale.", envvar="PLECOST_LANG"),
+    brute_force: bool = typer.Option(False, "--brute-force", help="Enable brute force login attacks (requires discovered usernames)"),
+    brute_force_wordlist: Optional[str] = typer.Option(None, "--brute-force-wordlist", help="Path to external password wordlist for brute force"),
+    brute_force_combine: bool = typer.Option(False, "--brute-force-combine", help="Combine external wordlist with internal password list"),
 ) -> None:
     """Scan a WordPress site for security vulnerabilities."""
     if lang:
@@ -122,6 +126,9 @@ def scan(
             output=output,
             db_url=db_url,
             module_options=_parse_module_options(module_option),
+            brute_force=brute_force,
+            brute_force_wordlist=brute_force_wordlist,
+            brute_force_combine=brute_force_combine,
         )
 
         display = None
@@ -812,6 +819,84 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
             "https://blog.sucuri.net/2020/01/webshell-in-fake-plugin-blnmrpb-directory.html",
         ],
         "remediation_id": "REM-WSH-300",
+    },
+    # ------------------------------------------------------------------ #
+    # Users module extra findings (AC-3, AC-4, AC-5)                     #
+    # ------------------------------------------------------------------ #
+    "PC-USR-003": {
+        "title": "User enumeration via WordPress sitemap",
+        "severity": "INFO",
+        "description": "The WordPress user sitemap (/wp-sitemap-users-1.xml) exposes usernames.",
+        "remediation": "Disable the user sitemap via add_filter('wp_sitemaps_add_provider', ...).",
+        "references": [],
+        "remediation_id": "REM-USR-003",
+    },
+    "PC-USR-004": {
+        "title": "User enumeration via RSS feed",
+        "severity": "MEDIUM",
+        "description": "RSS feed exposes author display names via the dc:creator element.",
+        "remediation": "Remove author information from RSS feeds.",
+        "references": [],
+        "remediation_id": "REM-USR-004",
+    },
+    "PC-USR-005": {
+        "title": "User enumeration via Yoast author sitemap",
+        "severity": "INFO",
+        "description": "The Yoast SEO author sitemap (/author-sitemap.xml) exposes usernames.",
+        "remediation": "Disable author sitemaps in Yoast SEO settings.",
+        "references": [],
+        "remediation_id": "REM-USR-005",
+    },
+    # ------------------------------------------------------------------ #
+    # Brute force module findings (AC-12, AC-14)                         #
+    # ------------------------------------------------------------------ #
+    "PC-BRU-001": {
+        "title": "Valid WordPress credentials found via brute force",
+        "severity": "CRITICAL",
+        "description": "Brute force attack found valid credential pairs for WordPress login.",
+        "remediation": "Change all found passwords immediately. Enable 2FA. Implement account lockout.",
+        "references": ["https://wordpress.org/support/article/brute-force-attacks/"],
+        "remediation_id": "REM-BRU-001",
+    },
+    "PC-BRU-002": {
+        "title": "2FA detected on WordPress login",
+        "severity": "INFO",
+        "description": "Two-factor authentication was detected on the login page.",
+        "remediation": "Keep 2FA enabled and enforce it for all users.",
+        "references": [],
+        "remediation_id": "REM-BRU-002",
+    },
+    "PC-BRU-003": {
+        "title": "Brute force stopped or skipped",
+        "severity": "INFO",
+        "description": "Brute force was stopped due to rate limiting or skipped due to no usernames found.",
+        "remediation": "Rate limiting is a positive control. Ensure it is properly configured.",
+        "references": [],
+        "remediation_id": "REM-BRU-003",
+    },
+    "PC-BRU-004": {
+        "title": "Brute force completed — no valid credentials found",
+        "severity": "INFO",
+        "description": "Brute force completed without finding valid credentials.",
+        "remediation": "Continue enforcing strong password policies and account lockout.",
+        "references": [],
+        "remediation_id": "REM-BRU-004",
+    },
+    "PC-BRU-005": {
+        "title": "Brute force rate limit detected",
+        "severity": "INFO",
+        "description": "The target rate-limited or blocked brute force login attempts.",
+        "remediation": "Rate limiting is a positive security control.",
+        "references": [],
+        "remediation_id": "REM-BRU-005",
+    },
+    "PC-BRU-006": {
+        "title": "Brute force wordlist loaded from external file",
+        "severity": "INFO",
+        "description": "An external wordlist was loaded for the brute force module.",
+        "remediation": "No action required.",
+        "references": [],
+        "remediation_id": "REM-BRU-006",
     },
 }
 

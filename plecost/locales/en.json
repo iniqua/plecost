@@ -72,7 +72,8 @@
         "waf": "Detect WAF/CDN (Cloudflare, Sucuri, etc.)",
         "plugins": "Enumerate plugins (passive + brute-force)",
         "themes": "Enumerate themes (passive + brute-force)",
-        "users": "Enumerate users (REST API, author archives)",
+        "users": "Enumerate users (REST API, author archives, sitemaps, RSS, oEmbed, HTML)",
+        "brute_force": "Brute force WordPress login (requires --brute-force flag)",
         "xmlrpc": "Check XML-RPC security (pingback, multicall)",
         "rest_api": "Check REST API exposure and misconfigs",
         "misconfigs": "Check for exposed sensitive files",
@@ -117,6 +118,51 @@
       "title": "User enumeration via author archives",
       "description": "WordPress author archive URLs (/?author=N) redirect to /author/username/, exposing valid usernames.",
       "remediation": "Redirect /?author=N to homepage. Add rewrite rules or use a security plugin."
+    },
+    "pc_usr_003": {
+      "title": "User enumeration via WordPress sitemap",
+      "description": "The WordPress user sitemap (/wp-sitemap-users-1.xml) exposes usernames.",
+      "remediation": "Disable the user sitemap: add_filter('wp_sitemaps_add_provider', function($p, $name){ if ($name==='users') return false; return $p; }, 10, 2);"
+    },
+    "pc_usr_004": {
+      "title": "User enumeration via RSS feed",
+      "description": "RSS feed exposes author display names via the dc:creator element.",
+      "remediation": "Remove author information from RSS feeds by filtering the dc:creator field."
+    },
+    "pc_usr_005": {
+      "title": "User enumeration via Yoast author sitemap",
+      "description": "The Yoast SEO author sitemap (/author-sitemap.xml) exposes usernames.",
+      "remediation": "Disable author sitemaps in Yoast SEO settings: SEO > XML Sitemaps > Author sitemap."
+    },
+    "pc_bru_001": {
+      "title": "Valid WordPress credentials found via brute force",
+      "description": "Brute force attack found valid credential pairs for WordPress login.",
+      "remediation": "Change all found passwords immediately. Enable 2FA. Implement account lockout and IP-based rate limiting."
+    },
+    "pc_bru_002": {
+      "title": "2FA detected on WordPress login",
+      "description": "Two-factor authentication was detected on the login page. Valid credentials alone are insufficient for login.",
+      "remediation": "Keep 2FA enabled and enforce it for all users."
+    },
+    "pc_bru_003": {
+      "title": "Brute force stopped or skipped",
+      "description": "Brute force was stopped due to rate limiting or skipped due to no usernames found.",
+      "remediation": "Rate limiting is a positive security control. Ensure it is properly configured."
+    },
+    "pc_bru_004": {
+      "title": "Brute force completed — no valid credentials found",
+      "description": "Brute force completed without finding valid credentials.",
+      "remediation": "Continue enforcing strong password policies and account lockout."
+    },
+    "pc_bru_005": {
+      "title": "Brute force rate limit detected",
+      "description": "The target rate-limited or blocked brute force login attempts.",
+      "remediation": "Rate limiting is a positive security control."
+    },
+    "pc_bru_006": {
+      "title": "Brute force wordlist loaded from external file",
+      "description": "An external wordlist was loaded for the brute force module.",
+      "remediation": "No action required."
     },
     "pc_xmlrpc_001": {
       "title": "XML-RPC endpoint is accessible",
