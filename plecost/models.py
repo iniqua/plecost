@@ -74,6 +74,7 @@ _CATEGORY_EXACT: dict[str, str] = {
 _CATEGORY_PREFIXES: list[tuple[str, str]] = [
     ("PC-DIR-",   "directory_listing"),
     ("PC-USR-",   "user_enumeration"),
+    ("PC-BRU-",   "brute_force"),
     ("PC-XMLRPC-","xmlrpc"),
     ("PC-REST-",  "rest_api_exposure"),
     ("PC-WAF-",   "waf_detected"),
@@ -243,3 +244,7 @@ class ScanOptions:
     output: str | None = None
     db_url: str | None = None  # None = default SQLite at ~/.plecost/db/plecost.db
     module_options: dict[str, dict[str, str]] = field(default_factory=dict)
+    # Brute force options (AC-16)
+    brute_force: bool = False
+    brute_force_wordlist: str | None = None
+    brute_force_combine: bool = False
