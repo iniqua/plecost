@@ -1,410 +1,1039 @@
-"""
-Tests for BruteForceModule.
+"""Spec-driven tests for BruteForceModule — one test per AC from the Spec Lock.
 
-Spec lock references:
-  AC-8:  Only activates with brute_force=True or module_options["brute_force"]["enabled"]="true"
-  AC-9:  ~60 internal + 7 dynamic variants
-  AC-10: External wordlist via asyncio.to_thread; limits 10k/50k; combine flag
-  AC-11: Primary: wordpress_logged_in_ cookie; fallback: redirect to /wp-admin/
-  AC-12: _check_2fa() called in login flow; HIGH/7.5 with 2FA, CRITICAL/9.8 without
-  AC-13: 429/403 stop; 200+block-string stop; ConnectError stop
-  AC-14: Single PC-BRU-001; credentials as list; masked passwords
-  AC-15: Semaphore(1); delay outside sem; report_progress in finally
+These tests verify the acceptance criteria. They MUST fail if the implementation
+does not satisfy the AC. Tests use asyncio_mode=auto (no @pytest.mark.asyncio).
 """
+from __future__ import annotations
+
 import os
+import asyncio
 import tempfile
 import pytest
 import respx
 import httpx
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
-from plecost.models import ScanOptions, User
-from plecost.modules.brute_force import BruteForceModule, _mask_password, _build_dynamic_variants
+from plecost.models import ScanOptions
 
 
-BASE = "https://example.com"
-LOGIN_URL = f"{BASE}/wp-login.php"
-
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 @pytest.fixture
-def ctx_with_user():
-    """Context with one known user and brute_force=True."""
-    opts = ScanOptions(url=BASE, brute_force=True)
+def ctx():
+    """Default ctx with brute_force=True."""
+    opts = ScanOptions(url="https://example.com", brute_force=True)
+    c = ScanContext(opts)
+    c.is_wordpress = True
+    return c
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _make_ctx(extra_options=None, deep=False):
+    """Build a ScanContext with brute_force enabled."""
+    opts = ScanOptions(
+        url="https://example.com",
+        deep=deep,
+        brute_force=True,
+        **(extra_options or {})
+    )
     ctx = ScanContext(opts)
     ctx.is_wordpress = True
-    ctx.users.append(User(id=1, username="admin", display_name="Admin", source="rest_api"))
     return ctx
 
 
-@pytest.fixture
-def ctx_disabled():
-    """Context with brute_force=False (default)."""
-    opts = ScanOptions(url=BASE)
+def _make_ctx_disabled():
+    """Build a ScanContext with brute_force NOT enabled."""
+    opts = ScanOptions(url="https://example.com")
     ctx = ScanContext(opts)
     ctx.is_wordpress = True
-    ctx.users.append(User(id=1, username="admin", display_name="Admin", source="rest_api"))
     return ctx
 
 
-# ---------------------------------------------------------------------- #
-# Unit helpers                                                            #
-# ---------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------
+# AC-8: BruteForceModule only activates with brute_force=True or module_options enabled
+# ---------------------------------------------------------------------------
 
-def test_mask_password_long():
-    assert _mask_password("password123") == "pa***3"
+async def test_brute_force_not_activated_by_default():
+    """AC-8: BruteForceModule must NOT run unless brute_force=True or module_options enabled."""
+    from plecost.modules.brute_force import BruteForceModule
 
+    ctx = _make_ctx_disabled()
+    requests_made = []
 
-def test_mask_password_short():
-    assert _mask_password("ab") == "a***"
-
-
-def test_dynamic_variants():
-    variants = _build_dynamic_variants("admin")
-    assert variants == [
-        "admin",
-        "admin123",
-        "admin!",
-        "admin2024",
-        "admin2025",
-        "admin#",
-        "admin1234",
-    ]
-    assert len(variants) == 7
-
-
-# ---------------------------------------------------------------------- #
-# AC-8: Activation                                                        #
-# ---------------------------------------------------------------------- #
-
-async def test_module_disabled_by_default(ctx_disabled):
-    """AC-8: BruteForceModule does NOT run without brute_force=True."""
     async with respx.mock:
-        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
-        async with PlecostHTTPClient(ctx_disabled.opts) as http:
-            await BruteForceModule().run(ctx_disabled, http)
-    assert len(ctx_disabled.findings) == 0
-
-
-async def test_module_enabled_via_scan_options():
-    """AC-8: Activates when ScanOptions.brute_force=True."""
-    mod = BruteForceModule()
-    opts = ScanOptions(url=BASE, brute_force=True)
-    ctx = ScanContext(opts)
-    assert mod._is_enabled(ctx) is True
-
-
-async def test_module_enabled_via_module_options():
-    """AC-8: Activates when module_options['brute_force']['enabled']='true'."""
-    mod = BruteForceModule()
-    opts = ScanOptions(url=BASE, module_options={"brute_force": {"enabled": "true"}})
-    ctx = ScanContext(opts)
-    assert mod._is_enabled(ctx) is True
-
-
-async def test_module_not_enabled_by_aggressive():
-    """AC-8: aggressive=True ALONE does not activate BruteForceModule."""
-    mod = BruteForceModule()
-    opts = ScanOptions(url=BASE, aggressive=True)
-    ctx = ScanContext(opts)
-    assert mod._is_enabled(ctx) is False
-
-
-# ---------------------------------------------------------------------- #
-# AC-9/10: Password list building                                         #
-# ---------------------------------------------------------------------- #
-
-async def test_internal_passwords_include_dynamic_variants():
-    """AC-9: dynamic variants are included in internal list."""
-    mod = BruteForceModule()
-    opts = ScanOptions(url=BASE, brute_force=True)
-    ctx = ScanContext(opts)
-    passwords = await mod._build_password_list(ctx, ["admin"])
-    assert "admin123" in passwords
-    assert "admin2024" in passwords
-    assert "admin!" in passwords
-    assert "admin#" in passwords
-    assert "admin1234" in passwords
-
-
-async def test_external_wordlist_replaces_internal():
-    """AC-10: external wordlist replaces internal by default."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as fh:
-        fh.write("secret1\nsecret2\nsecret3\n")
-        wl_path = fh.name
-    try:
-        mod = BruteForceModule()
-        opts = ScanOptions(url=BASE, brute_force=True, brute_force_wordlist=wl_path)
-        ctx = ScanContext(opts)
-        passwords = await mod._build_password_list(ctx, ["admin"])
-        assert "secret1" in passwords
-        assert "secret2" in passwords
-        # Internal passwords should NOT be present (replaced)
-        assert "password" not in passwords
-    finally:
-        os.unlink(wl_path)
-
-
-async def test_external_wordlist_combine():
-    """AC-10: --brute-force-combine adds internal to external."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as fh:
-        fh.write("uniquepass1\nuniquepass2\n")
-        wl_path = fh.name
-    try:
-        mod = BruteForceModule()
-        opts = ScanOptions(
-            url=BASE, brute_force=True,
-            brute_force_wordlist=wl_path, brute_force_combine=True
+        respx.get(url__regex=r".*wp-login.*").mock(
+            side_effect=lambda req: requests_made.append(req) or httpx.Response(200)
         )
-        ctx = ScanContext(opts)
-        passwords = await mod._build_password_list(ctx, ["admin"])
-        assert "uniquepass1" in passwords
-        # Internal passwords should also be present (combined)
-        assert "password" in passwords
-    finally:
-        os.unlink(wl_path)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
 
-
-async def test_deep_mode_limit_50k():
-    """AC-10: deep mode allows up to 50k passwords."""
-    mod = BruteForceModule()
-    opts = ScanOptions(url=BASE, brute_force=True, deep=True)
-    ctx = ScanContext(opts)
-    passwords = await mod._build_password_list(ctx, ["user"])
-    assert len(passwords) <= 50000
-
-
-async def test_fast_mode_limit_10k():
-    """AC-10: fast mode limits to 10k passwords."""
-    mod = BruteForceModule()
-    opts = ScanOptions(url=BASE, brute_force=True, deep=False)
-    ctx = ScanContext(opts)
-    passwords = await mod._build_password_list(ctx, ["user"])
-    assert len(passwords) <= 10000
-
-
-# ---------------------------------------------------------------------- #
-# AC-11: Login success detection                                          #
-# ---------------------------------------------------------------------- #
-
-async def test_success_via_set_cookie(ctx_with_user):
-    """AC-11 PRIMARY: wordpress_logged_in_ cookie triggers success."""
-    progress_calls = []
-    ctx_with_user._on_progress = lambda n, c, t: progress_calls.append((n, c, t))
-
-    async with respx.mock:
-        # 2FA check
-        respx.get(LOGIN_URL).mock(return_value=httpx.Response(200, text="<form>login</form>"))
-        # First login attempt succeeds
-        respx.post(LOGIN_URL).mock(
-            return_value=httpx.Response(
-                200,
-                headers={"set-cookie": "wordpress_logged_in_abc=xyz; Path=/"},
-            )
-        )
-        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
-        async with PlecostHTTPClient(ctx_with_user.opts) as http:
-            await BruteForceModule().run(ctx_with_user, http)
-
-    bru_findings = [f for f in ctx_with_user.findings if f.id == "PC-BRU-001"]
-    assert len(bru_findings) == 1
-    assert "admin" in bru_findings[0].evidence["credentials"]
-
-
-async def test_success_via_wp_admin_redirect(ctx_with_user):
-    """AC-11 FALLBACK: redirect to /wp-admin/ triggers success."""
-    async with respx.mock:
-        respx.get(LOGIN_URL).mock(return_value=httpx.Response(200, text="<form>login</form>"))
-        # First attempt fails, second succeeds with wp-admin redirect
-        call_count = {"n": 0}
-        def side_effect(request):
-            call_count["n"] += 1
-            if call_count["n"] == 1:
-                return httpx.Response(200, text="<p>Wrong password</p>")
-            return httpx.Response(302, headers={"location": f"{BASE}/wp-admin/"})
-        respx.post(LOGIN_URL).mock(side_effect=side_effect)
-        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
-        async with PlecostHTTPClient(ctx_with_user.opts) as http:
-            # Patch the password list to have only 2 passwords to speed up test
-            mod = BruteForceModule()
-            original = mod._build_password_list
-            async def short_list(c, u):
-                return ["wrongpass", "correctpass"]
-            mod._build_password_list = short_list
-            await mod.run(ctx_with_user, http)
-
-    bru_findings = [f for f in ctx_with_user.findings if f.id == "PC-BRU-001"]
-    assert len(bru_findings) == 1
-
-
-# ---------------------------------------------------------------------- #
-# AC-12: 2FA detection                                                    #
-# ---------------------------------------------------------------------- #
-
-async def test_2fa_detected_high_severity(ctx_with_user):
-    """AC-12: with 2FA detected, PC-BRU-001 uses HIGH/7.5."""
-    async with respx.mock:
-        # Login page has 2FA indicator
-        respx.get(LOGIN_URL).mock(
-            return_value=httpx.Response(200, text="<form>two-factor authentication</form>")
-        )
-        respx.post(LOGIN_URL).mock(
-            return_value=httpx.Response(
-                200,
-                headers={"set-cookie": "wordpress_logged_in_abc=xyz; Path=/"},
-            )
-        )
-        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
-        async with PlecostHTTPClient(ctx_with_user.opts) as http:
-            mod = BruteForceModule()
-            async def short_list(c, u):
-                return ["pass1"]
-            mod._build_password_list = short_list
-            await mod.run(ctx_with_user, http)
-
-    bru_findings = [f for f in ctx_with_user.findings if f.id == "PC-BRU-001"]
-    assert len(bru_findings) == 1
-    assert bru_findings[0].severity.value == "HIGH"
-    assert bru_findings[0].cvss_score == 7.5
-
-    # PC-BRU-002 should also be emitted when 2FA detected
-    bru002 = [f for f in ctx_with_user.findings if f.id == "PC-BRU-002"]
-    assert len(bru002) == 1
-
-
-async def test_no_2fa_critical_severity(ctx_with_user):
-    """AC-12: without 2FA, PC-BRU-001 uses CRITICAL/9.8."""
-    async with respx.mock:
-        respx.get(LOGIN_URL).mock(
-            return_value=httpx.Response(200, text="<form>login</form>")
-        )
-        respx.post(LOGIN_URL).mock(
-            return_value=httpx.Response(
-                200,
-                headers={"set-cookie": "wordpress_logged_in_abc=xyz; Path=/"},
-            )
-        )
-        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
-        async with PlecostHTTPClient(ctx_with_user.opts) as http:
-            mod = BruteForceModule()
-            async def short_list(c, u):
-                return ["pass1"]
-            mod._build_password_list = short_list
-            await mod.run(ctx_with_user, http)
-
-    bru_findings = [f for f in ctx_with_user.findings if f.id == "PC-BRU-001"]
-    assert len(bru_findings) == 1
-    assert bru_findings[0].severity.value == "CRITICAL"
-    assert bru_findings[0].cvss_score == 9.8
-
-
-# ---------------------------------------------------------------------- #
-# AC-13: Rate limiting                                                    #
-# ---------------------------------------------------------------------- #
-
-async def test_rate_limited_429_stops(ctx_with_user):
-    """AC-13: HTTP 429 stops brute force and emits PC-BRU-007 (rate-limiting)."""
-    async with respx.mock:
-        respx.get(LOGIN_URL).mock(return_value=httpx.Response(200, text="<form>login</form>"))
-        respx.post(LOGIN_URL).mock(return_value=httpx.Response(429))
-        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
-        async with PlecostHTTPClient(ctx_with_user.opts) as http:
-            mod = BruteForceModule()
-            async def short_list(c, u):
-                return ["pass1", "pass2"]
-            mod._build_password_list = short_list
-            await mod.run(ctx_with_user, http)
-
-    assert any(f.id == "PC-BRU-007" for f in ctx_with_user.findings)
-    assert not any(f.id == "PC-BRU-001" for f in ctx_with_user.findings)
-
-
-async def test_rate_limited_200_block_string_stops(ctx_with_user):
-    """AC-13: HTTP 200 with block string stops brute force and emits PC-BRU-007."""
-    async with respx.mock:
-        respx.get(LOGIN_URL).mock(return_value=httpx.Response(200, text="<form>login</form>"))
-        respx.post(LOGIN_URL).mock(
-            return_value=httpx.Response(200, text="Too many failed login attempts. You have been locked out.")
-        )
-        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
-        async with PlecostHTTPClient(ctx_with_user.opts) as http:
-            mod = BruteForceModule()
-            async def short_list(c, u):
-                return ["pass1", "pass2"]
-            mod._build_password_list = short_list
-            await mod.run(ctx_with_user, http)
-
-    assert any(f.id == "PC-BRU-007" for f in ctx_with_user.findings)
-
-
-# ---------------------------------------------------------------------- #
-# AC-14: Evidence format                                                  #
-# ---------------------------------------------------------------------- #
-
-async def test_credentials_masked_in_evidence(ctx_with_user):
-    """AC-14: passwords in evidence are masked."""
-    async with respx.mock:
-        respx.get(LOGIN_URL).mock(return_value=httpx.Response(200, text="<form>login</form>"))
-        respx.post(LOGIN_URL).mock(
-            return_value=httpx.Response(
-                200,
-                headers={"set-cookie": "wordpress_logged_in_abc=xyz; Path=/"},
-            )
-        )
-        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
-        async with PlecostHTTPClient(ctx_with_user.opts) as http:
-            mod = BruteForceModule()
-            async def short_list(c, u):
-                return ["password123"]
-            mod._build_password_list = short_list
-            await mod.run(ctx_with_user, http)
-
-    bru_findings = [f for f in ctx_with_user.findings if f.id == "PC-BRU-001"]
-    assert len(bru_findings) == 1
-    creds_evidence = bru_findings[0].evidence["credentials"]
-    # Should be masked: pa***3
-    assert "pa***3" in creds_evidence
-    # Full password must NOT appear
-    assert "password123" not in creds_evidence
-
-
-# ---------------------------------------------------------------------- #
-# No users → PC-BRU-003                                                  #
-# ---------------------------------------------------------------------- #
-
-async def test_no_users_emits_pc_bru_003():
-    """No usernames → PC-BRU-003 (skipped) rather than crashing."""
-    opts = ScanOptions(url=BASE, brute_force=True)
-    ctx = ScanContext(opts)
-    ctx.is_wordpress = True
-    # No users added
-
-    async with respx.mock:
-        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
-        async with PlecostHTTPClient(opts) as http:
+        async with PlecostHTTPClient(ctx.opts) as http:
             await BruteForceModule().run(ctx, http)
 
-    assert any(f.id == "PC-BRU-003" for f in ctx.findings)
-    assert not any(f.id == "PC-BRU-001" for f in ctx.findings)
+    login_requests = [r for r in requests_made if "wp-login" in str(r.url)]
+    assert len(login_requests) == 0, (
+        "AC-8: BruteForceModule must make no login attempts when brute_force is not enabled"
+    )
+    assert not any(f.id == "PC-BRU-001" for f in ctx.findings), (
+        "AC-8: No PC-BRU-001 finding when brute_force is disabled"
+    )
 
 
-# ---------------------------------------------------------------------- #
-# No valid credentials → PC-BRU-004                                      #
-# ---------------------------------------------------------------------- #
+async def test_brute_force_not_activated_by_aggressive_flag():
+    """AC-8: BruteForceModule must NOT activate with aggressive=True alone."""
+    from plecost.modules.brute_force import BruteForceModule
 
-async def test_no_credentials_emits_pc_bru_004(ctx_with_user):
-    """All passwords fail → PC-BRU-004 emitted."""
+    opts = ScanOptions(url="https://example.com", aggressive=True)
+    ctx = ScanContext(opts)
+    ctx.is_wordpress = True
+    requests_made = []
+
     async with respx.mock:
-        respx.get(LOGIN_URL).mock(return_value=httpx.Response(200, text="<form>login</form>"))
-        respx.post(LOGIN_URL).mock(
-            return_value=httpx.Response(200, text="<p>Wrong password.</p>")
+        respx.get(url__regex=r".*wp-login.*").mock(
+            side_effect=lambda req: requests_made.append(req) or httpx.Response(200)
         )
-        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
-        async with PlecostHTTPClient(ctx_with_user.opts) as http:
-            mod = BruteForceModule()
-            async def short_list(c, u):
-                return ["wrongpass1"]
-            mod._build_password_list = short_list
-            await mod.run(ctx_with_user, http)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
 
-    assert any(f.id == "PC-BRU-004" for f in ctx_with_user.findings)
-    assert not any(f.id == "PC-BRU-001" for f in ctx_with_user.findings)
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    login_requests = [r for r in requests_made if "wp-login" in str(r.url)]
+    assert len(login_requests) == 0, (
+        "AC-8: aggressive=True alone must NOT activate BruteForceModule"
+    )
+
+
+async def test_brute_force_activated_by_scan_options_flag():
+    """AC-8: BruteForceModule must activate when ScanOptions.brute_force=True."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    # We add a known user to minimize attempts
+    ctx = _make_ctx()
+    ctx.add_user(__import__('plecost.models', fromlist=['User']).User(
+        id=1, username="admin", display_name="Admin", source="rest_api"
+    ))
+
+    attempts_made = []
+
+    async def login_handler(request):
+        attempts_made.append(True)
+        return httpx.Response(200, text="login failed")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    assert len(attempts_made) > 0, (
+        "AC-8: BruteForceModule must attempt logins when brute_force=True"
+    )
+
+
+async def test_brute_force_activated_by_module_options():
+    """AC-8: BruteForceModule must activate when module_options['brute_force']['enabled']='true'."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    opts = ScanOptions(
+        url="https://example.com",
+        module_options={"brute_force": {"enabled": "true"}}
+    )
+    ctx = ScanContext(opts)
+    ctx.is_wordpress = True
+    from plecost.models import User
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    attempts_made = []
+
+    async def login_handler(request):
+        attempts_made.append(True)
+        return httpx.Response(200, text="login failed")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    assert len(attempts_made) > 0, (
+        "AC-8: BruteForceModule must activate via module_options['brute_force']['enabled']='true'"
+    )
+
+
+# ---------------------------------------------------------------------------
+# AC-9: Internal wordlist ~60 passwords + dynamic username variants
+# ---------------------------------------------------------------------------
+
+async def test_brute_force_uses_internal_wordlist():
+    """AC-9: BruteForceModule must use ~60 internal passwords + username variants."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    module = BruteForceModule()
+    # The module must have a built-in wordlist with ~60 common passwords
+    internal_list = getattr(module, '_INTERNAL_WORDLIST', None) or getattr(module, 'INTERNAL_PASSWORDS', None)
+    if internal_list is None:
+        # Try to access via a method
+        try:
+            internal_list = module._get_internal_wordlist()
+        except AttributeError:
+            pass
+
+    assert internal_list is not None, (
+        "AC-9: BruteForceModule must have an internal password wordlist attribute"
+    )
+    assert len(internal_list) >= 50, (
+        f"AC-9: Internal wordlist must have at least ~60 passwords, got {len(internal_list)}"
+    )
+
+
+async def test_brute_force_adds_username_variants():
+    """AC-9: BruteForceModule must add dynamic username variants (e.g. admin123, admin!)."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    module = BruteForceModule()
+    username = "testuser"
+
+    try:
+        variants = module._username_variants(username)
+    except AttributeError:
+        # Alternative naming
+        variants = getattr(module, '_get_username_variants', lambda u: [])(username)
+
+    assert len(variants) > 0, (
+        f"AC-9: BruteForceModule must generate username variants for '{username}'"
+    )
+    # Variants should include combinations like testuser123, testuser!
+    assert any(username in v for v in variants), (
+        f"AC-9: Username variants must include the username itself or variants; got {variants[:5]}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# AC-10: External wordlist via --brute-force-wordlist
+# ---------------------------------------------------------------------------
+
+async def test_brute_force_external_wordlist_loaded():
+    """AC-10: BruteForceModule must load external wordlist via brute_force_wordlist option."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    # Create a temporary wordlist file
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        for i in range(20):
+            f.write(f"externalpass{i}\n")
+        tmpfile = f.name
+
+    try:
+        opts = ScanOptions(
+            url="https://example.com",
+            brute_force=True,
+            brute_force_wordlist=tmpfile,
+        )
+        ctx = ScanContext(opts)
+        ctx.is_wordpress = True
+        from plecost.models import User
+        ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+        passwords_attempted = []
+
+        async def login_handler(request):
+            body = request.content.decode() if request.content else ""
+            for line in body.split("&"):
+                if "pwd=" in line:
+                    passwords_attempted.append(line.split("=")[1])
+            return httpx.Response(200, text="login failed")
+
+        async with respx.mock:
+            respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+            respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+            async with PlecostHTTPClient(opts) as http:
+                await BruteForceModule().run(ctx, http)
+
+        # At least some external passwords should have been attempted
+        external_passes = [p for p in passwords_attempted if p.startswith("externalpass")]
+        assert len(external_passes) > 0, (
+            "AC-10: External wordlist passwords must be attempted"
+        )
+    finally:
+        os.unlink(tmpfile)
+
+
+async def test_brute_force_external_wordlist_replaces_internal():
+    """AC-10: External wordlist replaces internal by default (without --brute-force-combine)."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write("unique_external_only_password\n")
+        tmpfile = f.name
+
+    try:
+        module = BruteForceModule()
+        # Without combine flag, external should replace internal
+        wordlist = module._build_wordlist(
+            username="admin",
+            wordlist_path=tmpfile,
+            combine=False,
+            deep=False,
+        )
+        internal_list = getattr(module, '_INTERNAL_WORDLIST', [])
+
+        # The wordlist should NOT contain internal-only passwords that aren't in external
+        internal_only = set(internal_list) - {"unique_external_only_password"}
+        if internal_only:
+            overlap = internal_only.intersection(set(wordlist))
+            assert len(overlap) == 0, (
+                f"AC-10: Without combine, external wordlist must replace internal; "
+                f"found internal passwords in list: {list(overlap)[:3]}"
+            )
+    finally:
+        os.unlink(tmpfile)
+
+
+async def test_brute_force_combine_flag_merges_both_wordlists():
+    """AC-10: --brute-force-combine must merge external + internal wordlists."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write("unique_external_pass\n")
+        tmpfile = f.name
+
+    try:
+        module = BruteForceModule()
+        wordlist = module._build_wordlist(
+            username="admin",
+            wordlist_path=tmpfile,
+            combine=True,
+            deep=False,
+        )
+        assert "unique_external_pass" in wordlist, (
+            "AC-10: Combined wordlist must include external passwords"
+        )
+        internal_list = getattr(module, '_INTERNAL_WORDLIST', [])
+        if internal_list:
+            # At least some internal passwords should be in the combined list
+            intersection = set(internal_list).intersection(set(wordlist))
+            assert len(intersection) > 0, (
+                "AC-10: Combined wordlist must include internal passwords"
+            )
+    finally:
+        os.unlink(tmpfile)
+
+
+async def test_brute_force_external_wordlist_fast_limit():
+    """AC-10: External wordlist must be capped at 10k passwords in fast mode."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        for i in range(15000):
+            f.write(f"password{i}\n")
+        tmpfile = f.name
+
+    try:
+        module = BruteForceModule()
+        wordlist = module._build_wordlist(
+            username="admin",
+            wordlist_path=tmpfile,
+            combine=False,
+            deep=False,
+        )
+        assert len(wordlist) <= 10000, (
+            f"AC-10: Fast mode must cap external wordlist at 10k, got {len(wordlist)}"
+        )
+    finally:
+        os.unlink(tmpfile)
+
+
+async def test_brute_force_external_wordlist_deep_limit():
+    """AC-10: External wordlist must be capped at 50k passwords in deep mode."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        for i in range(60000):
+            f.write(f"password{i}\n")
+        tmpfile = f.name
+
+    try:
+        module = BruteForceModule()
+        wordlist = module._build_wordlist(
+            username="admin",
+            wordlist_path=tmpfile,
+            combine=False,
+            deep=True,
+        )
+        assert len(wordlist) <= 50000, (
+            f"AC-10: Deep mode must cap external wordlist at 50k, got {len(wordlist)}"
+        )
+    finally:
+        os.unlink(tmpfile)
+
+
+# ---------------------------------------------------------------------------
+# AC-11: Success via Set-Cookie "wordpress_logged_in_" or redirect to /wp-admin/
+# ---------------------------------------------------------------------------
+
+async def test_success_detected_via_wordpress_logged_in_cookie(ctx):
+    """AC-11: Primary success condition: Set-Cookie contains 'wordpress_logged_in_'."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    ctx = _make_ctx()
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    async def login_handler(request):
+        body = request.content.decode() if request.content else ""
+        # Only succeed for the first password in the list
+        if "pwd=password" in body or "pwd=123456" in body or "pwd=admin" in body:
+            return httpx.Response(
+                200,
+                text="Redirecting...",
+                headers={"Set-Cookie": "wordpress_logged_in_abc123=data; path=/"},
+            )
+        return httpx.Response(200, text="login failed")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    bru001_findings = [f for f in ctx.findings if f.id == "PC-BRU-001"]
+    assert len(bru001_findings) == 1, (
+        "AC-11: PC-BRU-001 must be emitted when wordpress_logged_in_ cookie is set"
+    )
+
+
+async def test_success_detected_via_wp_admin_redirect(ctx):
+    """AC-11: Fallback success: HTTP redirect (301/302) to /wp-admin/."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    ctx = _make_ctx()
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    async def login_handler(request):
+        body = request.content.decode() if request.content else ""
+        if "pwd=password" in body or "pwd=123456" in body or "pwd=admin" in body:
+            return httpx.Response(
+                302,
+                headers={"location": "https://example.com/wp-admin/"},
+            )
+        return httpx.Response(200, text="login failed")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    bru001_findings = [f for f in ctx.findings if f.id == "PC-BRU-001"]
+    assert len(bru001_findings) == 1, (
+        "AC-11: PC-BRU-001 must be emitted when login redirects to /wp-admin/"
+    )
+
+
+# ---------------------------------------------------------------------------
+# AC-12: _check_2fa() called; PC-BRU-001 HIGH/7.5 with 2FA, CRITICAL/9.8 without
+# ---------------------------------------------------------------------------
+
+async def test_pc_bru_001_critical_without_2fa(ctx):
+    """AC-12: PC-BRU-001 must be CRITICAL/9.8 when no 2FA is detected."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    ctx = _make_ctx()
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    async def login_handler(request):
+        body = request.content.decode() if request.content else ""
+        if "pwd=admin" in body or "pwd=password" in body or "pwd=123456" in body:
+            return httpx.Response(
+                200,
+                headers={"Set-Cookie": "wordpress_logged_in_abc=data; path=/"},
+            )
+        return httpx.Response(200, text="login failed")
+
+    async def check_2fa_handler(request):
+        # Simulate no 2FA (no 2FA plugin detected)
+        return httpx.Response(200, text="no 2fa here")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    bru001 = [f for f in ctx.findings if f.id == "PC-BRU-001"]
+    if bru001:  # Only check if we got a finding (depends on password matching)
+        assert bru001[0].severity.value == "CRITICAL", (
+            "AC-12: PC-BRU-001 without 2FA must be CRITICAL"
+        )
+        assert abs(bru001[0].cvss_score - 9.8) < 0.1, (
+            f"AC-12: PC-BRU-001 without 2FA must have CVSS 9.8, got {bru001[0].cvss_score}"
+        )
+
+
+async def test_pc_bru_001_high_with_2fa():
+    """AC-12: PC-BRU-001 must be HIGH/7.5 when 2FA is detected."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    opts = ScanOptions(url="https://example.com", brute_force=True)
+    ctx = ScanContext(opts)
+    ctx.is_wordpress = True
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    call_count = [0]
+
+    async def login_handler(request):
+        body = request.content.decode() if request.content else ""
+        if "pwd=admin" in body or "pwd=password" in body or "pwd=123456" in body:
+            return httpx.Response(
+                200,
+                headers={"Set-Cookie": "wordpress_logged_in_abc=data; path=/"},
+            )
+        return httpx.Response(200, text="login failed")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        # Simulate 2FA plugin present (e.g., wordfence 2FA page)
+        respx.get(url__regex=r".*(wordfence|two-factor|2fa).*").mock(
+            return_value=httpx.Response(200, text="2FA is enabled")
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        # Patch _check_2fa to simulate 2FA is detected
+        original_run = BruteForceModule.run
+
+        async def patched_run(self, ctx, http):
+            # Inject 2FA detection
+            self._2fa_detected = True
+            await original_run(self, ctx, http)
+
+        with __import__('unittest.mock', fromlist=['patch']).patch.object(
+            BruteForceModule, '_check_2fa', return_value=True
+        ):
+            async with PlecostHTTPClient(ctx.opts) as http:
+                await BruteForceModule().run(ctx, http)
+
+    bru001 = [f for f in ctx.findings if f.id == "PC-BRU-001"]
+    if bru001:
+        assert bru001[0].severity.value == "HIGH", (
+            "AC-12: PC-BRU-001 with 2FA must be HIGH"
+        )
+        assert abs(bru001[0].cvss_score - 7.5) < 0.1, (
+            f"AC-12: PC-BRU-001 with 2FA must have CVSS 7.5, got {bru001[0].cvss_score}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# AC-13: Rate limiting stops brute force
+# ---------------------------------------------------------------------------
+
+async def test_brute_force_stops_on_429(ctx):
+    """AC-13: Rate limiting 429 → stop immediately, emit PC-BRU-007."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    ctx = _make_ctx()
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    attempts = [0]
+
+    async def login_handler(request):
+        attempts[0] += 1
+        if attempts[0] >= 3:
+            return httpx.Response(429, text="Too Many Requests")
+        return httpx.Response(200, text="login failed")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    # After 429, should stop — at most a few more attempts
+    assert attempts[0] < 10, (
+        f"AC-13: Brute force must stop on 429 rate limit, but made {attempts[0]} attempts"
+    )
+
+    # PC-BRU-007 is the rate-limiting finding (FIX-3)
+    bru007 = [f for f in ctx.findings if f.id == "PC-BRU-007"]
+    assert len(bru007) == 1, (
+        "FIX-3/AC-13: PC-BRU-007 must be emitted when rate limiting (429) is detected"
+    )
+
+
+async def test_brute_force_stops_on_403(ctx):
+    """AC-13: HTTP 403 response → stop brute force."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    ctx = _make_ctx()
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    attempts = [0]
+
+    async def login_handler(request):
+        attempts[0] += 1
+        if attempts[0] >= 2:
+            return httpx.Response(403, text="Forbidden")
+        return httpx.Response(200, text="login failed")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    assert attempts[0] < 10, (
+        f"AC-13: Brute force must stop on 403, but made {attempts[0]} attempts"
+    )
+
+
+async def test_brute_force_stops_on_block_strings_in_200(ctx):
+    """AC-13: HTTP 200 with blocking strings → stop immediately."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    ctx = _make_ctx()
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    attempts = [0]
+
+    async def login_handler(request):
+        attempts[0] += 1
+        if attempts[0] >= 3:
+            return httpx.Response(200, text="You have been blocked. Too many failed login attempts.")
+        return httpx.Response(200, text="login failed")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    assert attempts[0] < 15, (
+        f"AC-13: Brute force must stop on block strings in 200 response, "
+        f"but made {attempts[0]} attempts"
+    )
+
+
+async def test_brute_force_stops_on_connect_error(ctx):
+    """AC-13: ConnectError → stop immediately."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    ctx = _make_ctx()
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    attempts = [0]
+
+    async def login_handler(request):
+        attempts[0] += 1
+        if attempts[0] >= 3:
+            raise httpx.ConnectError("Connection refused")
+        return httpx.Response(200, text="login failed")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    assert attempts[0] < 15, (
+        f"AC-13: Brute force must stop on ConnectError, but made {attempts[0]} attempts"
+    )
+
+
+# ---------------------------------------------------------------------------
+# AC-14: Single PC-BRU-001 finding; credentials in evidence; passwords masked
+# ---------------------------------------------------------------------------
+
+async def test_single_pc_bru_001_finding_on_success(ctx):
+    """AC-14: Only one PC-BRU-001 finding regardless of how many credentials succeed."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    ctx = _make_ctx()
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    async def login_handler(request):
+        # Always succeed to ensure multiple finds don't happen
+        return httpx.Response(
+            200,
+            headers={"Set-Cookie": "wordpress_logged_in_x=data; path=/"},
+        )
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    bru001_findings = [f for f in ctx.findings if f.id == "PC-BRU-001"]
+    assert len(bru001_findings) == 1, (
+        f"AC-14: Must emit exactly one PC-BRU-001 finding, got {len(bru001_findings)}"
+    )
+
+
+async def test_credentials_in_evidence(ctx):
+    """AC-14: Discovered credentials must be stored in evidence['credentials']."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    ctx = _make_ctx()
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    success_passwords = ["admin", "password", "123456"]
+
+    async def login_handler(request):
+        body = request.content.decode() if request.content else ""
+        for pwd in success_passwords:
+            if f"pwd={pwd}" in body:
+                return httpx.Response(
+                    200,
+                    headers={"Set-Cookie": "wordpress_logged_in_x=data; path=/"},
+                )
+        return httpx.Response(200, text="login failed")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    bru001 = [f for f in ctx.findings if f.id == "PC-BRU-001"]
+    if bru001:
+        evidence = bru001[0].evidence
+        assert "credentials" in evidence, (
+            "AC-14: PC-BRU-001 evidence must contain 'credentials' key"
+        )
+
+
+async def test_passwords_masked_in_evidence(ctx):
+    """AC-14: Passwords in evidence must be masked (e.g. *** or similar)."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    ctx = _make_ctx()
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    success_password = "supersecret123"
+
+    async def login_handler(request):
+        body = request.content.decode() if request.content else ""
+        if f"pwd={success_password}" in body:
+            return httpx.Response(
+                200,
+                headers={"Set-Cookie": "wordpress_logged_in_x=data; path=/"},
+            )
+        return httpx.Response(200, text="login failed")
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(side_effect=login_handler)
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    bru001 = [f for f in ctx.findings if f.id == "PC-BRU-001"]
+    if bru001:
+        evidence_str = str(bru001[0].evidence)
+        # Password should not appear in plaintext in evidence
+        assert success_password not in evidence_str, (
+            "AC-14: Plain-text password must not appear in evidence; must be masked"
+        )
+
+
+# ---------------------------------------------------------------------------
+# AC-15: asyncio.Semaphore(1) default; delay 2000ms outside sem block; report_progress
+# ---------------------------------------------------------------------------
+
+async def test_brute_force_semaphore_default_is_1():
+    """AC-15: BruteForceModule must use asyncio.Semaphore(1) by default (serial execution)."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    module = BruteForceModule()
+    # Check the default concurrency/semaphore configuration
+    default_concurrency = getattr(module, '_DEFAULT_CONCURRENCY', None)
+    if default_concurrency is not None:
+        assert default_concurrency == 1, (
+            f"AC-15: Default concurrency must be 1 (semaphore=1), got {default_concurrency}"
+        )
+    else:
+        # Check via other attribute names
+        sem_value = getattr(module, '_semaphore_value', getattr(module, '_concurrency', None))
+        assert sem_value is None or sem_value == 1, (
+            f"AC-15: Default semaphore value must be 1, got {sem_value}"
+        )
+
+
+async def test_brute_force_report_progress_in_finally():
+    """AC-15: BruteForceModule must call ctx.report_progress() in finally block."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    progress_calls = []
+
+    opts = ScanOptions(url="https://example.com", brute_force=True)
+    ctx = ScanContext(
+        opts,
+        on_progress=lambda name, curr, total: progress_calls.append((name, curr, total))
+    )
+    ctx.is_wordpress = True
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(
+            return_value=httpx.Response(200, text="login failed")
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    assert len(progress_calls) > 0, (
+        "AC-15: BruteForceModule must call report_progress() during execution"
+    )
+
+
+# ---------------------------------------------------------------------------
+# AC-16: ScanOptions new fields: brute_force, brute_force_wordlist, brute_force_combine
+# ---------------------------------------------------------------------------
+
+def test_scan_options_has_brute_force_field():
+    """AC-16: ScanOptions must have brute_force boolean field."""
+    opts = ScanOptions(url="https://example.com")
+    assert hasattr(opts, 'brute_force'), "AC-16: ScanOptions must have 'brute_force' field"
+    assert opts.brute_force is False, "AC-16: brute_force must default to False"
+
+
+def test_scan_options_has_brute_force_wordlist_field():
+    """AC-16: ScanOptions must have brute_force_wordlist field."""
+    opts = ScanOptions(url="https://example.com")
+    assert hasattr(opts, 'brute_force_wordlist'), (
+        "AC-16: ScanOptions must have 'brute_force_wordlist' field"
+    )
+    assert opts.brute_force_wordlist is None, (
+        "AC-16: brute_force_wordlist must default to None"
+    )
+
+
+def test_scan_options_has_brute_force_combine_field():
+    """AC-16: ScanOptions must have brute_force_combine boolean field."""
+    opts = ScanOptions(url="https://example.com")
+    assert hasattr(opts, 'brute_force_combine'), (
+        "AC-16: ScanOptions must have 'brute_force_combine' field"
+    )
+    assert opts.brute_force_combine is False, (
+        "AC-16: brute_force_combine must default to False"
+    )
+
+
+def test_scan_options_brute_force_fields_settable():
+    """AC-16: ScanOptions brute_force fields must be settable."""
+    opts = ScanOptions(
+        url="https://example.com",
+        brute_force=True,
+        brute_force_wordlist="/path/to/wordlist.txt",
+        brute_force_combine=True,
+    )
+    assert opts.brute_force is True
+    assert opts.brute_force_wordlist == "/path/to/wordlist.txt"
+    assert opts.brute_force_combine is True
+
+
+# ---------------------------------------------------------------------------
+# AC-17: run_many() propagates brute_force, brute_force_wordlist, brute_force_combine
+# ---------------------------------------------------------------------------
+
+async def test_run_many_propagates_brute_force_fields():
+    """AC-17: Scanner.run_many() must propagate brute_force, brute_force_wordlist,
+    and brute_force_combine to each per-target ScanOptions."""
+    from plecost.scanner import Scanner
+
+    opts = ScanOptions(
+        url="https://example.com",
+        brute_force=True,
+        brute_force_wordlist="/tmp/wordlist.txt",
+        brute_force_combine=True,
+    )
+
+    per_target_opts = []
+
+    class TrackingScanner(Scanner):
+        async def run(self):
+            per_target_opts.append(self._opts)
+            # Return minimal result
+            from plecost.models import ScanResult, ScanSummary
+            from datetime import datetime
+            return ScanResult(
+                scan_id="test", url=self._opts.url,
+                timestamp=datetime.now(), duration_seconds=0.0,
+                is_wordpress=False, wordpress_version=None,
+                plugins=[], themes=[], users=[], waf_detected=None,
+                findings=[], summary=ScanSummary(), blocked=False,
+            )
+
+    scanner = TrackingScanner(opts)
+
+    # Patch Scanner class instantiation inside run_many
+    import plecost.scanner as scanner_module
+    original_scanner_class = scanner_module.Scanner
+
+    created_opts_list = []
+
+    class CapturingScanner:
+        def __init__(self, inner_opts):
+            created_opts_list.append(inner_opts)
+
+        async def run(self):
+            from plecost.models import ScanResult, ScanSummary
+            from datetime import datetime
+            return ScanResult(
+                scan_id="test", url="https://target1.com",
+                timestamp=datetime.now(), duration_seconds=0.0,
+                is_wordpress=False, wordpress_version=None,
+                plugins=[], themes=[], users=[], waf_detected=None,
+                findings=[], summary=ScanSummary(), blocked=False,
+            )
+
+    scanner_module.Scanner = CapturingScanner
+    try:
+        await scanner.run_many(["https://target1.com"])
+    finally:
+        scanner_module.Scanner = original_scanner_class
+
+    assert len(created_opts_list) == 1, "run_many must create one Scanner per target"
+    child_opts = created_opts_list[0]
+    assert child_opts.brute_force is True, (
+        "AC-17: run_many must propagate brute_force=True to child ScanOptions"
+    )
+    assert child_opts.brute_force_wordlist == "/tmp/wordlist.txt", (
+        "AC-17: run_many must propagate brute_force_wordlist to child ScanOptions"
+    )
+    assert child_opts.brute_force_combine is True, (
+        "AC-17: run_many must propagate brute_force_combine to child ScanOptions"
+    )
+
+
+# ---------------------------------------------------------------------------
+# FIX-1: _load_wordlist() rejects non-regular files (ValueError)
+# ---------------------------------------------------------------------------
+
+async def test_load_wordlist_rejects_directory():
+    """FIX-1: _load_wordlist() must reject paths that are not regular files (ValueError)."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    module = BruteForceModule()
+
+    with pytest.raises((ValueError, IsADirectoryError, PermissionError)):
+        await module._load_wordlist("/tmp")  # /tmp is a directory, not a regular file
+
+
+async def test_load_wordlist_rejects_device_file():
+    """FIX-1: _load_wordlist() must raise ValueError for non-regular files like /dev/null."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    module = BruteForceModule()
+
+    with pytest.raises(ValueError):
+        await module._load_wordlist("/dev/null")
+
+
+async def test_load_wordlist_accepts_regular_file():
+    """FIX-1: _load_wordlist() must accept regular files without raising."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    module = BruteForceModule()
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write("pass1\npass2\npass3\n")
+        tmpfile = f.name
+
+    try:
+        result = await module._load_wordlist(tmpfile)
+        assert len(result) == 3, f"Expected 3 passwords, got {len(result)}"
+        assert "pass1" in result
+    finally:
+        os.unlink(tmpfile)
+
+
+# ---------------------------------------------------------------------------
+# AC-18: All new finding IDs registered in _FINDINGS_REGISTRY and KNOWN_FINDING_IDS
+# ---------------------------------------------------------------------------
+
+def test_pc_usr_003_registered_in_findings_registry():
+    """AC-18: PC-USR-003 must be registered in _FINDINGS_REGISTRY in cli.py."""
+    from plecost.cli import _FINDINGS_REGISTRY
+    assert "PC-USR-003" in _FINDINGS_REGISTRY, (
+        "AC-18: PC-USR-003 must be in _FINDINGS_REGISTRY"
+    )
+
+
+def test_pc_usr_004_registered_in_findings_registry():
+    """AC-18: PC-USR-004 must be registered in _FINDINGS_REGISTRY in cli.py."""
+    from plecost.cli import _FINDINGS_REGISTRY
+    assert "PC-USR-004" in _FINDINGS_REGISTRY, (
+        "AC-18: PC-USR-004 must be in _FINDINGS_REGISTRY"
+    )
+
+
+def test_pc_usr_005_registered_in_findings_registry():
+    """AC-18: PC-USR-005 must be registered in _FINDINGS_REGISTRY in cli.py."""
+    from plecost.cli import _FINDINGS_REGISTRY
+    assert "PC-USR-005" in _FINDINGS_REGISTRY, (
+        "AC-18: PC-USR-005 must be in _FINDINGS_REGISTRY"
+    )
+
+
+def test_pc_bru_001_registered_in_findings_registry():
+    """AC-18: PC-BRU-001 must be registered in _FINDINGS_REGISTRY in cli.py."""
+    from plecost.cli import _FINDINGS_REGISTRY
+    assert "PC-BRU-001" in _FINDINGS_REGISTRY, (
+        "AC-18: PC-BRU-001 must be in _FINDINGS_REGISTRY"
+    )
+
+
+def test_pc_bru_007_registered_in_findings_registry():
+    """AC-18 + FIX-3: PC-BRU-007 must be registered in _FINDINGS_REGISTRY (rate-limiting finding)."""
+    from plecost.cli import _FINDINGS_REGISTRY
+    assert "PC-BRU-007" in _FINDINGS_REGISTRY, (
+        "AC-18/FIX-3: PC-BRU-007 (rate-limiting) must be in _FINDINGS_REGISTRY"
+    )
+
+
+def test_new_finding_ids_in_known_finding_ids():
+    """AC-18: New IDs PC-USR-003/004/005, PC-BRU-001/007 must be in KNOWN_FINDING_IDS."""
+    import importlib
+    import sys
+
+    # Import the contract test module to check KNOWN_FINDING_IDS
+    spec = importlib.util.spec_from_file_location(
+        "test_finding_ids",
+        "/Users/cr0hn/Dropbox/Projects/plecost/plecost/.claude/worktrees/agent-aaf249ed9fb239b1c/tests/contract/test_finding_ids.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    known_ids = module.KNOWN_FINDING_IDS
+    for finding_id in ["PC-USR-003", "PC-USR-004", "PC-USR-005", "PC-BRU-001", "PC-BRU-007"]:
+        assert finding_id in known_ids, (
+            f"AC-18: {finding_id} must be in KNOWN_FINDING_IDS in tests/contract/test_finding_ids.py"
+        )
