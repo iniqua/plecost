@@ -159,7 +159,7 @@ class User:
     id: int | None
     username: str
     display_name: str | None
-    source: str  # "rest_api", "author_archive", "rss", "oEmbed"
+    source: str  # "rest_api", "author_archive", "wp_sitemap", "rss_feed", "yoast_sitemap", "oembed", "html_author_link"
 
 
 @dataclass

@@ -438,6 +438,7 @@ def modules_list(
         "woocommerce": "fingerprint",
         "wp_ecommerce": "fingerprint",
         "magecart": "fingerprint, woocommerce, wp_ecommerce",
+        "brute_force": "users",
     }
     for name in _ALL_MODULE_NAMES:
         desc = t(f"cli.modules.descriptions.{name}")
@@ -882,21 +883,13 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
         "references": [],
         "remediation_id": "REM-BRU-004",
     },
-    "PC-BRU-005": {
-        "title": "Brute force rate limit detected",
+    "PC-BRU-007": {
+        "title": "Brute force stopped — rate limiting detected",
         "severity": "INFO",
         "description": "The target rate-limited or blocked brute force login attempts.",
-        "remediation": "Rate limiting is a positive security control.",
+        "remediation": "Rate limiting is a positive security control. Ensure it is properly configured.",
         "references": [],
-        "remediation_id": "REM-BRU-005",
-    },
-    "PC-BRU-006": {
-        "title": "Brute force wordlist loaded from external file",
-        "severity": "INFO",
-        "description": "An external wordlist was loaded for the brute force module.",
-        "remediation": "No action required.",
-        "references": [],
-        "remediation_id": "REM-BRU-006",
+        "remediation_id": "REM-BRU-007",
     },
 }
 

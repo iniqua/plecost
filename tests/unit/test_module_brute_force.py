@@ -302,7 +302,7 @@ async def test_no_2fa_critical_severity(ctx_with_user):
 # ---------------------------------------------------------------------- #
 
 async def test_rate_limited_429_stops(ctx_with_user):
-    """AC-13: HTTP 429 stops brute force and emits PC-BRU-003."""
+    """AC-13: HTTP 429 stops brute force and emits PC-BRU-007 (rate-limiting)."""
     async with respx.mock:
         respx.get(LOGIN_URL).mock(return_value=httpx.Response(200, text="<form>login</form>"))
         respx.post(LOGIN_URL).mock(return_value=httpx.Response(429))
@@ -314,12 +314,12 @@ async def test_rate_limited_429_stops(ctx_with_user):
             mod._build_password_list = short_list
             await mod.run(ctx_with_user, http)
 
-    assert any(f.id == "PC-BRU-003" for f in ctx_with_user.findings)
+    assert any(f.id == "PC-BRU-007" for f in ctx_with_user.findings)
     assert not any(f.id == "PC-BRU-001" for f in ctx_with_user.findings)
 
 
 async def test_rate_limited_200_block_string_stops(ctx_with_user):
-    """AC-13: HTTP 200 with block string stops brute force."""
+    """AC-13: HTTP 200 with block string stops brute force and emits PC-BRU-007."""
     async with respx.mock:
         respx.get(LOGIN_URL).mock(return_value=httpx.Response(200, text="<form>login</form>"))
         respx.post(LOGIN_URL).mock(
@@ -333,7 +333,7 @@ async def test_rate_limited_200_block_string_stops(ctx_with_user):
             mod._build_password_list = short_list
             await mod.run(ctx_with_user, http)
 
-    assert any(f.id == "PC-BRU-003" for f in ctx_with_user.findings)
+    assert any(f.id == "PC-BRU-007" for f in ctx_with_user.findings)
 
 
 # ---------------------------------------------------------------------- #
