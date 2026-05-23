@@ -22,6 +22,8 @@ class ScanContext:
         self.woocommerce: WooCommerceInfo | None = None
         self.wp_ecommerce: WPECommerceInfo | None = None
         self.magecart: MagecartInfo | None = None
+        self.xmlrpc_accessible: bool = False
+        self.xmlrpc_multicall_available: bool = False
         self.plugins: list[Plugin] = []
         self.themes: list[Theme] = []
         self.users: list[User] = []

@@ -122,7 +122,7 @@ class UsersModule(ScanModule):
                 else:
                     consecutive_misses += 1
             except Exception:
-                break
+                consecutive_misses += 1
 
             if consecutive_misses >= 3:
                 break

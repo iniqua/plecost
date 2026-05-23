@@ -49,6 +49,7 @@ class XMLRPCModule(ScanModule):
         except Exception:
             return
 
+        ctx.xmlrpc_accessible = True
         ctx.add_finding(Finding(
             id="PC-XMLRPC-001", remediation_id="REM-XMLRPC-001",
             title="XML-RPC endpoint is accessible",
@@ -166,6 +167,7 @@ class XMLRPCModule(ScanModule):
 
                 # Check for system.multicall
                 if "system.multicall" in r.text:
+                    ctx.xmlrpc_multicall_available = True
                     ctx.add_finding(Finding(
                         id="PC-XMLRPC-004", remediation_id="REM-XMLRPC-004",
                         title="XML-RPC system.multicall enabled (Brute-force amplification)",
