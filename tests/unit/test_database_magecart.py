@@ -1,7 +1,7 @@
 """Unit tests for MagecartDomain store queries."""
 from __future__ import annotations
 import pytest
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from plecost.database.models import Base, MagecartDomain
 from plecost.database.store import CVEStore

@@ -137,6 +137,13 @@ def scan(
             brute_force_combine=brute_force_combine,
         )
 
+        if deep:
+            typer.echo(
+                "[!] Deep mode: mu-plugins PHP probe active. "
+                "This sends POST requests to PHP files on the target server. "
+                "Only use with explicit authorization."
+            )
+
         display = None
         if verbose:
             display = VerboseDisplay(console, module_names=_ALL_MODULE_NAMES)

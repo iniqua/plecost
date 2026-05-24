@@ -1,5 +1,8 @@
 # Plecost — Context for Claude
 
+## Gestión del contexto
+- Si ya has leído un fichero y está en el contexto de la conversación, no vuelvas a leerlo — ya lo tienes disponible.
+
 ## Setup
 ```bash
 pip install -e ".[dev]"           # install with dev dependencies
@@ -177,6 +180,27 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - Finding ID → i18n key: `PC-WPEC-001` → `"findings.pc_wpec_001.{title,description,remediation}"`; rule: `.lower().replace("-", "_")`
 - Avoid loop variable named `t` — it shadows the `t()` i18n import (use `th`, `item`, etc. instead)
 - CHANGELOG is at `../CHANGELOG.md` relative to git root (`plecost/`) — use `git add ../CHANGELOG.md`
+
+## Webshell Detection — China Chopper
+- `GET /wp-content/mu-plugins/*.php → HTTP 200 + 0 bytes` es la firma EXACTA de China Chopper — NO suprimir ni bajar severidad; emitir `PC-WSH-150` CRITICAL siempre
+- China Chopper es indetectable externamente por GET (diseño deliberado, Mandiant 2013) — la única confirmación válida es POST nonce probe: `printf("NONCE")` y verificar que el nonce aparezca en el body
+- POST nonce probe solo activo en `--deep`; si no confirma → skip silencioso (no finding); solo reportar si confirmado al 100%
+- Plan completo en `docs/china-chopper-detection-plan.md`; parámetros a probar: `password`, `cmd`, `c`, `pass`, `p`, `key` + variante `eval(base64_decode(...))`
+- `security.php` de Plesk (legítimo) y China Chopper son indistinguibles por GET — no usar whitelist de nombres (publicaría lista de evasión en open source)
+- El header `X-Powered-By: PleskLin` NO debe desactivar la detección — un Plesk comprometido sigue enviando ese header
+
+## Misconfigs — install.php y upgrade.php
+- `PC-MCFG-007`/`PC-MCFG-008`: usar `content_signature` POSITIVA (solo reportar si el formulario activo está presente)
+- `_INSTALL_ACTIVE_RE = re.compile(r'<input[^>]+name=["\']weblog_title', re.IGNORECASE)`
+- `_UPGRADE_ACTIVE_RE = re.compile(r'<(?:form|a)[^>]+(?:upgrade\.php|do_upgrade)', re.IGNORECASE)`
+- NO usar listas negativas de frases ("already installed", "no upgrade required") — solo cubren en/es de ~60 locales WordPress; usar regex HTML positiva que es language-independent
+
+## WordPress Version
+- `KNOWN_LATEST_VERSION` en `wp_hardening.py` es un literal hardcodeado con fecha — verificar con `curl -s https://api.wordpress.org/core/version-check/1.7/ | python3 -c "import json,sys;print(json.load(sys.stdin)['offers'][0]['version'])"` antes de actualizar
+- Versión más reciente verificada a 2026-05-24: `6.8.1` (confirmar antes de usar)
+
+## Scoring de Hallazgos
+- NO elevar severidad de un webshell sospechoso basándose en CVEs de otros plugins del mismo sitio — es correlación espuria que genera HIGH engañosos sobre archivos legítimos
 
 ## License
 - PolyForm Noncommercial License 1.0.0 — free for non-commercial use; commercial use requires contacting cr0hn@cr0hn.com

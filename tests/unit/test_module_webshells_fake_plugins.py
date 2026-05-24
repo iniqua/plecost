@@ -1,4 +1,3 @@
-import base64
 import respx
 import httpx
 from plecost.engine.context import ScanContext

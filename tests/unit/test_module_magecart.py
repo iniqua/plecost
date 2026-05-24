@@ -1,8 +1,7 @@
 """Unit tests for MagecartModule."""
 from __future__ import annotations
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 import httpx
-import pytest
 import respx
 
 from plecost.models import ScanOptions, WooCommerceInfo, WPECommerceInfo

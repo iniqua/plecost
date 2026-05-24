@@ -2,7 +2,7 @@ import respx
 import httpx
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
-from plecost.models import ScanOptions, Severity
+from plecost.models import ScanOptions
 from plecost.modules.webshells.detectors.response_fp import ResponseFingerprintDetector
 
 

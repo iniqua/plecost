@@ -1,3 +1,24 @@
+## [4.5.2] — 2026-05-24
+
+### Changed
+- **PC-WSH-150 China Chopper — detección confirmada con POST probe** (`mu_plugins.py`):
+  - En fast mode (default): `MuPluginsDetector` retorna `[]` inmediatamente sin hacer ningún request HTTP — elimina todos los falsos positivos en ese modo.
+  - En deep mode (`--deep`): se mantiene el GET scan con filtro catch-all, y se añade un POST probe activo para confirmar ejecución de código PHP. Solo se emite PC-WSH-150 CRITICAL si la confirmación tiene éxito.
+  - Mecanismo anti-reflexión: el payload usa `printf(strrev("REVERSED_NONCE"))` — el body POST contiene el nonce invertido; solo PHP ejecutando `strrev()` puede producir el nonce forward en la respuesta, lo que previene falsos positivos por WAFs/debug handlers que reflejan el cuerpo de la petición.
+  - Se prueban 6 parámetros en orden: `password`, `cmd`, `c`, `pass`, `p`, `key` — cada uno con payload directo y variante `eval(base64_decode(...))`.
+  - El finding PC-WSH-150 ahora incluye `probe_param` (parámetro que confirmó) y `confirmed=True` en el evidence.
+  - Título actualizado: `"China Chopper webshell confirmed in wp-content/mu-plugins"`.
+  - Añadido `ctx.report_progress()` en bloque `finally` para evitar congelado de barra de progreso en modo verbose.
+- **CLI warning en deep mode**: se imprime `[!] Deep mode: mu-plugins PHP probe active. This sends POST requests to PHP files on the target server. Only use with explicit authorization.` antes de iniciar el scan cuando `--deep` está activo.
+
+### Tests
+- 9 tests nuevos spec-driven en `tests/unit/test_module_webshells_mu_plugins.py` (21 total):
+  - AC-2: verificación de que todos los nombres del wordlist se sondean en deep mode
+  - AC-3: verificación de que GET 404 no dispara POST probe
+  - AC-6: 6 tests individuales (uno por parámetro) + test para variante b64
+  - AC-9: test de CLI warning con verificación positiva (warning presente) y negativa (ausente en fast mode)
+- 2 tests reescritos para eliminar aserciones tautológicas
+
 ## [4.5.1] — 2026-05-24
 
 ### Fixed

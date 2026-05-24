@@ -1,6 +1,4 @@
 # plecost/tests/unit/test_i18n.py
-import os
-import pytest
 from plecost import i18n
 
 
