@@ -1,7 +1,7 @@
 """
 XML-RPC attacker — uses wp.getUsersBlogs to test credentials.
 
-Success: response does NOT contain <fault> element.
+Success: status 200 AND <methodResponse> in body AND no <fault> element.
 Rate limiting: 3 consecutive 429/403 responses → detected.
 """
 from __future__ import annotations
@@ -10,6 +10,13 @@ from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.brute.base import BaseAttacker
+
+
+def _mask_password(pw: str) -> str:
+    """Mask password for evidence: show first and last char only."""
+    if len(pw) <= 3:
+        return pw[:1] + "***"
+    return pw[:1] + "***" + pw[-1:]
 
 _PAYLOAD_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
 <methodCall>
@@ -59,8 +66,12 @@ class XMLRPCAttacker(BaseAttacker):
                             break
                         continue
                     rate_limit_hits = 0
-                    # Success: valid response without <fault>
-                    if r.status_code == 200 and "<fault>" not in r.text:
+                    # Success: valid XML-RPC response with <methodResponse> and no <fault>
+                    if (
+                        r.status_code == 200
+                        and "<methodResponse>" in r.text
+                        and "<fault>" not in r.text
+                    ):
                         found.append((username, password))
                 except Exception:
                     rate_limit_hits += 1
@@ -70,7 +81,7 @@ class XMLRPCAttacker(BaseAttacker):
 
         findings: list[Finding] = []
         if found:
-            cred_list = "\n".join(f"  • {u} / {p}" for u, p in found)
+            cred_list = "\n".join(f"  • {u} / {_mask_password(p)}" for u, p in found)
             findings.append(Finding(
                 id="PC-BRUTE-001", remediation_id="REM-BRUTE-001",
                 title="Valid credentials found via XML-RPC brute force",
@@ -96,7 +107,7 @@ class XMLRPCAttacker(BaseAttacker):
                     "Rate limiting or blocking was detected on the XML-RPC endpoint "
                     "after repeated authentication attempts. Protection is active."
                 ),
-                evidence={"url": xmlrpc_url, "consecutive_blocks": rate_limit_hits},
+                evidence={"url": xmlrpc_url, "consecutive_blocks": str(rate_limit_hits)},
                 remediation="No action required. Rate limiting is a positive security control.",
                 references=[],
                 cvss_score=0.0, module="brute"

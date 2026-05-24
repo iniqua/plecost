@@ -14,6 +14,13 @@ from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.brute.base import BaseAttacker
 
+
+def _mask_password(pw: str) -> str:
+    """Mask password for evidence: show first and last char only."""
+    if len(pw) <= 3:
+        return pw[:1] + "***"
+    return pw[:1] + "***" + pw[-1:]
+
 _RATE_LIMIT_THRESHOLD = 3
 
 
@@ -77,7 +84,7 @@ class WPLoginAttacker(BaseAttacker):
         findings: list[Finding] = []
 
         if found:
-            cred_list = "\n".join(f"  • {u} / {p}" for u, p in found)
+            cred_list = "\n".join(f"  • {u} / {_mask_password(p)}" for u, p in found)
             findings.append(Finding(
                 id="PC-BRUTE-002", remediation_id="REM-BRUTE-002",
                 title="Valid credentials found via wp-login.php brute force",
@@ -103,7 +110,7 @@ class WPLoginAttacker(BaseAttacker):
                     "Rate limiting or blocking was detected on wp-login.php "
                     "after repeated authentication attempts. Protection is active."
                 ),
-                evidence={"url": login_url, "consecutive_blocks": rate_limit_hits},
+                evidence={"url": login_url, "consecutive_blocks": str(rate_limit_hits)},
                 remediation="No action required. Rate limiting is a positive security control.",
                 references=[],
                 cvss_score=0.0, module="brute"

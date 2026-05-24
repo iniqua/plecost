@@ -3,13 +3,15 @@ Brute Force module (brute subpackage) — AC-9
 
 This module is ONLY active when ScanOptions.brute_force=True.
 
-It runs two attack vectors in sequence:
+It runs one attack vector:
   1. XMLRPCAttacker: brute-force via XML-RPC (if ctx.xmlrpc_accessible)
-  2. WPLoginAttacker: brute-force via wp-login.php
+
+NOTE: WPLoginAttacker is NOT used here — BruteForceModule (brute_force.py)
+already attacks wp-login.php when brute_force=True. Running both concurrently
+would be a dual-attack on the same endpoint (F-1 fix).
 
 Findings:
   PC-BRUTE-001 (CRITICAL) — credentials found via XML-RPC
-  PC-BRUTE-002 (CRITICAL) — credentials found via wp-login
   PC-BRUTE-003 (HIGH)     — no brute force protection detected
   PC-BRUTE-004 (INFO)     — protection confirmed (rate limiting)
 """
@@ -22,7 +24,6 @@ from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
 from plecost.modules.brute.attackers.xmlrpc import XMLRPCAttacker
-from plecost.modules.brute.attackers.wp_login import WPLoginAttacker
 
 _WORDLIST_PATH = Path(__file__).parent / "wordlists" / "fast.txt"
 
@@ -59,36 +60,36 @@ class BruteModule(ScanModule):
         all_findings: list[Finding] = []
 
         # Attack 1: XML-RPC (if accessible)
+        # WPLoginAttacker is intentionally omitted — BruteForceModule covers wp-login.php
         if ctx.xmlrpc_accessible:
             xmlrpc_findings = await XMLRPCAttacker().attack(ctx, http, usernames, passwords)
             all_findings.extend(xmlrpc_findings)
 
-        # Attack 2: wp-login.php
-        wp_login_findings = await WPLoginAttacker().attack(ctx, http, usernames, passwords)
-        all_findings.extend(wp_login_findings)
-
-        # Emit all findings from attackers
+        # Deduplicate findings by ID before emitting (F-3 fix)
+        emitted_ids: set[str] = set()
         for finding in all_findings:
-            ctx.add_finding(finding)
+            if finding.id not in emitted_ids:
+                ctx.add_finding(finding)
+                emitted_ids.add(finding.id)
 
         # Determine overall protection state
         has_success = any(f.id in ("PC-BRUTE-001", "PC-BRUTE-002") for f in all_findings)
         has_protection = any(f.id == "PC-BRUTE-004" for f in all_findings)
 
-        if not has_success and not has_protection:
-            # No credentials found AND no protection detected
+        if not has_success and not has_protection and ctx.xmlrpc_accessible:
+            # No credentials found AND no protection detected on XML-RPC
+            # (wp-login.php protection is assessed by BruteForceModule)
             ctx.add_finding(Finding(
                 id="PC-BRUTE-003", remediation_id="REM-BRUTE-003",
-                title="No brute force protection detected on login endpoints",
+                title="No brute force protection detected on XML-RPC endpoint",
                 severity=Severity.HIGH,
                 description=(
-                    "Multiple credential attempts were made against the WordPress login "
-                    "endpoints without triggering any rate limiting or blocking response. "
-                    "This indicates the site lacks brute force protection."
+                    "Multiple credential attempts were made against the WordPress XML-RPC "
+                    "endpoint without triggering any rate limiting or blocking response. "
+                    "This indicates the site lacks brute force protection on XML-RPC."
                 ),
                 evidence={
                     "xmlrpc_tested": str(ctx.xmlrpc_accessible),
-                    "wp_login_tested": "true",
                     "usernames_tested": str(len(usernames)),
                 },
                 remediation=(

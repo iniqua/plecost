@@ -35,6 +35,16 @@ KNOWN_FINDING_IDS = [
     "PC-MGC-000", "PC-MGC-001", "PC-MGC-002", "PC-MGC-003", "PC-MGC-004",
     "PC-WSH-001", "PC-WSH-100", "PC-WSH-150",
     "PC-WSH-200", "PC-WSH-250", "PC-WSH-300",
+    # Wave 1: new findings added 2026-05-24
+    "PC-MCFG-013", "PC-MCFG-014",
+    "PC-MCFG-015", "PC-MCFG-016", "PC-MCFG-017", "PC-MCFG-018", "PC-MCFG-019",
+    "PC-MCFG-020",
+    "PC-DBG-002",
+    "PC-XMLRPC-007",
+    "PC-TTH-001", "PC-TTH-002", "PC-TTH-003",
+    "PC-EMRG-001", "PC-EMRG-002", "PC-EMRG-003", "PC-EMRG-004", "PC-EMRG-005",
+    "PC-BRUTE-001", "PC-BRUTE-002", "PC-BRUTE-003", "PC-BRUTE-004",
+    "PC-WPH-001",
 ]
 
 _ID_PATTERN = re.compile(r'^PC-[A-Z]+-\d{3}$')

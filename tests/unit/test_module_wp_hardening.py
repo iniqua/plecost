@@ -96,3 +96,35 @@ async def test_evidence_contains_versions():
     f = ctx.findings[0]
     assert f.evidence["detected_version"] == "6.0.0"
     assert f.evidence["latest_known_version"] == KNOWN_LATEST_VERSION
+
+
+# -----------------------------------------------------------------------
+# AC-10c: explicit mandatory test name from PASO 4
+# -----------------------------------------------------------------------
+
+async def test_wp_hardening_respects_module_options_override():
+    """AC-10c: module_options override takes effect; no finding when version equals override."""
+    # Override latest_version to the currently detected version → no finding expected
+    ctx = _make_ctx("5.9.0", module_options={"hardening": {"latest_version": "5.9.0"}})
+    async with respx.mock:
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await WPHardeningModule().run(ctx, http)
+    # 5.9.0 is NOT < 5.9.0 → no finding
+    assert ctx.findings == [], (
+        "When module_options override makes detected == latest, no finding should be emitted"
+    )
+
+
+async def test_wp_hardening_override_triggers_finding_for_older_version():
+    """AC-10c: module_options override is used as reference; older version triggers finding."""
+    # Override latest_version to 5.9.0; detected is 5.8.0 → finding expected
+    ctx = _make_ctx("5.8.0", module_options={"hardening": {"latest_version": "5.9.0"}})
+    async with respx.mock:
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await WPHardeningModule().run(ctx, http)
+    assert len(ctx.findings) == 1
+    f = ctx.findings[0]
+    assert f.id == "PC-WPH-001"
+    assert f.evidence["latest_known_version"] == "5.9.0"

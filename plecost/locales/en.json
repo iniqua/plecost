@@ -87,7 +87,11 @@
         "woocommerce": "Detect WooCommerce and its configuration",
         "wp_ecommerce": "Detect WP eCommerce and check for vulnerabilities",
         "magecart": "Detect Magecart/card-skimming scripts on checkout pages",
-        "webshells": "Detect webshells and backdoors in wp-content"
+        "webshells": "Detect webshells and backdoors in wp-content",
+        "timthumb": "Detect TimThumb image-resizing script (known RCE vector)",
+        "emergency_scripts": "Detect emergency admin scripts (authentication bypass risk)",
+        "wp_hardening": "Check WordPress version against latest known release",
+        "brute": "Brute force WordPress credentials via XML-RPC and wp-login.php"
       }
     },
     "explain": {

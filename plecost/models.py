@@ -40,6 +40,16 @@ _CATEGORY_EXACT: dict[str, str] = {
     "PC-WP-002":   "version_disclosure",
     # attack surface
     "PC-MCFG-012": "attack_surface",
+    # Wave 1 additions
+    "PC-MCFG-013": "debug_exposure",
+    "PC-MCFG-014": "credentials_exposed",
+    "PC-MCFG-015": "credentials_exposed",
+    "PC-MCFG-016": "credentials_exposed",
+    "PC-MCFG-017": "credentials_exposed",
+    "PC-MCFG-018": "credentials_exposed",
+    "PC-MCFG-019": "credentials_exposed",
+    "PC-MCFG-020": "backup_files",
+    "PC-DBG-002":  "debug_exposure",
     # http security headers
     "PC-HDR-001": "hsts",
     "PC-HDR-002": "clickjacking",
