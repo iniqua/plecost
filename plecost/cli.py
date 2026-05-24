@@ -217,6 +217,99 @@ async def _apply_sqlite_migrations(conn: Any) -> None:
             await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {definition}"))
 
 
+async def _sync_active_installs(sf: "async_sessionmaker[AsyncSession]") -> None:
+    """
+    Populate active_installs for PluginsWordlist and ThemesWordlist by calling the
+    WordPress.org public API. Only updates slugs already present in the DB (AC-5).
+    If the API is unavailable, logs a warning and returns without crashing (AC-4).
+    Uses paginated requests (100 per page, max 50 pages) per AC-2/AC-8.
+    """
+    from sqlalchemy import select, update
+    from plecost.database.models import PluginsWordlist, ThemesWordlist
+
+    _MAX_PAGES = 50
+    _PER_PAGE = 100
+
+    async def _fetch_and_update(
+        client: httpx.AsyncClient,
+        session_factory: "async_sessionmaker[AsyncSession]",
+        api_url_template: str,
+        items_key: str,
+        model: type,
+    ) -> None:
+        """Paginate through WP.org API and update matching slugs in the DB."""
+        # Collect all (slug, active_installs) from the API
+        collected: dict[str, int] = {}
+        for page in range(1, _MAX_PAGES + 1):
+            url = api_url_template.format(page=page, per_page=_PER_PAGE)
+            try:
+                resp = await client.get(url, timeout=30.0)
+                resp.raise_for_status()
+                data = resp.json()
+            except Exception:
+                # Partial failure: stop fetching more pages but keep what we have
+                break
+
+            items = data.get(items_key, [])
+            if not items:
+                break  # No more results
+
+            for item in items:
+                slug = item.get("slug", "")
+                installs = item.get("active_installs", 0)
+                if slug:
+                    collected[slug] = int(installs)
+
+            # If we got fewer items than requested, we've reached the last page
+            if len(items) < _PER_PAGE:
+                break
+
+        if not collected:
+            return
+
+        # Update only slugs that exist in the DB (AC-5)
+        async with session_factory() as session:
+            # Retrieve existing slugs from the DB
+            result = await session.execute(select(model.slug))  # type: ignore[attr-defined]
+            existing_slugs = {row[0] for row in result.fetchall()}
+
+            updates = {slug: installs for slug, installs in collected.items() if slug in existing_slugs}
+            if not updates:
+                return
+
+            # Batch update
+            for slug, installs in updates.items():
+                await session.execute(
+                    update(model).where(model.slug == slug).values(active_installs=installs)  # type: ignore[attr-defined]
+                )
+            await session.commit()
+
+    try:
+        async with httpx.AsyncClient() as client:
+            # Sync plugins
+            plugin_url = (
+                "https://api.wordpress.org/plugins/info/1.2/"
+                "?action=query_plugins"
+                "&request[fields][active_installs]=1"
+                "&request[per_page]={per_page}"
+                "&request[page]={page}"
+            )
+            await _fetch_and_update(client, sf, plugin_url, "plugins", PluginsWordlist)
+
+            # Sync themes
+            theme_url = (
+                "https://api.wordpress.org/themes/info/1.1/"
+                "?action=query_themes"
+                "&request[fields][active_installs]=1"
+                "&request[per_page]={per_page}"
+                "&request[page]={page}"
+            )
+            await _fetch_and_update(client, sf, theme_url, "themes", ThemesWordlist)
+
+    except Exception as exc:
+        console.print(f"[yellow]Warning: could not sync active_installs from WP.org: {exc}[/yellow]")
+
+
 async def _clean_low_confidence_records(sf: "async_sessionmaker[AsyncSession]") -> int:
     """
     Remove normalized_vulns records where match_confidence=0.5 and slug is not
@@ -380,6 +473,11 @@ async def _update_db_async(db_path: Path, token: "str | None", force_full: bool)
 
         # Save remote checksum locally
         await _set_metadata(sf, "index_checksum", remote_checksum)
+
+        # Populate active_installs from WP.org API (AC-1 to AC-8)
+        console.print("[dim]Syncing plugin/theme popularity from WP.org...[/dim]")
+        await _sync_active_installs(sf)
+
         console.print(f"[green]CVE database updated at {db_path}[/green]")
     finally:
         await engine.dispose()
