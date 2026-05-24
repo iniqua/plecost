@@ -34,7 +34,7 @@ plecost scan -T urls.txt -o report.json        # bulk scan, save JSON
 - `plecost/cli.py` — Typer entrypoint; commands: `scan`, `explain`, `update-db`, `build-db`, `sync-db`, `modules`
 - `plecost/scanner.py` — `Scanner.run()` and `Scanner.run_many()` (public API for use as a library)
 - `plecost/engine/` — `http_client.py` (httpx async), `context.py` (shared state), `scheduler.py` (async dependency graph)
-- `plecost/modules/` — 18 detection modules; each extends `ScanModule` with `name`, `depends_on`, `async run()`
+- `plecost/modules/` — 19 detection modules; each extends `ScanModule` with `name`, `depends_on`, `async run()`
 - `plecost/database/` — SQLAlchemy async; `updater.py` (NVD full build), `incremental.py` (delta sync), `downloader.py` (from release), `store.py` (queries)
 - `plecost/database/patch_applier.py` — applies JSON patches (upserts + soft-deletes); portable SQLite/PG
 - `plecost/reporters/` — `terminal.py` (Rich), `json_reporter.py` (JSON)
@@ -88,12 +88,33 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - Patch files on GitHub: release tag `db-patches` — `index.json`, `full.json`, `patch-YYYY-MM-DD.json`
 - Architecture docs: `docs/cve-patch-system/`
 
+## BruteForce Module
+- Activado SOLO por `opts.brute_force=True` o `module_options["brute_force"]["enabled"]="true"` — NUNCA por `--aggressive`
+- `ScanOptions` nuevos campos: `brute_force: bool = False`, `brute_force_wordlist: str|None = None`, `brute_force_combine: bool = False`
+- `ScanContext` nuevos atributos: `ctx.xmlrpc_accessible: bool`, `ctx.xmlrpc_multicall_available: bool` (seteados por xmlrpc module)
+- Semáforo: el `await asyncio.sleep(delay)` va FUERA del bloque `async with sem:` — si va dentro bloquea slots del semáforo durante la espera
+- Lectura de wordlist externa: `asyncio.to_thread(_load_wordlist, path, limit)` — `_load_wordlist` es función de módulo, NO método de clase
+- Path traversal: validar con `Path(path).resolve().is_file()` antes de abrir fichero externo
+- Detección de login exitoso: cookie `wordpress_logged_in_` en `Set-Cookie` (primario); redirect a `/wp-admin/` (fallback)
+- PC-BRU-003 = sin usuarios para atacar; PC-BRU-007 = rate-limiting detectado — son findings distintos
+
+## Users Module — Gotchas
+- Author archives: en el bloque `except Exception`, hacer `consecutive_misses += 1` (NO `break`) — break ignoraría el contador y rompería el early-stop
+- RSS `dc:creator` dedup: por username sintetizado (`name.lower().replace(" ", "")`), NO por `display_name` — evita duplicados cuando dos posts tienen el mismo autor
+- REST API pagination: siempre capear con `min(total_pages, 100)` — un servidor malicioso puede devolver `X-WP-TotalPages: 999999`
+- `User.source` valores válidos: `"rest_api"`, `"author_archive"`, `"wp_sitemap"`, `"rss_feed"`, `"yoast_sitemap"`, `"oembed"`, `"html_author_link"`
+
+## XML Parsing Safety
+- Antes de `ET.fromstring(r.text)`, verificar `len(r.content) < 1_048_576` (1 MB) — respuestas XML sin cota son vulnerables a XML bomb
+- Aplica a todos los módulos que parsean XML: `_wp_sitemap_users`, `_yoast_author_sitemap`, `_rss_feed`, xmlrpc
+
 ## Tests
 - `asyncio_mode = "auto"` in pyproject.toml — do NOT add `@pytest.mark.asyncio` manually
 - respx: use `respx.get(url).mock(return_value=httpx.Response(...))` — NOT `respx.pattern(...)`
 - respx catch-all: `respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))` — use as last route to handle unmatched URLs
 - respx: routes are matched in order — put specific mocks before the catch-all `url__regex` route
 - Coverage: use dots not slashes: `--cov=plecost.database.patch_applier` (not `plecost/database/patch_applier`)
+- Funciones helper en módulos (e.g. `_load_wordlist` en `brute_force.py`) son funciones de módulo, NO métodos de clase — importarlas directamente: `from plecost.modules.brute_force import _load_wordlist`
 - Functional tests against real WordPress: `PLECOST_FUNCTIONAL_TESTS=1 pytest tests/functional/`
 - Test Docker WordPress: `docker-compose -f docker-compose.test.yml up -d` (port 8765)
 
