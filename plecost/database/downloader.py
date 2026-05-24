@@ -1,7 +1,10 @@
 from __future__ import annotations
+import asyncio
 import hashlib
 import json
+import random
 from pathlib import Path
+from urllib.parse import urlparse
 import httpx
 
 GITHUB_REPO = "Plecost/plecost-db"
@@ -15,6 +18,12 @@ FULL_JSON_URL = f"{BASE_URL}/full.json"
 FULL_CHECKSUM_URL = f"{BASE_URL}/full.checksum"
 MAGECART_DOMAINS_URL = f"{BASE_URL}/magecart-domains.json"
 MAGECART_DOMAINS_CHECKSUM_URL = f"{BASE_URL}/magecart-domains.checksum"
+
+_RETRY_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
+_MAX_RETRIES = 3
+
+_GITHUB_HOSTNAMES = frozenset({"raw.githubusercontent.com", "github.com"})
+_GITHUB_DOMAIN_SUFFIX = ".github.com"
 
 
 def _sha256_file(path: Path) -> str:
@@ -30,9 +39,19 @@ def _sha256_bytes(data: bytes) -> str:
 
 
 async def _fetch_bytes(client: httpx.AsyncClient, url: str) -> bytes:
-    r = await client.get(url)
-    r.raise_for_status()
-    return r.content
+    last_exc: httpx.HTTPStatusError | None = None
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            r = await client.get(url)
+            r.raise_for_status()
+            return r.content
+        except httpx.HTTPStatusError as exc:
+            last_exc = exc
+            if exc.response.status_code not in _RETRY_STATUS_CODES or attempt >= _MAX_RETRIES:
+                raise
+            delay = 2 ** attempt + random.uniform(0, 1)
+            await asyncio.sleep(delay)
+    raise last_exc  # type: ignore[misc]
 
 
 async def _stream_to_file(client: httpx.AsyncClient, url: str, dest: Path) -> None:
@@ -45,7 +64,7 @@ async def _stream_to_file(client: httpx.AsyncClient, url: str, dest: Path) -> No
 
 async def fetch_remote_index_checksum(token: str | None = None) -> str:
     """Fetch only the checksum of the remote index (cheap, ~64 bytes)."""
-    headers = _make_headers(token)
+    headers = _make_headers(token, INDEX_CHECKSUM_URL)
     async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=headers) as client:
         data = await _fetch_bytes(client, INDEX_CHECKSUM_URL)
     return data.decode().strip()
@@ -53,7 +72,7 @@ async def fetch_remote_index_checksum(token: str | None = None) -> str:
 
 async def fetch_index(token: str | None = None) -> dict[str, object]:
     """Download and return the full index.json."""
-    headers = _make_headers(token)
+    headers = _make_headers(token, INDEX_URL)
     async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=headers) as client:
         data = await _fetch_bytes(client, INDEX_URL)
     result: dict[str, object] = json.loads(data)
@@ -62,7 +81,7 @@ async def fetch_index(token: str | None = None) -> dict[str, object]:
 
 async def download_full_json(dest: Path, token: str | None = None) -> None:
     """Download the full.json patch file and verify its SHA256."""
-    headers = _make_headers(token)
+    headers = _make_headers(token, FULL_JSON_URL)
     async with httpx.AsyncClient(timeout=300, follow_redirects=True, headers=headers) as client:
         # Fetch checksum first
         checksum_data = await _fetch_bytes(client, FULL_CHECKSUM_URL)
@@ -82,7 +101,7 @@ async def download_full_json(dest: Path, token: str | None = None) -> None:
 
 async def download_patch(url: str, expected_sha256: str, token: str | None = None) -> dict[str, object]:
     """Download a single daily patch JSON and verify its SHA256. Returns parsed JSON."""
-    headers = _make_headers(token)
+    headers = _make_headers(token, url)
     async with httpx.AsyncClient(timeout=60, follow_redirects=True, headers=headers) as client:
         data = await _fetch_bytes(client, url)
 
@@ -96,16 +115,32 @@ async def download_patch(url: str, expected_sha256: str, token: str | None = Non
     return result
 
 
-def _make_headers(token: str | None) -> dict[str, str]:
+def _is_github_url(url: str) -> bool:
+    """Return True only if the URL hostname is a trusted GitHub host."""
+    hostname = urlparse(url).hostname or ""
+    return hostname.endswith(_GITHUB_DOMAIN_SUFFIX) or hostname in _GITHUB_HOSTNAMES
+
+
+def _make_headers(token: str | None, url: str = "") -> dict[str, str]:
+    """Build request headers.
+
+    The Authorization header is only added when:
+    - A token is provided, AND
+    - The URL hostname ends in .github.com or is raw.githubusercontent.com.
+
+    If no URL is provided (legacy callers), the header is always included when
+    a token is present (backwards compatibility).
+    """
     headers: dict[str, str] = {"Accept": "application/json"}
     if token:
-        headers["Authorization"] = f"Bearer {token}"
+        if not url or _is_github_url(url):
+            headers["Authorization"] = f"Bearer {token}"
     return headers
 
 
 async def download_magecart_domains(token: str | None = None) -> dict[str, object]:
     """Download magecart-domains.json and verify its SHA256. Returns parsed JSON."""
-    headers = _make_headers(token)
+    headers = _make_headers(token, MAGECART_DOMAINS_URL)
     async with httpx.AsyncClient(timeout=60, follow_redirects=True, headers=headers) as client:
         # Fetch checksum first
         checksum_data = await _fetch_bytes(client, MAGECART_DOMAINS_CHECKSUM_URL)
