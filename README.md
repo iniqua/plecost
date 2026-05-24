@@ -119,7 +119,7 @@ Plecost was built from scratch to fix the limitations teams hit in production wh
 | JSON output (stable schema) | ✅ | ✅ |
 | Verbose real-time progress (`-v`) | ✅ | ✅ |
 | Quiet mode (HIGH + CRITICAL only) | ✅ | ❌ |
-| **Stable permanent finding IDs** | ✅ 79 IDs (`PC-MOD-NNN`) | ❌ |
+| **Stable permanent finding IDs** | ✅ 120 IDs (`PC-MOD-NNN`) | ❌ |
 | `plecost explain <ID>` — per-finding remediation | ✅ | ❌ |
 | Safe to track findings in JIRA / ticketing | ✅ IDs never change | ❌ |
 | Remediation ID per finding (`REM-MOD-NNN`) | ✅ | ❌ |
@@ -240,6 +240,30 @@ plecost update-db
 plecost scan https://target.com
 ```
 
+
+## What's New in v4.8.0
+
+### CVE evidence now includes installed version
+
+CVE findings include the detected installed version in their `evidence` object. This makes it clear exactly which version triggered each CVE — no ambiguity about why the finding was reported.
+
+```json
+{
+  "id": "PC-CVE-CVE-2024-2262",
+  "evidence": {
+    "cve_id": "CVE-2024-2262",
+    "software": "woocommerce-products-filter",
+    "version_range": "*–1.4.4",
+    "installed_version": "1.3.8.2"
+  }
+}
+```
+
+### XML bomb protection in sitemap/RSS parsing
+
+The users module now caps XML response size at 1 MB before parsing with `ElementTree`. Malformed or adversarially large XML responses (XML bomb DoS) are silently skipped instead of potentially exhausting memory.
+
+---
 
 ## What's New in v4.5.0
 
@@ -639,7 +663,12 @@ plecost scan https://target.com --output report.json
       "description": "...",
       "remediation": "Update WooCommerce to version 7.8.0 or later.",
       "references": ["https://nvd.nist.gov/vuln/detail/CVE-2023-28121"],
-      "evidence": { "plugin": "woocommerce", "version": "8.2.1" },
+      "evidence": {
+        "cve_id": "CVE-2023-28121",
+        "software": "woocommerce",
+        "version_range": "*–7.8.0",
+        "installed_version": "8.2.1"
+      },
       "module": "cves"
     }
   ],

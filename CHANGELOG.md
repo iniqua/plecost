@@ -1,3 +1,16 @@
+## [4.8.0] — 2026-05-24
+
+### Added
+- **CVE evidence traceability**: `installed_version` field added to CVE finding evidence — muestra la versión instalada detectada junto al `version_range` vulnerable para eliminar ambigüedad sobre por qué se reporta cada CVE
+
+### Fixed
+- **XML bomb protection**: módulos `_wp_sitemap_users`, `_rss_feed` y `_yoast_author_sitemap` ahora verifican `len(r.content) < 1 MB` antes de llamar a `ET.fromstring()` — respuestas XML sin cota ya no pueden agotar memoria
+
+### Tests
+- **Total suite: 602 tests, 0 regresiones, 85.83% cobertura**
+
+---
+
 ## [4.7.0] — 2026-05-24
 
 ### Fixed

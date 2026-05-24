@@ -43,7 +43,7 @@ plecost scan -T urls.txt -o report.json        # bulk scan, save JSON
 ## Finding IDs
 - Permanent format: `PC-{MODULE}-{NNN}` (e.g. `PC-MCFG-001`, `PC-CVE-CVE-2023-28121`)
 - Associated remediation ID: `REM-{MODULE}-{NNN}`
-- Full registry of 79 IDs in `plecost/cli.py` → `plecost explain <ID>`
+- Full registry of 120 IDs in `plecost/cli.py` → `plecost explain <ID>`
 
 ## Public API
 - `from plecost import Scanner, ScanOptions, ScanResult` — only these three are exported (`__all__`)
