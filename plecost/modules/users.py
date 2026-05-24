@@ -3,6 +3,7 @@ import json
 import re
 import asyncio
 import xml.etree.ElementTree as ET
+from typing import Any
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity, User
@@ -47,7 +48,7 @@ class UsersModule(ScanModule):
             if not isinstance(users_data, list) or not users_data:
                 return
 
-            all_users: list[dict] = list(users_data)
+            all_users: list[dict[str, Any]] = list(users_data)
 
             # Paginate through remaining pages (AC-1: sequential iteration)
             # F-2: cap total_pages to avoid unbounded requests from malicious server
