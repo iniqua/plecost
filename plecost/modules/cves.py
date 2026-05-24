@@ -29,21 +29,21 @@ class CVEsModule(ScanModule):
         # Check core
         if ctx.wordpress_version:
             for vuln in await self._store.find("core", "wordpress", ctx.wordpress_version, rejected_ids):
-                ctx.add_finding(self._make_finding(vuln))
+                ctx.add_finding(self._make_finding(vuln, ctx.wordpress_version))
         # Check plugins
         for plugin in ctx.plugins:
             all_vulns = await self._store.find_all_by_slug("plugin", plugin.slug, rejected_ids)
             plugin.vulns = [self._to_plugin_vuln(v) for v in all_vulns]
             if plugin.version:
                 for vuln in await self._store.find("plugin", plugin.slug, plugin.version, rejected_ids):
-                    ctx.add_finding(self._make_finding(vuln))
+                    ctx.add_finding(self._make_finding(vuln, plugin.version))
         # AC-9: Check themes (both vuln list and findings)
         for theme in ctx.themes:
             all_vulns = await self._store.find_all_by_slug("theme", theme.slug, rejected_ids)
             theme.vulns = [self._to_plugin_vuln(v) for v in all_vulns]
             if theme.version:
                 for vuln in await self._store.find("theme", theme.slug, theme.version, rejected_ids):
-                    ctx.add_finding(self._make_finding(vuln))
+                    ctx.add_finding(self._make_finding(vuln, theme.version))
 
     def _to_plugin_vuln(self, vuln: VulnerabilityRecord) -> PluginVuln:
         version_range = (
@@ -62,21 +62,24 @@ class CVEsModule(ScanModule):
             references=vuln.references,
         )
 
-    def _make_finding(self, vuln: VulnerabilityRecord) -> Finding:
+    def _make_finding(self, vuln: VulnerabilityRecord, installed_version: str | None = None) -> Finding:
         sev = _SEVERITY_MAP.get(vuln.severity, Severity.MEDIUM)
         exploit_note = " **Public exploit available.**" if vuln.has_exploit else ""
         version_range = (
             f"{vuln.version_start_incl or vuln.version_start_excl or '*'}"
             f"–{vuln.version_end_incl or vuln.version_end_excl or '*'}"
         )
+        evidence: dict = {"cve_id": vuln.cve_id, "software": vuln.software_slug,
+                          "version_range": version_range}
+        if installed_version:
+            evidence["installed_version"] = installed_version
         return Finding(
             id=f"PC-CVE-{vuln.cve_id}",
             remediation_id=f"REM-CVE-{vuln.cve_id}",
             title=f"{markup_escape(vuln.title)} ({markup_escape(vuln.cve_id)})",
             severity=sev,
             description=f"{markup_escape(vuln.description)}.{exploit_note} Affects versions {version_range}.",
-            evidence={"cve_id": vuln.cve_id, "software": vuln.software_slug,
-                      "version_range": version_range},
+            evidence=evidence,
             remediation=vuln.remediation,
             references=vuln.references,
             cvss_score=vuln.cvss_score,
