@@ -136,8 +136,14 @@ async def test_fetch_remote_index_checksum():
 
 @respx.mock
 async def test_fetch_index_returns_parsed_json():
+    payload = json.dumps(FAKE_INDEX).encode()
+    checksum = hashlib.sha256(payload).hexdigest()
+
+    respx.get(INDEX_CHECKSUM_URL).mock(
+        return_value=httpx.Response(200, content=checksum.encode())
+    )
     respx.get(INDEX_URL).mock(
-        return_value=httpx.Response(200, json=FAKE_INDEX)
+        return_value=httpx.Response(200, content=payload)
     )
 
     result = await fetch_index()

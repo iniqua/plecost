@@ -2,10 +2,13 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import random
 from pathlib import Path
 from urllib.parse import urlparse
 import httpx
+
+logger = logging.getLogger(__name__)
 
 GITHUB_REPO = "Plecost/plecost-db"
 RELEASE_ASSET_NAME = "plecost.db"  # Deprecated: kept for backwards compatibility
@@ -71,32 +74,56 @@ async def fetch_remote_index_checksum(token: str | None = None) -> str:
 
 
 async def fetch_index(token: str | None = None) -> dict[str, object]:
-    """Download and return the full index.json."""
+    """Download and return the full index.json, verifying its SHA256 checksum."""
+    # Fetch checksum with a separate client to avoid shared connection state
+    checksum_headers = _make_headers(token, INDEX_CHECKSUM_URL)
+    async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=checksum_headers) as ck_client:
+        checksum_data = await _fetch_bytes(ck_client, INDEX_CHECKSUM_URL)
+    expected_sha256 = checksum_data.decode().strip().split()[0]
+
+    # Fetch index.json with its own client
     headers = _make_headers(token, INDEX_URL)
     async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=headers) as client:
         data = await _fetch_bytes(client, INDEX_URL)
+
+    # Verify integrity
+    actual = _sha256_bytes(data)
+    if actual != expected_sha256:
+        raise ValueError(
+            f"SHA256 mismatch for index.json: expected {expected_sha256}, got {actual}"
+        )
+
     result: dict[str, object] = json.loads(data)
     return result
 
 
 async def download_full_json(dest: Path, token: str | None = None) -> None:
-    """Download the full.json patch file and verify its SHA256."""
+    """Download the full.json patch file and verify its SHA256.
+
+    Retries up to _MAX_RETRIES times on SHA256 mismatch to handle race conditions
+    where a new GitHub release is published between the checksum fetch and the
+    file download.
+    """
     headers = _make_headers(token, FULL_JSON_URL)
-    async with httpx.AsyncClient(timeout=300, follow_redirects=True, headers=headers) as client:
-        # Fetch checksum first
-        checksum_data = await _fetch_bytes(client, FULL_CHECKSUM_URL)
-        expected_sha256 = checksum_data.decode().strip().split()[0]
+    last_exc: Exception | None = None
+    for attempt in range(_MAX_RETRIES):
+        async with httpx.AsyncClient(timeout=300, follow_redirects=True, headers=headers) as client:
+            # Fetch checksum and file in the same client session per attempt
+            checksum_data = await _fetch_bytes(client, FULL_CHECKSUM_URL)
+            expected_sha256 = checksum_data.decode().strip().split()[0]
+            await _stream_to_file(client, FULL_JSON_URL, dest)
 
-        # Stream download
-        await _stream_to_file(client, FULL_JSON_URL, dest)
+        actual = _sha256_file(dest)
+        if actual == expected_sha256:
+            return  # success
 
-    # Verify SHA256
-    actual = _sha256_file(dest)
-    if actual != expected_sha256:
         dest.unlink(missing_ok=True)
-        raise ValueError(
-            f"SHA256 mismatch for full.json: expected {expected_sha256}, got {actual}"
+        last_exc = ValueError(
+            f"SHA256 mismatch for full.json (attempt {attempt + 1}/{_MAX_RETRIES}): "
+            f"expected {expected_sha256}, got {actual}"
         )
+
+    raise last_exc  # type: ignore[misc]
 
 
 async def download_patch(url: str, expected_sha256: str, token: str | None = None) -> dict[str, object]:
@@ -159,6 +186,9 @@ async def download_magecart_domains(token: str | None = None) -> dict[str, objec
     return result
 
 
+_LEGACY_DB_MAX_SIZE = 100 * 1024 * 1024  # 100 MB
+
+
 # Legacy function kept for backwards compatibility
 async def download_latest_db(dest_path: str | Path, token: str | None = None) -> None:
     """
@@ -166,6 +196,8 @@ async def download_latest_db(dest_path: str | Path, token: str | None = None) ->
     Use download_patches() instead.
     Kept for backwards compatibility with existing installations.
     """
+    logger.warning("download_latest_db is deprecated; use update-db instead")
+
     dest = Path(dest_path)
     dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -181,9 +213,11 @@ async def download_latest_db(dest_path: str | Path, token: str | None = None) ->
         release = r.json()
 
         asset_url = None
+        asset_size: int | None = None
         for asset in release.get("assets", []):
             if asset["name"] == "plecost.db":
                 asset_url = asset["browser_download_url"]
+                asset_size = asset.get("size")
                 break
 
         if not asset_url:
@@ -192,8 +226,22 @@ async def download_latest_db(dest_path: str | Path, token: str | None = None) ->
                 f"Run 'plecost build-db' to create the initial database."
             )
 
+        # Enforce size limit before downloading
+        if asset_size is not None and asset_size > _LEGACY_DB_MAX_SIZE:
+            raise ValueError(
+                f"Legacy DB asset exceeds size limit: {asset_size} bytes > "
+                f"{_LEGACY_DB_MAX_SIZE} bytes (100 MB)"
+            )
+
+        received = 0
         async with client.stream("GET", asset_url, headers=headers) as resp:
             resp.raise_for_status()
             with open(dest, "wb") as f:
                 async for chunk in resp.aiter_bytes(chunk_size=8192):
+                    received += len(chunk)
+                    if received > _LEGACY_DB_MAX_SIZE:
+                        raise ValueError(
+                            f"Legacy DB download exceeded size limit of "
+                            f"{_LEGACY_DB_MAX_SIZE} bytes (100 MB)"
+                        )
                     f.write(chunk)
