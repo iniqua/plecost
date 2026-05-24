@@ -1,7 +1,8 @@
 from __future__ import annotations
 import asyncio
+import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, IO, List, Optional
 import httpx
 import typer
 from rich.console import Console
@@ -13,6 +14,50 @@ if TYPE_CHECKING:
 
 app = typer.Typer(name="plecost", help="The best black-box WordPress security scanner.")
 console = Console()
+
+
+# ---------------------------------------------------------------------------
+# File lock helpers (AC-1 / G-024)
+# ---------------------------------------------------------------------------
+
+def _acquire_db_lock(lock_path: Path) -> "IO[Any]":
+    """Acquire an exclusive file lock to prevent concurrent update-db runs.
+
+    Raises RuntimeError immediately if another process holds the lock.
+    Windows: file locking is skipped (not supported via fcntl); a warning is
+    printed and execution continues without a lock.
+    """
+    lock_file: IO[Any] = open(lock_path, "w")
+    if sys.platform == "win32":
+        # msvcrt.locking requires exact byte counts and is cumbersome for a
+        # simple advisory lock; skip silently on Windows.
+        console.print("[yellow]Warning: file locking not supported on Windows; running without lock.[/yellow]")
+        return lock_file
+    import fcntl
+    try:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        lock_file.close()
+        raise RuntimeError(
+            f"Another update-db process is running (lock: {lock_path}). "
+            "Wait for it to finish or delete the lockfile if stale."
+        )
+    return lock_file
+
+
+def _release_db_lock(lock_file: "IO[Any]", lock_path: Path) -> None:
+    """Release the exclusive file lock and delete the lockfile."""
+    try:
+        if sys.platform != "win32":
+            import fcntl
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+        lock_file.close()
+        lock_path.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
 
 _ALL_MODULE_NAMES = [
     "fingerprint", "waf", "plugins", "themes", "users", "xmlrpc",
@@ -345,6 +390,44 @@ async def _clean_low_confidence_records(sf: "async_sessionmaker[AsyncSession]") 
         return deleted
 
 
+async def _sync_cisa_kev(sf: "async_sessionmaker[AsyncSession]") -> None:
+    """Update has_exploit=True for CVEs listed in the CISA Known Exploited Vulnerabilities catalog.
+
+    AC-3 / G-004: Called after _sync_active_installs at the end of _update_db_async.
+    If the CISA API is unavailable, a warning is printed and the function returns
+    without crashing.
+    """
+    from sqlalchemy import update as sa_update
+    from plecost.database.models import NormalizedVuln
+
+    _KEV_URL = (
+        "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+            resp = await client.get(_KEV_URL)
+            resp.raise_for_status()
+            data = resp.json()
+        kev_ids: set[str] = {v["cveID"] for v in data.get("vulnerabilities", []) if v.get("cveID")}
+        if not kev_ids:
+            console.print("[dim]CISA KEV: empty catalog, nothing to mark.[/dim]")
+            return
+        async with sf() as session:
+            result = await session.execute(
+                sa_update(NormalizedVuln)
+                .where(NormalizedVuln.cve_id.in_(kev_ids))
+                .values(has_exploit=True)
+            )
+            await session.commit()
+            count = result.rowcount
+        if count > 0:
+            console.print(f"[green]CISA KEV: {count} CVE(s) marked as has_exploit=True[/green]")
+        else:
+            console.print("[dim]CISA KEV: no matching CVEs in local DB[/dim]")
+    except Exception as exc:
+        console.print(f"[yellow]Warning: CISA KEV sync failed: {exc}[/yellow]")
+
+
 async def _update_db_async(db_path: Path, token: "str | None", force_full: bool) -> None:
     import json
     import tempfile
@@ -478,6 +561,10 @@ async def _update_db_async(db_path: Path, token: "str | None", force_full: bool)
         console.print("[dim]Syncing plugin/theme popularity from WP.org...[/dim]")
         await _sync_active_installs(sf)
 
+        # Mark known-exploited CVEs from the CISA KEV catalog (AC-3 / G-004)
+        console.print("[dim]Syncing CISA Known Exploited Vulnerabilities...[/dim]")
+        await _sync_cisa_kev(sf)
+
         console.print(f"[green]CVE database updated at {db_path}[/green]")
     finally:
         await engine.dispose()
@@ -501,6 +588,14 @@ def update_db(
     ),
 ) -> None:
     """Download and apply CVE database patches from GitHub releases."""
+    # AC-2 / G-006: reject plain sqlite:// (sync driver) before any DB work
+    if db_url and db_url.startswith("sqlite://") and not db_url.startswith("sqlite+aiosqlite://"):
+        console.print(
+            "[red]Error: Use 'sqlite+aiosqlite://...' instead of 'sqlite://...' "
+            "for async SQLite support.[/red]"
+        )
+        raise typer.Exit(1)
+
     if not db_url:
         db_path = Path.home() / ".plecost" / "db" / "plecost.db"
         db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -518,7 +613,17 @@ def update_db(
     except ImportError:
         pass
 
-    asyncio.run(_update_db_async(db_path, github_token, force_full))
+    # AC-1 / G-024: acquire exclusive file lock to prevent concurrent update-db runs
+    lock_path = db_path.with_suffix(".lock")
+    try:
+        lock_file = _acquire_db_lock(lock_path)
+    except RuntimeError as exc:
+        console.print(f"[red]Error: {exc}[/red]")
+        raise typer.Exit(1)
+    try:
+        asyncio.run(_update_db_async(db_path, github_token, force_full))
+    finally:
+        _release_db_lock(lock_file, lock_path)
 
 
 modules_app = typer.Typer(help="Manage scanner modules.")
