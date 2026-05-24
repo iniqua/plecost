@@ -1,3 +1,25 @@
+## [4.7.0] — 2026-05-24
+
+### Fixed
+- **G-027**: `fetch_index()` ahora verifica SHA256 de `index.json` contra `INDEX_CHECKSUM_URL` antes de parsear — un `index.json` comprometido ya no puede redirigir a URLs arbitrarias sin detectarse
+- **G-028**: `download_latest_db()` (legacy) añade límite de 100 MB y log de deprecación
+- **G3-004**: `download_full_json()` reintenta la operación completa (checksum + stream) hasta 3 veces en SHA256 mismatch — elimina race condition si GitHub publica nueva release entre los dos fetches
+- **G-023**: `_apply_upserts()` protege cada `session.flush()` con `session.begin_nested()` (SAVEPOINT) — un fallo en un batch solo hace rollback de ese batch, no de todo el patch
+- **G-024**: `update-db` adquiere un lockfile exclusivo (`db_path.lock`) — dos procesos concurrentes no pueden double-apply patches; error claro si ya está bloqueado
+- **G-006**: `update-db` valida que la URL de DB use `sqlite+aiosqlite://` en lugar de `sqlite://` — mensaje de error accionable en lugar de corrupción silenciosa
+- **G-004**: Nueva función `_sync_cisa_kev(sf)` en `update-db` — descarga el catálogo CISA KEV y marca `has_exploit=True` en los CVEs confirmados como explotados activamente; API no disponible → warning sin crash
+- **G-009**: `_is_affected()` loguea `DEBUG` cuando un CVE no tiene rangos de versión definidos — facilita diagnóstico de CVEs "silenciados"
+- **G-014**: `_load_corrections()` captura `JSONDecodeError`/`OSError` y retorna `[]` con log `ERROR` en lugar de crashear
+- **G2-007**: `make_engine()` activa `pool_pre_ping=True` para PostgreSQL — detecta conexiones stale antes de usarlas
+- **G2-008**: `make_engine()` activa WAL mode (`PRAGMA journal_mode=WAL`) para SQLite — reduce `SQLITE_BUSY` en scans concurrentes con `run_many()`
+
+### Tests
+- `tests/unit/test_database_downloader_retry.py`: 9 tests nuevos para G-027, G-028, G3-004
+- `tests/unit/test_database_patch_applier_savepoint.py`: 13 tests nuevos para G-023 (savepoints, count, logging)
+- `tests/unit/test_cli_update_db_safety.py`: 14 tests nuevos para G-024, G-006, G-004 (CISA KEV)
+- `tests/unit/test_engine_store_misc.py`: 10 tests nuevos para G2-007, G2-008, G-009, G-014
+- **Total suite: 571 tests, 0 regresiones**
+
 ## [4.6.0] — 2026-05-24
 
 ### Added
