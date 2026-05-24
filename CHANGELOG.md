@@ -1,3 +1,16 @@
+## [4.5.1] — 2026-05-24
+
+### Fixed
+- **PC-WSH-150 falso positivo (mu-plugins body vacío)**: archivos PHP en `/wp-content/mu-plugins/` que devuelven HTTP 200 con 0 bytes ahora emiten CRITICAL (no se suprimen silenciosamente). La description incluye la nota "empty response — may indicate China Chopper-style shell — manual verification required". El filtro catch-all se aplica correctamente también en respuestas vacías, evitando FP cuando el servidor devuelve 0 bytes para todas las rutas.
+- **PC-MCFG-007 / PC-MCFG-008 falsos positivos (install.php / upgrade.php)**: los findings de `wp-admin/install.php` y `wp-admin/upgrade.php` ahora solo se emiten si el cuerpo de la respuesta contiene el formulario activo de instalación/actualización (detección positiva con regex HTML). En sitios ya instalados donde WordPress devuelve "Already installed" o "No upgrade required", el scanner no emite ningún finding, independientemente del idioma.
+- **KNOWN_LATEST_VERSION actualizado a 7.0**: la constante hardcodeada en `wp_hardening.py` se actualizó de `6.8.1` a `7.0` (WordPress 7.0 es la versión estable actual, verificado vía API oficial de WordPress el 2026-05-24). Sitios con WP < 7.0 ahora se reportan correctamente como desactualizados.
+
+### Tests
+- 17 tests nuevos spec-driven añadidos:
+  - `tests/unit/test_module_webshells_mu_plugins.py`: 3 tests AC-1 (body vacío, body con contenido, catch-all con tamaño cero)
+  - `tests/unit/test_module_misconfigs_install_upgrade.py`: 10 tests AC-2/AC-3 (install.php con formulario activo, sin formulario, upgrade.php con y sin upgrade pendiente)
+  - `tests/unit/test_module_wp_hardening.py`: 4 tests AC-4 (versiones 6.8.1, 6.9, 7.0, None)
+
 ## [4.5.0] — 2026-05-24
 
 ### Added

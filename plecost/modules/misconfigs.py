@@ -13,11 +13,19 @@ _PHP_SOURCE_RE = re.compile(r'(define\s*\(|DB_PASSWORD|DB_HOST|DB_NAME|\$table_p
 # Adminer signature: body must contain "class Adminer" to avoid FPs
 _ADMINER_SIGNATURE_RE = re.compile(r'class Adminer', re.I)
 
+# install.php: only flag if the active installation form is present (language-independent HTML)
+# A healthy "Already installed" page has no such input field.
+_INSTALL_ACTIVE_RE = re.compile(r'<input[^>]+name=["\']weblog_title', re.IGNORECASE)
+
+# upgrade.php: only flag if the upgrade form/link is present (language-independent HTML)
+# A "No upgrade required" page has no such form or upgrade link.
+_UPGRADE_ACTIVE_RE = re.compile(r'<(?:form|a)[^>]+(?:upgrade\.php|do_upgrade)', re.IGNORECASE)
+
 _CHECKS = [
     # (path, finding_id, rem_id, severity, title_key, description_key, remediation_key,
     #  php_source_check, plaintext_check, content_signature)
     # plaintext_check=True → skip if Content-Type contains "text/html" (soft-404 FP prevention)
-    # content_signature=regex → body[:4096] must match; None = no body check
+    # content_signature=regex → body[:4096] must match; None = no body check (positive gate)
     ("/wp-config.php",         "PC-MCFG-001", "REM-MCFG-001", Severity.CRITICAL,
      "findings.pc_mcfg_001.title",
      "findings.pc_mcfg_001.description",
@@ -48,16 +56,20 @@ _CHECKS = [
      "findings.pc_mcfg_006.description",
      "findings.pc_mcfg_006.remediation",
      False, True, None),
+    # install.php: only flag if the active installation form (weblog_title input) is present.
+    # A healthy "Already installed" page lacks this field — no phrase matching needed.
     ("/wp-admin/install.php",  "PC-MCFG-007", "REM-MCFG-007", Severity.MEDIUM,
      "findings.pc_mcfg_007.title",
      "findings.pc_mcfg_007.description",
      "findings.pc_mcfg_007.remediation",
-     False, False, None),
+     False, False, _INSTALL_ACTIVE_RE),
+    # upgrade.php: only flag if the upgrade form or link is present in the HTML.
+    # A "No upgrade required" page has neither — no phrase matching needed.
     ("/wp-admin/upgrade.php",  "PC-MCFG-008", "REM-MCFG-008", Severity.MEDIUM,
      "findings.pc_mcfg_008.title",
      "findings.pc_mcfg_008.description",
      "findings.pc_mcfg_008.remediation",
-     False, False, None),
+     False, False, _UPGRADE_ACTIVE_RE),
     ("/readme.html",           "PC-MCFG-009", "REM-MCFG-009", Severity.LOW,
      "findings.pc_mcfg_009.title",
      "findings.pc_mcfg_009.description",
@@ -191,7 +203,8 @@ class MisconfigsModule(ScanModule):
             if php_source_check and not _PHP_SOURCE_RE.search(r.text):
                 return
 
-            # For files requiring a body signature (e.g. adminer.php)
+            # For files requiring a body signature (e.g. adminer.php, install.php, upgrade.php):
+            # report ONLY if the signature is present — acts as a positive gate.
             if content_signature is not None and not content_signature.search(r.text[:4096]):
                 return
 

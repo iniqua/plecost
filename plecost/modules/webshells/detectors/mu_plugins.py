@@ -42,22 +42,35 @@ class MuPluginsDetector(BaseDetector):
                     r = await http.get(url)
                     if r.status_code != 200:
                         return
+                    empty_body = len(r.content) == 0
                     if catch_all_size is not None:
                         hit_size = len(r.content)
                         max_s = max(hit_size, catch_all_size)
                         if max_s == 0 or abs(hit_size - catch_all_size) / max_s < _TOLERANCE:
                             return
-                    findings.append(Finding(
-                        id="PC-WSH-150",
-                        remediation_id="REM-WSH-150",
-                        title="Suspicious PHP file in wp-content/mu-plugins",
-                        severity=Severity.CRITICAL,
-                        description=(
+                    severity = Severity.CRITICAL
+                    cvss_score = 9.8
+                    if empty_body:
+                        description = (
+                            f"A PHP file was found at `{url}` — empty response — may indicate "
+                            "China Chopper-style shell — manual verification required. "
+                            "Must-Use plugins load automatically on every WordPress request "
+                            "and are hidden from the admin plugin list — making them a preferred "
+                            "location for persistent backdoors."
+                        )
+                    else:
+                        description = (
                             f"A PHP file was found at `{url}`. "
                             "Must-Use plugins load automatically on every WordPress request "
                             "and are hidden from the admin plugin list — making them a preferred "
                             "location for persistent backdoors."
-                        ),
+                        )
+                    findings.append(Finding(
+                        id="PC-WSH-150",
+                        remediation_id="REM-WSH-150",
+                        title="Suspicious PHP file in wp-content/mu-plugins",
+                        severity=severity,
+                        description=description,
                         evidence={"url": url, "status_code": "200"},
                         remediation=(
                             "Review and remove any unexpected files in wp-content/mu-plugins/. "
@@ -68,7 +81,7 @@ class MuPluginsDetector(BaseDetector):
                             "https://blog.sucuri.net/2025/03/hidden-malware-strikes-again-mu-plugins-under-attack.html",
                             "https://www.bleepingcomputer.com/news/security/hackers-abuse-wordpress-mu-plugins-to-hide-malicious-code/",
                         ],
-                        cvss_score=9.8,
+                        cvss_score=cvss_score,
                         module="webshells",
                     ))
                 except Exception:

@@ -3,7 +3,7 @@ WordPress Hardening module — AC-10
 
 Checks if the detected WordPress version is older than the known latest version.
 
-KNOWN_LATEST_VERSION: "6.8.1" (hardcoded per spec)
+KNOWN_LATEST_VERSION: "7.0" (hardcoded; last verified: 2026-05-24)
 Overridable via: ctx.opts.module_options.get("hardening", {}).get("latest_version")
 
 Finding:
@@ -19,7 +19,7 @@ from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
 from plecost.i18n import t
 
-KNOWN_LATEST_VERSION = "6.8.1"
+KNOWN_LATEST_VERSION = "7.0"  # Last verified: 2026-05-24
 
 
 class WPHardeningModule(ScanModule):

@@ -128,3 +128,63 @@ async def test_wp_hardening_override_triggers_finding_for_older_version():
     f = ctx.findings[0]
     assert f.id == "PC-WPH-001"
     assert f.evidence["latest_known_version"] == "5.9.0"
+
+
+# -----------------------------------------------------------------------
+# SPEC LOCK tests — AC-4
+# KNOWN_LATEST_VERSION = "7.0"
+# These tests would FAIL if the implementation had the specific bug they guard against.
+# -----------------------------------------------------------------------
+
+# AC-4: wordpress_version="6.9" → PC-WPH-001 emitted
+async def test_ac4_version_6_9_triggers_finding():
+    """AC-4: wordpress_version=6.9 < KNOWN_LATEST_VERSION=7.0 → PC-WPH-001 emitted."""
+    ctx = _make_ctx("6.9")
+    async with respx.mock:
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await WPHardeningModule().run(ctx, http)
+    ids = [f.id for f in ctx.findings]
+    assert "PC-WPH-001" in ids, (
+        "AC-4: version 6.9 is older than KNOWN_LATEST_VERSION=7.0 → PC-WPH-001 must be emitted"
+    )
+
+
+# AC-4: wordpress_version="7.0" → NO finding (version == latest, not outdated)
+async def test_ac4_version_7_0_no_finding():
+    """AC-4: wordpress_version=7.0 == KNOWN_LATEST_VERSION=7.0 → NO finding."""
+    ctx = _make_ctx("7.0")
+    async with respx.mock:
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await WPHardeningModule().run(ctx, http)
+    assert not any(f.id == "PC-WPH-001" for f in ctx.findings), (
+        "AC-4: version 7.0 equals KNOWN_LATEST_VERSION=7.0 → PC-WPH-001 must NOT be emitted"
+    )
+
+
+# AC-4: wordpress_version="6.8.1" → PC-WPH-001 emitted (patch release still older)
+async def test_ac4_version_6_8_1_triggers_finding():
+    """AC-4: wordpress_version=6.8.1 < KNOWN_LATEST_VERSION=7.0 → PC-WPH-001 emitted."""
+    ctx = _make_ctx("6.8.1")
+    async with respx.mock:
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await WPHardeningModule().run(ctx, http)
+    ids = [f.id for f in ctx.findings]
+    assert "PC-WPH-001" in ids, (
+        "AC-4: version 6.8.1 is older than KNOWN_LATEST_VERSION=7.0 → PC-WPH-001 must be emitted"
+    )
+
+
+# AC-4: wordpress_version=None → NO finding (early return before version comparison)
+async def test_ac4_version_none_no_finding():
+    """AC-4: wordpress_version=None → early return, NO PC-WPH-001 emitted."""
+    ctx = _make_ctx(None)
+    async with respx.mock:
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await WPHardeningModule().run(ctx, http)
+    assert ctx.findings == [], (
+        "AC-4: wordpress_version=None → module must do early return, no finding emitted"
+    )
