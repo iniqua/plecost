@@ -1,3 +1,18 @@
+## [4.6.0] — 2026-05-24
+
+### Added
+- **G-017 — `active_installs` desde WP.org API** (`cli.py`): nueva función `_sync_active_installs()` llamada al final de `update-db`. Pagina la WP.org API (plugins/themes, per_page=100, máx 50 páginas) y actualiza los registros con `active_installs=0`. Fast-scan `--top 150` ahora ordena correctamente por popularidad real en lugar de aleatorio. API no disponible → warning y continúa sin crash (AC-4).
+- **RCG-7 — retry backoff + protección del header Authorization** (`downloader.py`): `_fetch_bytes()` reintenta hasta 3 veces en 429/5xx con delay `2^attempt + uniform(0,1)s`. `_make_headers()` acepta `url` y solo incluye `Authorization: Bearer` cuando el hostname es `*.github.com` o `raw.githubusercontent.com` — previene exfiltración del GITHUB_TOKEN a URLs no-GitHub (ej. WP.org API).
+- **BRU-RL — jitter + circuit breaker adaptativo** (`brute_force.py`): delay entre intentos cambia de `sleep(2.0)` fijo a `sleep(random.uniform(0.3, 1.5))`. Nueva clase `_RateLimitCircuitBreaker` con estados CLOSED/OPEN/HALF_OPEN/EXHAUSTED: 3 respuestas 429 consecutivas abren el circuit; state machine OPEN(10s)→HALF_OPEN probe→si 429: OPEN(20s)→OPEN(30s)→EXHAUSTED tras 60s total. EXHAUSTED emite PC-BRU-007 con `total_wait_seconds=60`. Non-429 en HALF_OPEN restaura CLOSED.
+
+### Tests
+- `tests/unit/test_database_active_installs.py`: 7 tests spec-driven para G-017 (AC-1 a AC-5)
+- `tests/unit/test_database_downloader_retry.py`: 20 tests para RCG-7 (retry en 429/5xx, Authorization header, URL validation)
+- `tests/unit/test_module_brute_force_cb.py`: 17 tests para BRU-RL (10 unitarios de `_RateLimitCircuitBreaker`, 7 de integración); tests pre-existentes de AC-13 actualizados para reflejar tolerancia de 3 429s consecutivos
+
+### Verified
+- Rescan de plesk.com y fucking-navidad.com: `PC-WSH-150`, `PC-WSH-001`, `PC-MCFG-007`, `PC-MCFG-008` ausentes — falsos positivos eliminados confirmados post-merge.
+
 ## [4.5.2] — 2026-05-24
 
 ### Changed
