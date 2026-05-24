@@ -1039,9 +1039,14 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
         "remediation_id": "REM-BRU-004",
     },
     "PC-BRU-007": {
-        "title": "Brute force stopped — rate limiting detected",
+        "title": "Brute force stopped — rate limiting / circuit breaker exhausted",
         "severity": "INFO",
-        "description": "The target rate-limited or blocked brute force login attempts.",
+        "description": (
+            "The target rate-limited login attempts. If three or more consecutive 429 / "
+            "connection-reset responses were received, the adaptive circuit breaker activated "
+            "and waited up to 60 s (10 s + 20 s + 30 s back-off windows) before giving up. "
+            "evidence fields: total_wait_seconds (0 for immediate stop), attempts_made."
+        ),
         "remediation": "Rate limiting is a positive security control. Ensure it is properly configured.",
         "references": [],
         "remediation_id": "REM-BRU-007",
