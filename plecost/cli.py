@@ -75,6 +75,7 @@ def scan(
     ),
     lang: Optional[str] = typer.Option(None, "--lang", "-L", help="Language for output (en, es). Overrides PLECOST_LANG env var and system locale.", envvar="PLECOST_LANG"),
     brute_force: bool = typer.Option(False, "--brute-force", help="Enable brute force login attacks (requires discovered usernames)"),
+    brute_force_defaults: bool = typer.Option(False, "--brute-force-defaults", help="Use built-in password list for brute force (requires --brute-force)"),
     brute_force_wordlist: Optional[str] = typer.Option(None, "--brute-force-wordlist", help="Path to external password wordlist for brute force"),
     brute_force_combine: bool = typer.Option(False, "--brute-force-combine", help="Combine external wordlist with internal password list"),
 ) -> None:
@@ -131,6 +132,7 @@ def scan(
             db_url=db_url,
             module_options=_parse_module_options(module_option),
             brute_force=brute_force,
+            brute_force_use_defaults=brute_force_defaults,
             brute_force_wordlist=brute_force_wordlist,
             brute_force_combine=brute_force_combine,
         )
@@ -938,6 +940,18 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
         "remediation": "Rate limiting is a positive security control. Ensure it is properly configured.",
         "references": [],
         "remediation_id": "REM-BRU-007",
+    },
+    "PC-BRU-008": {
+        "title": "Brute force enabled but no wordlist provided",
+        "severity": "INFO",
+        "description": (
+            "Brute force was enabled (--brute-force) but no password source was configured. "
+            "Use --brute-force-defaults to activate the built-in wordlist, "
+            "or --brute-force-wordlist <path> to supply an external one."
+        ),
+        "remediation": "Supply a wordlist via --brute-force-defaults or --brute-force-wordlist.",
+        "references": [],
+        "remediation_id": "REM-BRU-008",
     },
     # ------------------------------------------------------------------ #
     # TimThumb module findings (AC-7)                                     #

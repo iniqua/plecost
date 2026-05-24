@@ -56,8 +56,16 @@ class BruteModule(ScanModule):
             # No users discovered — cannot brute force
             return
 
-        passwords = _load_fast_wordlist()
+        # AC-2 / CONSTRAINT: only load fast.txt if brute_force_use_defaults=True
+        if ctx.opts.brute_force_use_defaults:
+            passwords = _load_fast_wordlist()
+        else:
+            passwords = []
         all_findings: list[Finding] = []
+
+        # If no passwords available, skip all attacks
+        if not passwords:
+            return
 
         # Attack 1: XML-RPC (if accessible)
         # WPLoginAttacker is intentionally omitted — BruteForceModule covers wp-login.php

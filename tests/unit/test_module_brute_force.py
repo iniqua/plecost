@@ -24,8 +24,8 @@ from plecost.models import ScanOptions
 
 @pytest.fixture
 def ctx():
-    """Default ctx with brute_force=True."""
-    opts = ScanOptions(url="https://example.com", brute_force=True)
+    """Default ctx with brute_force=True and brute_force_use_defaults=True."""
+    opts = ScanOptions(url="https://example.com", brute_force=True, brute_force_use_defaults=True)
     c = ScanContext(opts)
     c.is_wordpress = True
     return c
@@ -44,11 +44,12 @@ def no_sleep(monkeypatch):
 # ---------------------------------------------------------------------------
 
 def _make_ctx(extra_options=None, deep=False):
-    """Build a ScanContext with brute_force enabled."""
+    """Build a ScanContext with brute_force enabled and brute_force_use_defaults=True."""
     opts = ScanOptions(
         url="https://example.com",
         deep=deep,
         brute_force=True,
+        brute_force_use_defaults=True,
         **(extra_options or {})
     )
     ctx = ScanContext(opts)
@@ -118,10 +119,10 @@ async def test_brute_force_not_activated_by_aggressive_flag():
 
 
 async def test_brute_force_activated_by_scan_options_flag():
-    """AC-8: BruteForceModule must activate when ScanOptions.brute_force=True."""
+    """AC-8: BruteForceModule must activate when ScanOptions.brute_force=True + brute_force_use_defaults=True."""
     from plecost.modules.brute_force import BruteForceModule
 
-    # We add a known user to minimize attempts
+    # We add a known user to minimize attempts; brute_force_use_defaults=True enables internal list
     ctx = _make_ctx()
     ctx.add_user(__import__('plecost.models', fromlist=['User']).User(
         id=1, username="admin", display_name="Admin", source="rest_api"
@@ -151,6 +152,7 @@ async def test_brute_force_activated_by_module_options():
 
     opts = ScanOptions(
         url="https://example.com",
+        brute_force_use_defaults=True,
         module_options={"brute_force": {"enabled": "true"}}
     )
     ctx = ScanContext(opts)
@@ -295,7 +297,7 @@ async def test_brute_force_external_wordlist_replaces_internal():
 
 
 async def test_brute_force_combine_flag_merges_both_wordlists():
-    """AC-10: --brute-force-combine must merge external + internal wordlists."""
+    """AC-10 / AC-4: --brute-force-combine merges external + internal ONLY if brute_force_use_defaults=True."""
     from plecost.modules.brute_force import BruteForceModule, _INTERNAL_PASSWORDS
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
@@ -307,6 +309,7 @@ async def test_brute_force_combine_flag_merges_both_wordlists():
         opts = ScanOptions(
             url="https://example.com",
             brute_force=True,
+            brute_force_use_defaults=True,
             brute_force_wordlist=tmpfile,
             brute_force_combine=True,
         )
@@ -497,7 +500,7 @@ async def test_pc_bru_001_high_with_2fa():
     from plecost.modules.brute_force import BruteForceModule
     from plecost.models import User
 
-    opts = ScanOptions(url="https://example.com", brute_force=True)
+    opts = ScanOptions(url="https://example.com", brute_force=True, brute_force_use_defaults=True)
     ctx = ScanContext(opts)
     ctx.is_wordpress = True
     ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
@@ -801,7 +804,7 @@ async def test_brute_force_report_progress_in_finally():
 
     progress_calls = []
 
-    opts = ScanOptions(url="https://example.com", brute_force=True)
+    opts = ScanOptions(url="https://example.com", brute_force=True, brute_force_use_defaults=True)
     ctx = ScanContext(
         opts,
         on_progress=lambda name, curr, total: progress_calls.append((name, curr, total))
@@ -910,7 +913,7 @@ async def test_run_many_propagates_brute_force_fields():
     created_opts_list = []
 
     class CapturingScanner:
-        def __init__(self, inner_opts):
+        def __init__(self, inner_opts, **kwargs):
             created_opts_list.append(inner_opts)
 
         async def run(self):
@@ -1042,3 +1045,182 @@ def test_new_finding_ids_in_known_finding_ids():
         assert finding_id in known_ids, (
             f"AC-18: {finding_id} must be in KNOWN_FINDING_IDS in tests/contract/test_finding_ids.py"
         )
+
+
+# ---------------------------------------------------------------------------
+# AC-1 / AC-2: --brute-force alone does NOT use internal list; needs --brute-force-defaults
+# ---------------------------------------------------------------------------
+
+async def test_brute_force_no_attack_without_wordlist_or_defaults():
+    """AC-1/AC-5: brute_force=True but no defaults and no wordlist → PC-BRU-008, zero HTTP credential attempts."""
+    from plecost.modules.brute_force import BruteForceModule
+    from plecost.models import User
+
+    opts = ScanOptions(
+        url="https://example.com",
+        brute_force=True,
+        brute_force_use_defaults=False,   # AC-1: internal list NOT used by default
+        brute_force_wordlist=None,
+    )
+    ctx = ScanContext(opts)
+    ctx.is_wordpress = True
+    ctx.add_user(User(id=1, username="admin", display_name="Admin", source="rest_api"))
+
+    login_requests = []
+
+    async with respx.mock:
+        respx.post("https://example.com/wp-login.php").mock(
+            side_effect=lambda req: login_requests.append(req) or httpx.Response(200)
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(200))
+
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteForceModule().run(ctx, http)
+
+    # No login attempts made
+    assert len(login_requests) == 0, (
+        "AC-1: brute_force=True without --brute-force-defaults must make ZERO login attempts"
+    )
+    # PC-BRU-008 emitted to signal no wordlist configured
+    bru008 = [f for f in ctx.findings if f.id == "PC-BRU-008"]
+    assert len(bru008) == 1, (
+        "AC-5: PC-BRU-008 must be emitted when brute_force=True but no wordlist configured"
+    )
+
+
+def test_scan_options_has_brute_force_use_defaults_field():
+    """AC-2: ScanOptions must have brute_force_use_defaults boolean field defaulting to False."""
+    opts = ScanOptions(url="https://example.com")
+    assert hasattr(opts, "brute_force_use_defaults"), (
+        "AC-2: ScanOptions must have 'brute_force_use_defaults' field"
+    )
+    assert opts.brute_force_use_defaults is False, (
+        "AC-2: brute_force_use_defaults must default to False"
+    )
+
+
+async def test_brute_force_defaults_activates_internal_list():
+    """AC-2: brute_force_use_defaults=True activates the internal wordlist."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    module = BruteForceModule()
+    opts = ScanOptions(
+        url="https://example.com",
+        brute_force=True,
+        brute_force_use_defaults=True,
+    )
+    ctx = ScanContext(opts)
+    ctx.is_wordpress = True
+
+    passwords = await module._build_password_list(ctx, ["admin"])
+    assert len(passwords) > 0, (
+        "AC-2: brute_force_use_defaults=True must produce a non-empty password list"
+    )
+
+
+async def test_brute_force_no_defaults_gives_empty_list_without_wordlist():
+    """AC-1: brute_force_use_defaults=False without wordlist → empty list."""
+    from plecost.modules.brute_force import BruteForceModule
+
+    module = BruteForceModule()
+    opts = ScanOptions(
+        url="https://example.com",
+        brute_force=True,
+        brute_force_use_defaults=False,
+        brute_force_wordlist=None,
+    )
+    ctx = ScanContext(opts)
+    ctx.is_wordpress = True
+
+    passwords = await module._build_password_list(ctx, ["admin"])
+    assert passwords == [], (
+        "AC-1: Without --brute-force-defaults or wordlist, password list must be empty"
+    )
+
+
+async def test_brute_force_combine_without_defaults_uses_external_only():
+    """AC-4: --brute-force-combine without --brute-force-defaults uses external only (no internal merge)."""
+    import tempfile, os
+    from plecost.modules.brute_force import BruteForceModule, _INTERNAL_PASSWORDS
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write("external_only_pass\n")
+        tmpfile = f.name
+
+    try:
+        module = BruteForceModule()
+        opts = ScanOptions(
+            url="https://example.com",
+            brute_force=True,
+            brute_force_use_defaults=False,   # no internal list
+            brute_force_wordlist=tmpfile,
+            brute_force_combine=True,
+        )
+        ctx = ScanContext(opts)
+        ctx.is_wordpress = True
+        passwords = await module._build_password_list(ctx, ["admin"])
+
+        # External password should be present
+        assert "external_only_pass" in passwords, (
+            "AC-4: External wordlist must appear when combine=True"
+        )
+        # No internal passwords should be present when use_defaults=False
+        internal_in_list = set(_INTERNAL_PASSWORDS).intersection(set(passwords))
+        assert len(internal_in_list) == 0, (
+            "AC-4: Without --brute-force-defaults, internal passwords must NOT be merged"
+        )
+    finally:
+        os.unlink(tmpfile)
+
+
+# ---------------------------------------------------------------------------
+# AC-6: run_many() propagates all callbacks
+# ---------------------------------------------------------------------------
+
+async def test_run_many_propagates_callbacks():
+    """AC-6: Scanner.run_many() must propagate on_finding callback to each per-target Scanner."""
+    from plecost.scanner import Scanner
+    from plecost.models import User
+
+    findings_received = []
+    module_starts = []
+
+    opts = ScanOptions(url="https://example.com", brute_force=False)
+
+    import plecost.scanner as scanner_module
+    original_scanner_class = scanner_module.Scanner
+
+    captured_kwargs: list[dict] = []
+
+    class CapturingScanner:
+        def __init__(self, inner_opts, **kwargs):
+            captured_kwargs.append(kwargs)
+
+        async def run(self):
+            from plecost.models import ScanResult, ScanSummary
+            from datetime import datetime
+            return ScanResult(
+                scan_id="test", url="https://target1.com",
+                timestamp=datetime.now(), duration_seconds=0.0,
+                is_wordpress=False, wordpress_version=None,
+                plugins=[], themes=[], users=[], waf_detected=None,
+                findings=[], summary=ScanSummary(), blocked=False,
+            )
+
+    scanner_module.Scanner = CapturingScanner
+    try:
+        scanner = Scanner(
+            opts,
+            on_finding=lambda f: findings_received.append(f),
+            on_module_start=lambda name: module_starts.append(name),
+        )
+        await scanner.run_many(["https://target1.com"])
+    finally:
+        scanner_module.Scanner = original_scanner_class
+
+    assert len(captured_kwargs) == 1, "run_many must create one Scanner per target"
+    kwargs = captured_kwargs[0]
+    assert "on_finding" in kwargs, "AC-6: on_finding callback must be propagated to child Scanner"
+    assert "on_module_start" in kwargs, "AC-6: on_module_start callback must be propagated to child Scanner"
+    assert "on_module_done" in kwargs, "AC-6: on_module_done callback must be propagated to child Scanner"
+    assert "on_module_progress" in kwargs, "AC-6: on_module_progress callback must be propagated to child Scanner"

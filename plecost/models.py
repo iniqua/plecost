@@ -262,3 +262,4 @@ class ScanOptions:
     brute_force: bool = False
     brute_force_wordlist: str | None = None
     brute_force_combine: bool = False
+    brute_force_use_defaults: bool = False  # Use built-in ~70 password list

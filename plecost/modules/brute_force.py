@@ -150,6 +150,24 @@ class BruteForceModule(ScanModule):
         # ---------------------------------------------------------------- #
         passwords = await self._build_password_list(ctx, usernames)
 
+        # AC-5: No wordlist and no defaults → emit PC-BRU-008 and return   #
+        if not passwords:
+            ctx.add_finding(Finding(
+                id="PC-BRU-008", remediation_id="REM-BRU-008",
+                title="Brute force enabled but no wordlist provided",
+                severity=Severity.INFO,
+                description=(
+                    "Brute force was enabled but no password source was configured. "
+                    "Use --brute-force-defaults to activate the built-in wordlist, "
+                    "or --brute-force-wordlist <path> to supply an external one."
+                ),
+                evidence={"reason": "no_wordlist_configured"},
+                remediation="Supply a wordlist via --brute-force-defaults or --brute-force-wordlist.",
+                references=[],
+                cvss_score=0.0, module=self.name
+            ))
+            return
+
         # ---------------------------------------------------------------- #
         # Brute force loop                                                  #
         # ---------------------------------------------------------------- #
@@ -283,18 +301,21 @@ class BruteForceModule(ScanModule):
         self, ctx: ScanContext, usernames: list[str]
     ) -> list[str]:
         limit = 50000 if ctx.opts.deep else 10000
+        use_defaults = ctx.opts.brute_force_use_defaults
 
         # Internal passwords + dynamic variants (AC-9)
-        internal: list[str] = list(_INTERNAL_PASSWORDS)
-        for username in usernames:
-            internal.extend(_build_dynamic_variants(username))
-        # Deduplicate preserving order
-        seen: set[str] = set()
+        # Only build if use_defaults=True (AC-1/AC-2)
         deduped_internal: list[str] = []
-        for p in internal:
-            if p not in seen:
-                seen.add(p)
-                deduped_internal.append(p)
+        if use_defaults:
+            internal: list[str] = list(_INTERNAL_PASSWORDS)
+            for username in usernames:
+                internal.extend(_build_dynamic_variants(username))
+            # Deduplicate preserving order
+            seen: set[str] = set()
+            for p in internal:
+                if p not in seen:
+                    seen.add(p)
+                    deduped_internal.append(p)
 
         wordlist_path = ctx.opts.brute_force_wordlist
         if wordlist_path:
@@ -303,14 +324,15 @@ class BruteForceModule(ScanModule):
             except Exception:
                 external = []
 
-            if ctx.opts.brute_force_combine:
-                # Combine: external + internal (AC-10)
+            if ctx.opts.brute_force_combine and use_defaults:
+                # AC-4: Combine: external + internal ONLY if use_defaults=True
                 combined = external + [p for p in deduped_internal if p not in set(external)]
                 return combined[:limit]
             else:
                 # External replaces internal (AC-10)
                 return external[:limit]
         else:
+            # No external wordlist: return internal list (may be empty if use_defaults=False)
             return deduped_internal[:limit]
 
     # ------------------------------------------------------------------ #

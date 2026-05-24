@@ -91,10 +91,18 @@ class Scanner:
                 db_url=self._opts.db_url,
                 # AC-17: propagate brute force fields to each per-target scan
                 brute_force=self._opts.brute_force,
+                brute_force_use_defaults=self._opts.brute_force_use_defaults,
                 brute_force_wordlist=self._opts.brute_force_wordlist,
                 brute_force_combine=self._opts.brute_force_combine,
             )
-            scanner = Scanner(opts)
+            # AC-6: propagate all callbacks to the per-target Scanner
+            scanner = Scanner(
+                opts,
+                on_module_start=self._on_module_start,
+                on_module_done=self._on_module_done,
+                on_finding=self._on_finding,
+                on_module_progress=self._on_progress,
+            )
             result = await scanner.run()
             results.append(result)
         return results

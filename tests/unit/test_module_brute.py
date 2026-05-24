@@ -12,7 +12,7 @@ from plecost.modules.brute.attackers.wp_login import _mask_password as wp_mask
 
 
 def _make_ctx(brute_force: bool = True, with_users: bool = True) -> ScanContext:
-    opts = ScanOptions(url="https://example.com", brute_force=brute_force)
+    opts = ScanOptions(url="https://example.com", brute_force=brute_force, brute_force_use_defaults=True)
     ctx = ScanContext(opts)
     ctx.is_wordpress = True
     if with_users:
