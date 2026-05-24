@@ -121,7 +121,7 @@ async def test_misconfigs_debug_log_accessible(ctx):
 
 
 async def test_misconfigs_htaccess_accessible(ctx):
-    """GET /.htaccess returning 200 with content must emit a finding."""
+    """GET /.htaccess returning 200 must NOT emit any finding — .htaccess is not in _CHECKS."""
     async with respx.mock:
         respx.get("https://example.com/.htaccess").mock(
             return_value=httpx.Response(200, text="Options -Indexes\nDeny from all")
@@ -130,11 +130,14 @@ async def test_misconfigs_htaccess_accessible(ctx):
         async with PlecostHTTPClient(ctx.opts) as http:
             await MisconfigsModule().run(ctx, http)
 
-    # .htaccess is not in the _CHECKS list — if no finding is emitted that is expected behaviour.
-    # This test documents the current behaviour: no PC-MCFG finding for .htaccess.
+    # .htaccess is NOT in _CHECKS — the module must not emit a finding for it.
+    # If a bug added .htaccess detection without a proper check list entry, this test
+    # would catch it.  The previous assertion (isinstance(list, list)) was always True
+    # and would not catch such a bug.
     htaccess_findings = [f for f in ctx.findings if "htaccess" in f.title.lower()]
-    # Whether a finding is emitted or not, the module must not crash
-    assert isinstance(htaccess_findings, list)
+    assert htaccess_findings == [], (
+        ".htaccess is not in _CHECKS — no PC-MCFG finding should be emitted for it"
+    )
 
 
 async def test_misconfigs_no_false_positives_on_404(ctx):
