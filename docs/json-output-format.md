@@ -99,7 +99,8 @@ Finding {
 | `waf`              | Web Application Firewall detection             |
 | `plugins`          | Plugin detection (passive + brute-force)       |
 | `themes`           | Theme detection (passive + brute-force)        |
-| `users`            | User enumeration                               |
+| `users`            | User enumeration (7 techniques)                |
+| `brute_force`      | Credential brute force against wp-login.php    |
 | `xmlrpc`           | XML-RPC exposure checks                        |
 | `rest_api`         | REST API exposure and user leaks               |
 | `misconfigs`       | WordPress misconfiguration checks              |
@@ -134,7 +135,8 @@ Finding {
 | `backup_files`            | SQL backup or archive files accessible                          |
 | `admin_scripts`           | install.php / upgrade.php accessible                            |
 | `directory_listing`       | Open directory listing in wp-content or subdirectories          |
-| `user_enumeration`        | WordPress usernames leaked via REST API or author archives       |
+| `user_enumeration`        | WordPress usernames leaked via REST API, author archives, sitemap, RSS, oEmbed or HTML links |
+| `brute_force`             | Credential brute force result (success, failure, rate-limit, skipped) |
 | `xmlrpc`                  | XML-RPC endpoint enabled (brute-force / DoS amplification risk) |
 | `rest_api_exposure`       | REST API leaking data or users without authentication           |
 | `attack_surface`          | Unnecessary attack surface enabled (e.g. wp-cron external)     |
@@ -171,8 +173,43 @@ Evidence keys vary by finding. Common patterns:
 # http_headers
 { "header": string, "value": string | "missing" }
 
-# users (rest_api / xmlrpc)
-{ "source": string, "users": string }   -- users is a formatted multi-line string
+# users — PC-USR-001 (REST API)
+{ "url": string, "users": string }
+-- users: multi-line string, one entry per line: "  • [id:N] Name (@slug) — url"
+
+# users — PC-USR-002 (author archives)
+{ "users": string }
+-- users: multi-line string, one entry per line: "  • slug"
+
+# users — PC-USR-003 (WP sitemap /wp-sitemap-users-1.xml)
+{ "url": string, "users": string }
+-- users: multi-line string: "  • @slug" per line
+
+# users — PC-USR-004 (RSS dc:creator)
+{ "url": string, "users": string }
+-- users: multi-line string: "  • display_name" per line
+
+# users — PC-USR-005 (Yoast /author-sitemap.xml)
+{ "url": string, "users": string }
+-- users: multi-line string: "  • @slug" per line
+
+# brute_force — PC-BRU-001 (valid credentials found)
+{ "url": string, "credentials": string, "has_2fa": string, "attempts": integer }
+-- credentials: multi-line string: "  • username / pa***d" (passwords masked: first 2 chars + *** + last char)
+-- has_2fa: "True" or "False"
+-- severity: CRITICAL (9.8) when has_2fa=False; HIGH (7.5) when has_2fa=True
+
+# brute_force — PC-BRU-002 (2FA detected during brute force)
+{ "url": string, "2fa": "detected" }
+
+# brute_force — PC-BRU-003 (no WordPress users found — scan skipped)
+{ "reason": "no_users_found" }
+
+# brute_force — PC-BRU-004 (brute force completed, no credentials found)
+{ "attempts": integer }
+
+# brute_force — PC-BRU-007 (brute force stopped — rate limiting detected)
+{ "reason": "rate_limit_detected", "attempts": integer }
 
 # webshells
 { "url": string, "matched_pattern": string, "response_size": integer }

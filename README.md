@@ -378,7 +378,7 @@ plecost scan https://target.com --quiet
 
 ## Detection Modules
 
-Plecost runs **18 async modules** in parallel, wired through an explicit dependency graph. Modules without interdependencies run concurrently from the start; `cves` waits for `plugins` and `themes` to complete before correlating results against the local database.
+Plecost runs **19 async modules** in parallel, wired through an explicit dependency graph. Modules without interdependencies run concurrently from the start; `cves` waits for `plugins` and `themes` to complete before correlating results against the local database.
 
 | Module | What it checks | Finding IDs |
 |--------|----------------|-------------|
@@ -386,7 +386,8 @@ Plecost runs **18 async modules** in parallel, wired through an explicit depende
 | `waf` | WAF/CDN detection (Cloudflare, Sucuri, Wordfence, Imperva, AWS, Akamai, Fastly) | PC-WAF-001 |
 | `plugins` | Plugin enumeration — passive HTML + brute-force against `readme.txt` | PC-PLG-NNN |
 | `themes` | Theme detection via passive scan + `style.css` brute-force | PC-THM-001 |
-| `users` | User enumeration via REST API and author archive pages | PC-USR-001/002 |
+| `users` | User enumeration via 7 techniques: REST API (paginated), author archives (1–25/100 IDs), WP sitemap, RSS `<dc:creator>`, Yoast sitemap, oEmbed, HTML author links | PC-USR-001/002/003/004/005 |
+| `brute_force` | Credential brute force against `wp-login.php` using detected usernames + internal wordlist or external file. Requires `--brute-force`. Detects rate-limiting and 2FA. | PC-BRU-001/002/003/004/007 |
 | `xmlrpc` | XML-RPC access, `pingback.ping` DoS vector, `system.listMethods` | PC-XMLRPC-001/002/003 |
 | `rest_api` | REST API link disclosure, oEmbed, CORS misconfiguration | PC-REST-001/002/003 |
 | `misconfigs` | 12 checks: `wp-config.php`, `.env`, `.git`, `debug.log`, directory traversal... | PC-MCFG-001–012 |
@@ -402,6 +403,48 @@ Plecost runs **18 async modules** in parallel, wired through an explicit depende
 | `wp_ecommerce` | WP eCommerce-specific security checks (see below) | PC-WPEC-000–021 |
 
 Use `plecost explain <ID>` for full technical detail and remediation steps on any finding ID.
+
+
+## User Enumeration
+
+The `users` module runs 7 techniques in parallel and deduplicates results across all sources:
+
+| Finding ID | Technique | Severity | Trigger |
+|------------|-----------|----------|---------|
+| `PC-USR-001` | REST API `/wp-json/wp/v2/users` with full pagination | MEDIUM | Endpoint returns user data |
+| `PC-USR-002` | Author archive `/?author=N` (IDs 1–25 fast / 1–100 deep, early-stop after 3 misses) | MEDIUM | Redirect to `/author/<slug>/` |
+| `PC-USR-003` | WordPress core sitemap `/wp-sitemap-users-1.xml` | INFO | File accessible and contains `<loc>` entries with author slugs |
+| `PC-USR-004` | RSS feed `<dc:creator>` tags at `/?feed=rss2` | MEDIUM | Feed contains author names |
+| `PC-USR-005` | Yoast SEO author sitemap `/author-sitemap.xml` | INFO | Yoast sitemap accessible |
+| *(no finding)* | oEmbed API — only if `author_url` contains `/author/` | — | Used for deduplication only |
+| *(no finding)* | Homepage HTML author links matching `/author/<slug>/` | — | Used for deduplication only |
+
+All seven techniques run concurrently. Users discovered by multiple techniques are deduplicated by username (case-insensitive) and appear once in `ScanResult.users`.
+
+
+## Brute Force
+
+The `brute_force` module is **opt-in** and requires `--brute-force`. It never activates with `--aggressive`.
+
+```bash
+plecost scan https://target.com --brute-force                             # internal wordlist only
+plecost scan https://target.com --brute-force --brute-force-wordlist passwords.txt  # external wordlist
+plecost scan https://target.com --brute-force --brute-force-wordlist passwords.txt --brute-force-combine  # both
+```
+
+For each detected username, it tests ~63 internal passwords plus dynamic variants (e.g. `username`, `username123`, `username2025`, `username!`). External wordlists are capped at 10 000 lines (fast mode) or 50 000 lines (deep mode).
+
+Login success is detected by the presence of a `wordpress_logged_in_*` cookie in the response (`Set-Cookie` header).
+
+| Finding ID | Condition | Severity |
+|------------|-----------|----------|
+| `PC-BRU-001` | Valid credentials found | CRITICAL (9.8) without 2FA; HIGH (7.5) with 2FA detected |
+| `PC-BRU-002` | 2FA detected on `wp-admin` login page | INFO |
+| `PC-BRU-003` | No WordPress users discovered — brute force skipped | INFO |
+| `PC-BRU-004` | Brute force completed with no valid credentials found | INFO |
+| `PC-BRU-007` | Brute force stopped — target is rate-limiting login attempts | INFO |
+
+Passwords in `PC-BRU-001` evidence are masked: first 2 characters + `***` + last character (e.g. `pa***d`). Rate limiting is detected by HTTP 429/403, body strings (`Too many`, `Locked`, `Blocked`, etc.), or a dropped TCP connection.
 
 
 ## WooCommerce Security
