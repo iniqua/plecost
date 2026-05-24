@@ -419,7 +419,7 @@ async def _sync_cisa_kev(sf: "async_sessionmaker[AsyncSession]") -> None:
                 .values(has_exploit=True)
             )
             await session.commit()
-            count = result.rowcount
+            count = result.rowcount  # type: ignore[attr-defined]
         if count > 0:
             console.print(f"[green]CISA KEV: {count} CVE(s) marked as has_exploit=True[/green]")
         else:

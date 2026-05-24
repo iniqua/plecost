@@ -69,8 +69,8 @@ class CVEsModule(ScanModule):
             f"{vuln.version_start_incl or vuln.version_start_excl or '*'}"
             f"–{vuln.version_end_incl or vuln.version_end_excl or '*'}"
         )
-        evidence: dict = {"cve_id": vuln.cve_id, "software": vuln.software_slug,
-                          "version_range": version_range}
+        evidence: dict[str, str] = {"cve_id": vuln.cve_id, "software": vuln.software_slug,
+                                    "version_range": version_range}
         if installed_version:
             evidence["installed_version"] = installed_version
         return Finding(
