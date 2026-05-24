@@ -223,6 +223,17 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 ## Scoring de Hallazgos
 - NO elevar severidad de un webshell sospechoso basándose en CVEs de otros plugins del mismo sitio — es correlación espuria que genera HIGH engañosos sobre archivos legítimos
 
+## Release Process
+- Antes de tagear: actualizar `version` en `pyproject.toml` — el paquete PyPI se construye desde ahí, no del tag
+- Orden: bump `pyproject.toml` → commit → push → `git tag vX.Y.Z` → `git push origin vX.Y.Z` → `gh release create`
+- Si el tag ya existe en remoto y hay que rehacerlo: `git tag -d vX.Y.Z && git push origin :refs/tags/vX.Y.Z && gh release delete vX.Y.Z --yes`
+
+## mypy Gotchas
+- `dict` sin tipo dispara `[type-arg]` en CI — usar siempre `dict[str, str]` o `dict[str, Any]`
+- `result.rowcount` tras `session.execute(UPDATE)`: mypy no lo reconoce en `Result[Any]` — suprimir con `# type: ignore[attr-defined]` (no `[union-attr]`)
+- mypy no está instalado globalmente — ejecutar con `source .venv/bin/activate && python3 -m mypy plecost/ --ignore-missing-imports`
+- Las anotaciones "Event loop is closed" en CI son warnings pre-existentes de aiosqlite — no son fallos; CI pasa igualmente
+
 ## License
 - PolyForm Noncommercial License 1.0.0 — free for non-commercial use; commercial use requires contacting cr0hn@cr0hn.com
 - Do NOT change to MIT or any open source license without explicit authorization
