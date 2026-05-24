@@ -28,6 +28,10 @@ from plecost.modules.magecart import MagecartModule
 from plecost.modules.webshells import WebshellsModule
 from plecost.modules.cves import CVEsModule
 from plecost.modules.brute_force import BruteForceModule
+from plecost.modules.timthumb import TimThumbModule
+from plecost.modules.emergency_scripts import EmergencyScriptsModule
+from plecost.modules.wp_hardening import WPHardeningModule
+from plecost.modules.brute import BruteModule
 from plecost.modules.base import ScanModule
 from plecost.models import Finding
 
@@ -135,6 +139,10 @@ class Scanner:
             MagecartModule(store),  # store puede ser None si DB no disponible
             WebshellsModule(),
             BruteForceModule(),
+            TimThumbModule(),
+            EmergencyScriptsModule(),
+            WPHardeningModule(),
+            BruteModule(),
         ]
         if cve_mod:
             modules.append(cve_mod)

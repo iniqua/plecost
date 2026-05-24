@@ -72,18 +72,22 @@ _CATEGORY_EXACT: dict[str, str] = {
 }
 
 _CATEGORY_PREFIXES: list[tuple[str, str]] = [
-    ("PC-DIR-",   "directory_listing"),
-    ("PC-USR-",   "user_enumeration"),
-    ("PC-BRU-",   "brute_force"),
-    ("PC-XMLRPC-","xmlrpc"),
-    ("PC-REST-",  "rest_api_exposure"),
-    ("PC-WAF-",   "waf_detected"),
-    ("PC-WC-",    "woocommerce_detection"),
-    ("PC-WPEC-",  "wp_ecommerce"),
-    ("PC-MGC-",   "card_skimmer"),
-    ("PC-WSH-",   "webshell"),
-    ("PC-CVE-",   "cve"),
-    ("PC-PRE-",   "infrastructure"),
+    ("PC-DIR-",    "directory_listing"),
+    ("PC-USR-",    "user_enumeration"),
+    ("PC-BRU-",    "brute_force"),
+    ("PC-BRUTE-",  "brute_force"),
+    ("PC-XMLRPC-", "xmlrpc"),
+    ("PC-REST-",   "rest_api_exposure"),
+    ("PC-WAF-",    "waf_detected"),
+    ("PC-WC-",     "woocommerce_detection"),
+    ("PC-WPEC-",   "wp_ecommerce"),
+    ("PC-MGC-",    "card_skimmer"),
+    ("PC-WSH-",    "webshell"),
+    ("PC-CVE-",    "cve"),
+    ("PC-PRE-",    "infrastructure"),
+    ("PC-TTH-",    "timthumb"),
+    ("PC-EMRG-",   "emergency_scripts"),
+    ("PC-WPH-",    "wp_hardening"),
 ]
 
 

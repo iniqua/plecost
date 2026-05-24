@@ -178,5 +178,30 @@ class XMLRPCModule(ScanModule):
                         references=["https://kinsta.com/blog/xmlrpc-php/#xmlrpc-brute-force-attacks"],
                         cvss_score=7.5, module=self.name
                     ))
+
+                # AC-6: PC-XMLRPC-007 — publishing methods exposed
+                _PUBLISH_METHODS = {"wp.newPost", "metaWeblog.newPost", "blogger.newPost"}
+                found_publish = [m for m in _PUBLISH_METHODS if m in r.text]
+                if found_publish:
+                    ctx.add_finding(Finding(
+                        id="PC-XMLRPC-007", remediation_id="REM-XMLRPC-007",
+                        title="XML-RPC publishing methods exposed",
+                        severity=Severity.LOW,
+                        description=(
+                            "One or more XML-RPC publishing methods are exposed: "
+                            + ", ".join(sorted(found_publish))
+                            + ". These methods can be abused to publish content "
+                            "as any user that can be authenticated."
+                        ),
+                        evidence={"url": xmlrpc_url, "methods": sorted(found_publish)},
+                        remediation=(
+                            "Disable XML-RPC publishing methods or restrict XML-RPC access entirely: "
+                            "add_filter('xmlrpc_methods', function($m){ "
+                            "unset($m['wp.newPost'], $m['metaWeblog.newPost'], $m['blogger.newPost']); "
+                            "return $m; });"
+                        ),
+                        references=["https://kinsta.com/blog/xmlrpc-php/"],
+                        cvss_score=3.1, module=self.name
+                    ))
         except Exception:
             pass

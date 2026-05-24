@@ -23,6 +23,10 @@ _ALL_MODULE_NAMES = [
     "magecart",
     "webshells",
     "brute_force",
+    "timthumb",
+    "emergency_scripts",
+    "wp_hardening",
+    "brute",
 ]
 
 
@@ -508,6 +512,39 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
         "references": [],
         "remediation_id": "REM-XMLRPC-003",
     },
+    "PC-XMLRPC-004": {
+        "title": "XML-RPC system.multicall enabled (Brute-force amplification)",
+        "severity": "HIGH",
+        "description": "The system.multicall method is enabled, allowing attackers to bypass rate limits by sending thousands of credentials in a single request.",
+        "remediation": "Disable system.multicall: add_filter('xmlrpc_methods', function($m){ unset($m['system.multicall']); return $m; });",
+        "references": ["https://kinsta.com/blog/xmlrpc-php/#xmlrpc-brute-force-attacks"],
+        "remediation_id": "REM-XMLRPC-004",
+    },
+    "PC-XMLRPC-005": {
+        "title": "XML-RPC Brute-Force Protection Missing",
+        "severity": "HIGH",
+        "description": "The xmlrpc.php endpoint does not enforce rate limiting on failed authentication attempts.",
+        "remediation": "Implement rate limiting via a WAF, security plugin, or Fail2Ban, or disable XML-RPC entirely.",
+        "references": ["https://kinsta.com/blog/xmlrpc-php/"],
+        "remediation_id": "REM-XMLRPC-005",
+    },
+    "PC-XMLRPC-006": {
+        "title": "XML-RPC Guardrails Active",
+        "severity": "INFO",
+        "description": "The xmlrpc.php endpoint is accessible, but active defenses (WAF/Rate Limiting) successfully blocked repeated authentication attempts.",
+        "remediation": "No immediate action required. Defenses are working as expected.",
+        "references": [],
+        "remediation_id": "REM-XMLRPC-006",
+    },
+    # AC-6: publishing methods
+    "PC-XMLRPC-007": {
+        "title": "XML-RPC publishing methods exposed",
+        "severity": "LOW",
+        "description": "XML-RPC publishing methods (wp.newPost, metaWeblog.newPost, blogger.newPost) are exposed, allowing content creation via XML-RPC as any authenticated user.",
+        "remediation": "Disable publishing methods: add_filter('xmlrpc_methods', function($m){ unset($m['wp.newPost'], $m['metaWeblog.newPost'], $m['blogger.newPost']); return $m; });",
+        "references": ["https://kinsta.com/blog/xmlrpc-php/"],
+        "remediation_id": "REM-XMLRPC-007",
+    },
     "PC-REST-001": {
         "title": "REST API link exposed in HTML head",
         "severity": "INFO",
@@ -544,6 +581,15 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
     "PC-MCFG-010": {"title": "license.txt accessible", "severity": "LOW", "description": "license.txt confirms WordPress installation.", "remediation": "Delete /license.txt from the server.", "references": [], "remediation_id": "REM-MCFG-010"},
     "PC-MCFG-011": {"title": "wlwmanifest.xml exposed", "severity": "LOW", "description": "Exposes Windows Live Writer endpoint.", "remediation": "remove_action('wp_head', 'wlwmanifest_link');", "references": [], "remediation_id": "REM-MCFG-011"},
     "PC-MCFG-012": {"title": "wp-cron.php externally accessible", "severity": "MEDIUM", "description": "wp-cron.php can be triggered by anyone.", "remediation": "define('DISABLE_WP_CRON', true); and use real server cron.", "references": [], "remediation_id": "REM-MCFG-012"},
+    # AC-1..AC-4: new misconfig findings
+    "PC-MCFG-013": {"title": "wp-content/debug.log exposed", "severity": "HIGH", "description": "The WordPress debug log in wp-content is publicly accessible and may contain sensitive server paths and error data.", "remediation": "Delete the file and set WP_DEBUG_LOG to false in wp-config.php. Deny direct access via .htaccess.", "references": ["https://wordpress.org/support/article/debugging-in-wordpress/"], "remediation_id": "REM-MCFG-013"},
+    "PC-MCFG-014": {"title": "Adminer database tool exposed", "severity": "CRITICAL", "description": "adminer.php is publicly accessible and provides a full-featured database management interface. Attackers can use it to read, modify, or exfiltrate all data.", "remediation": "Remove adminer.php from the webroot immediately. Never leave database management tools publicly accessible.", "references": ["https://adminer.org/", "https://owasp.org/www-community/vulnerabilities/Insecure_Direct_Object_Reference"], "remediation_id": "REM-MCFG-014"},
+    "PC-MCFG-015": {"title": "wp-config.php~ editor backup exposed", "severity": "CRITICAL", "description": "A text editor backup file wp-config.php~ is publicly accessible and exposes database credentials and WordPress secret keys.", "remediation": "Delete wp-config.php~ immediately. Configure your editor to not create backup files in the webroot.", "references": ["https://wordpress.org/support/article/hardening-wordpress/"], "remediation_id": "REM-MCFG-015"},
+    "PC-MCFG-016": {"title": "wp-config.php.old backup exposed", "severity": "CRITICAL", "description": "A backup file wp-config.php.old is publicly accessible and exposes database credentials and WordPress secret keys.", "remediation": "Delete wp-config.php.old immediately. Remove all configuration backups from the webroot.", "references": ["https://wordpress.org/support/article/hardening-wordpress/"], "remediation_id": "REM-MCFG-016"},
+    "PC-MCFG-017": {"title": "wp-config.php_bak backup exposed", "severity": "CRITICAL", "description": "A backup file wp-config.php_bak is publicly accessible and exposes database credentials and WordPress secret keys.", "remediation": "Delete wp-config.php_bak immediately. Remove all configuration backups from the webroot.", "references": ["https://wordpress.org/support/article/hardening-wordpress/"], "remediation_id": "REM-MCFG-017"},
+    "PC-MCFG-018": {"title": "wp-config.php.orig backup exposed", "severity": "CRITICAL", "description": "A backup file wp-config.php.orig is publicly accessible and exposes database credentials and WordPress secret keys.", "remediation": "Delete wp-config.php.orig immediately. Remove all configuration backups from the webroot.", "references": ["https://wordpress.org/support/article/hardening-wordpress/"], "remediation_id": "REM-MCFG-018"},
+    "PC-MCFG-019": {"title": "wp-config.php.save backup exposed", "severity": "CRITICAL", "description": "A backup file wp-config.php.save is publicly accessible and exposes database credentials and WordPress secret keys.", "remediation": "Delete wp-config.php.save immediately. Remove all configuration backups from the webroot.", "references": ["https://wordpress.org/support/article/hardening-wordpress/"], "remediation_id": "REM-MCFG-019"},
+    "PC-MCFG-020": {"title": "database.sql dump exposed", "severity": "HIGH", "description": "A database dump file database.sql is publicly accessible and may expose the full WordPress database including password hashes, user data, and site content.", "remediation": "Remove database.sql from the webroot immediately. Store backups outside the document root.", "references": ["https://wordpress.org/support/article/hardening-wordpress/"], "remediation_id": "REM-MCFG-020"},
     "PC-DIR-001": {"title": "Directory listing in /wp-content/", "severity": "HIGH", "description": "Directory listing is enabled in /wp-content/.", "remediation": "Add 'Options -Indexes' to .htaccess.", "references": [], "remediation_id": "REM-DIR-001"},
     "PC-DIR-002": {"title": "Directory listing in /wp-content/plugins/", "severity": "HIGH", "description": "Plugin directory listing enabled.", "remediation": "Add 'Options -Indexes' to .htaccess.", "references": [], "remediation_id": "REM-DIR-002"},
     "PC-DIR-003": {"title": "Directory listing in /wp-content/themes/", "severity": "HIGH", "description": "Theme directory listing enabled.", "remediation": "Add 'Options -Indexes' to .htaccess.", "references": [], "remediation_id": "REM-DIR-003"},
@@ -560,6 +606,8 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
     "PC-SSL-002": {"title": "Invalid or expired SSL certificate", "severity": "HIGH", "description": "The SSL certificate is invalid or expired.", "remediation": "Renew the SSL certificate immediately.", "references": [], "remediation_id": "REM-SSL-002"},
     "PC-SSL-003": {"title": "HSTS not configured", "severity": "MEDIUM", "description": "HSTS is not configured.", "remediation": "Enable HSTS in web server configuration.", "references": [], "remediation_id": "REM-SSL-003"},
     "PC-DBG-001": {"title": "WP_DEBUG active — PHP errors exposed", "severity": "HIGH", "description": "PHP error messages are visible in responses, indicating WP_DEBUG=true.", "remediation": "Set define('WP_DEBUG', false); in wp-config.php for production.", "references": ["https://wordpress.org/support/article/debugging-in-wordpress/"], "remediation_id": "REM-DBG-001"},
+    # AC-5: Full Path Disclosure via REST API
+    "PC-DBG-002": {"title": "Full Path Disclosure via REST API", "severity": "MEDIUM", "description": "The WordPress REST API leaks the absolute server file-system path in its error response, aiding attackers in mapping the server layout.", "remediation": "Set WP_DEBUG to false in wp-config.php and ensure display_errors = Off in php.ini for production.", "references": ["https://owasp.org/www-community/attacks/Full_Path_Disclosure"], "remediation_id": "REM-DBG-002"},
     "PC-DBG-003": {"title": "PHP version exposed via X-Powered-By", "severity": "MEDIUM", "description": "PHP version is disclosed in the X-Powered-By response header.", "remediation": "Set expose_php = Off in php.ini", "references": [], "remediation_id": "REM-DBG-003"},
     "PC-CNT-001": {"title": "Potential card skimming script", "severity": "HIGH", "description": "A script with card skimming patterns was detected.", "remediation": "Investigate and remove the suspicious script immediately. Check for site compromise.", "references": ["https://www.imperva.com/learn/application-security/magecart/"], "remediation_id": "REM-CNT-001"},
     "PC-CNT-002": {"title": "Suspicious external iframe", "severity": "MEDIUM", "description": "An external iframe from an unexpected domain was found.", "remediation": "Review all external iframes. Remove unauthorized ones.", "references": [], "remediation_id": "REM-CNT-002"},
@@ -890,6 +938,136 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
         "remediation": "Rate limiting is a positive security control. Ensure it is properly configured.",
         "references": [],
         "remediation_id": "REM-BRU-007",
+    },
+    # ------------------------------------------------------------------ #
+    # TimThumb module findings (AC-7)                                     #
+    # ------------------------------------------------------------------ #
+    "PC-TTH-001": {
+        "title": "TimThumb script is publicly accessible",
+        "severity": "HIGH",
+        "description": "A timthumb.php script was found accessible at the target. TimThumb is an outdated image-resizing library with a long history of critical vulnerabilities including remote code execution.",
+        "remediation": "Remove timthumb.php from the server. Modern WordPress themes use native image handling and do not require TimThumb.",
+        "references": [
+            "https://blog.sucuri.net/2014/06/timthumb-zero-day-exploit-found-vulnerability-in-webshot.html",
+            "https://nvd.nist.gov/vuln/search/results?query=timthumb",
+        ],
+        "remediation_id": "REM-TTH-001",
+    },
+    "PC-TTH-002": {
+        "title": "TimThumb version below 2.8.14 (vulnerable)",
+        "severity": "CRITICAL",
+        "description": "The detected TimThumb version is older than 2.8.14, the last patched release. This version is vulnerable to multiple critical exploits including remote code execution via webshot and arbitrary file inclusion.",
+        "remediation": "Remove timthumb.php immediately. If the theme/plugin requires it, update to a version that uses a patched TimThumb or native WordPress image handling.",
+        "references": ["https://nvd.nist.gov/vuln/search/results?query=timthumb"],
+        "remediation_id": "REM-TTH-002",
+    },
+    "PC-TTH-003": {
+        "title": "TimThumb found inside plugin directory",
+        "severity": "HIGH",
+        "description": "A timthumb.php file was found inside a WordPress plugin directory. Plugins bundling TimThumb are a known attack vector for compromising WordPress sites.",
+        "remediation": "Update or remove the plugin that bundles TimThumb. Contact the plugin author to request removal of the TimThumb dependency.",
+        "references": [
+            "https://blog.sucuri.net/2014/06/timthumb-zero-day-exploit-found-vulnerability-in-webshot.html"
+        ],
+        "remediation_id": "REM-TTH-003",
+    },
+    # ------------------------------------------------------------------ #
+    # Emergency Scripts module findings (AC-8)                            #
+    # ------------------------------------------------------------------ #
+    "PC-EMRG-001": {
+        "title": "Emergency script /emergency.php is accessible",
+        "severity": "HIGH",
+        "description": "/emergency.php is publicly accessible and contains PHP signatures (password reset, form elements) suggesting it is an emergency WordPress administration script. Such scripts bypass normal authentication and are a critical security risk.",
+        "remediation": "Remove /emergency.php immediately after use. Never leave emergency scripts accessible on production servers.",
+        "references": ["https://wordpress.org/support/article/hardening-wordpress/"],
+        "remediation_id": "REM-EMRG-001",
+    },
+    "PC-EMRG-002": {
+        "title": "Emergency script /wp-emergency.php is accessible",
+        "severity": "HIGH",
+        "description": "/wp-emergency.php is publicly accessible and contains PHP signatures suggesting it is an emergency WordPress administration script that bypasses normal authentication.",
+        "remediation": "Remove /wp-emergency.php immediately after use.",
+        "references": ["https://wordpress.org/support/article/hardening-wordpress/"],
+        "remediation_id": "REM-EMRG-002",
+    },
+    "PC-EMRG-003": {
+        "title": "Emergency script /reset.php is accessible",
+        "severity": "HIGH",
+        "description": "/reset.php is publicly accessible and contains PHP signatures suggesting it is a WordPress password reset or emergency access script.",
+        "remediation": "Remove /reset.php immediately after use.",
+        "references": ["https://wordpress.org/support/article/hardening-wordpress/"],
+        "remediation_id": "REM-EMRG-003",
+    },
+    "PC-EMRG-004": {
+        "title": "Emergency script /pw-reset.php is accessible",
+        "severity": "HIGH",
+        "description": "/pw-reset.php is publicly accessible and contains PHP signatures suggesting it is a WordPress password reset script that bypasses normal authentication.",
+        "remediation": "Remove /pw-reset.php immediately after use.",
+        "references": ["https://wordpress.org/support/article/hardening-wordpress/"],
+        "remediation_id": "REM-EMRG-004",
+    },
+    "PC-EMRG-005": {
+        "title": "Emergency script /emergency-reset.php is accessible",
+        "severity": "HIGH",
+        "description": "/emergency-reset.php is publicly accessible and contains PHP signatures suggesting it is an emergency WordPress reset script that bypasses normal authentication.",
+        "remediation": "Remove /emergency-reset.php immediately after use.",
+        "references": ["https://wordpress.org/support/article/hardening-wordpress/"],
+        "remediation_id": "REM-EMRG-005",
+    },
+    # ------------------------------------------------------------------ #
+    # Brute module findings (AC-9)                                        #
+    # ------------------------------------------------------------------ #
+    "PC-BRUTE-001": {
+        "title": "Valid credentials found via XML-RPC brute force",
+        "severity": "CRITICAL",
+        "description": "Brute force attack via the XML-RPC endpoint found valid credential pairs. An attacker can use these credentials to gain full administrative access.",
+        "remediation": "Change found passwords immediately. Disable XML-RPC if not needed. Enable 2FA and implement account lockout.",
+        "references": [
+            "https://kinsta.com/blog/xmlrpc-php/#xmlrpc-brute-force-attacks",
+            "https://wordpress.org/support/article/brute-force-attacks/",
+        ],
+        "remediation_id": "REM-BRUTE-001",
+    },
+    "PC-BRUTE-002": {
+        "title": "Valid credentials found via wp-login.php brute force",
+        "severity": "CRITICAL",
+        "description": "Brute force attack via wp-login.php found valid credential pairs. An attacker can use these credentials to gain full administrative access.",
+        "remediation": "Change found passwords immediately. Enable 2FA. Implement account lockout and IP-based rate limiting.",
+        "references": ["https://wordpress.org/support/article/brute-force-attacks/"],
+        "remediation_id": "REM-BRUTE-002",
+    },
+    "PC-BRUTE-003": {
+        "title": "No brute force protection detected on login endpoints",
+        "severity": "HIGH",
+        "description": "Multiple credential attempts were made against WordPress login endpoints without triggering any rate limiting or blocking. The site lacks brute force protection.",
+        "remediation": "Implement account lockout and rate limiting. Use a security plugin such as Wordfence or limit-login-attempts-reloaded. Disable XML-RPC if not needed.",
+        "references": [
+            "https://wordpress.org/support/article/brute-force-attacks/",
+            "https://kinsta.com/blog/wordpress-login-page/#how-to-protect-your-wordpress-login-page",
+        ],
+        "remediation_id": "REM-BRUTE-003",
+    },
+    "PC-BRUTE-004": {
+        "title": "Brute force protection confirmed",
+        "severity": "INFO",
+        "description": "Rate limiting or blocking was detected on WordPress login endpoints after repeated authentication attempts. Active brute force protection is in place.",
+        "remediation": "No action required. Rate limiting is a positive security control. Ensure it is properly configured.",
+        "references": [],
+        "remediation_id": "REM-BRUTE-004",
+    },
+    # ------------------------------------------------------------------ #
+    # WP Hardening module findings (AC-10)                                #
+    # ------------------------------------------------------------------ #
+    "PC-WPH-001": {
+        "title": "WordPress version is outdated",
+        "severity": "MEDIUM",
+        "description": "The detected WordPress version is older than the known latest version (6.8.1). Outdated WordPress installations may be vulnerable to publicly disclosed security issues.",
+        "remediation": "Update WordPress to the latest version immediately via Dashboard > Updates or WP-CLI: wp core update.",
+        "references": [
+            "https://wordpress.org/news/category/releases/",
+            "https://wordpress.org/support/article/updating-wordpress/",
+        ],
+        "remediation_id": "REM-WPH-001",
     },
 }
 

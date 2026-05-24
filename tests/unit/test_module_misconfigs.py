@@ -146,3 +146,170 @@ async def test_misconfigs_no_false_positives_on_404(ctx):
 
     misconfig_findings = [f for f in ctx.findings if f.id.startswith("PC-MCFG")]
     assert len(misconfig_findings) == 0
+
+
+# -----------------------------------------------------------------------
+# New findings: AC-1 to AC-4
+# -----------------------------------------------------------------------
+
+async def test_pc_mcfg_013_wp_content_debug_log(ctx):
+    """AC-1: /wp-content/debug.log accessible with plaintext content → PC-MCFG-013 HIGH."""
+    async with respx.mock:
+        respx.get("https://example.com/wp-content/debug.log").mock(
+            return_value=httpx.Response(
+                200,
+                text="[13-Apr-2026 12:00:00 UTC] PHP Notice: error in /var/www",
+                headers={"content-type": "text/plain"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    ids = [f.id for f in ctx.findings]
+    assert "PC-MCFG-013" in ids
+    f = next(f for f in ctx.findings if f.id == "PC-MCFG-013")
+    assert f.severity == Severity.HIGH
+
+
+async def test_pc_mcfg_013_not_triggered_on_html_response(ctx):
+    """AC-1: /wp-content/debug.log returns HTML (soft-404) → no PC-MCFG-013."""
+    async with respx.mock:
+        respx.get("https://example.com/wp-content/debug.log").mock(
+            return_value=httpx.Response(
+                200,
+                text="<html><body>Not found</body></html>",
+                headers={"content-type": "text/html"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert not any(f.id == "PC-MCFG-013" for f in ctx.findings)
+
+
+async def test_pc_mcfg_014_adminer_with_signature(ctx):
+    """AC-2: /adminer.php with 'class Adminer' in body → PC-MCFG-014 CRITICAL."""
+    async with respx.mock:
+        respx.get("https://example.com/adminer.php").mock(
+            return_value=httpx.Response(
+                200,
+                text="<!doctype html><html><body>class Adminer { ... }</body></html>",
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    ids = [f.id for f in ctx.findings]
+    assert "PC-MCFG-014" in ids
+    f = next(f for f in ctx.findings if f.id == "PC-MCFG-014")
+    assert f.severity == Severity.CRITICAL
+
+
+async def test_pc_mcfg_014_not_triggered_without_signature(ctx):
+    """AC-2: /adminer.php without 'class Adminer' in body → no PC-MCFG-014."""
+    async with respx.mock:
+        respx.get("https://example.com/adminer.php").mock(
+            return_value=httpx.Response(200, text="<html><body>something else</body></html>")
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert not any(f.id == "PC-MCFG-014" for f in ctx.findings)
+
+
+async def test_pc_mcfg_015_wp_config_tilde(ctx):
+    """AC-3: /wp-config.php~ with plaintext content → PC-MCFG-015 CRITICAL."""
+    async with respx.mock:
+        respx.get("https://example.com/wp-config.php~").mock(
+            return_value=httpx.Response(
+                200,
+                text="<?php // WordPress config\ndefine('DB_PASSWORD','secret');",
+                headers={"content-type": "text/plain"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    ids = [f.id for f in ctx.findings]
+    assert "PC-MCFG-015" in ids
+    f = next(f for f in ctx.findings if f.id == "PC-MCFG-015")
+    assert f.severity == Severity.CRITICAL
+
+
+async def test_pc_mcfg_016_wp_config_old(ctx):
+    """AC-3: /wp-config.php.old → PC-MCFG-016 CRITICAL."""
+    async with respx.mock:
+        respx.get("https://example.com/wp-config.php.old").mock(
+            return_value=httpx.Response(
+                200, text="define('DB_HOST','localhost');",
+                headers={"content-type": "text/plain"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert any(f.id == "PC-MCFG-016" for f in ctx.findings)
+
+
+async def test_pc_mcfg_017_wp_config_bak(ctx):
+    """AC-3: /wp-config.php_bak → PC-MCFG-017 CRITICAL."""
+    async with respx.mock:
+        respx.get("https://example.com/wp-config.php_bak").mock(
+            return_value=httpx.Response(
+                200, text="DB_NAME=wordpress",
+                headers={"content-type": "text/plain"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert any(f.id == "PC-MCFG-017" for f in ctx.findings)
+
+
+async def test_pc_mcfg_018_wp_config_orig(ctx):
+    """AC-3: /wp-config.php.orig → PC-MCFG-018 CRITICAL."""
+    async with respx.mock:
+        respx.get("https://example.com/wp-config.php.orig").mock(
+            return_value=httpx.Response(
+                200, text="define('DB_PASSWORD','secret');",
+                headers={"content-type": "text/plain"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert any(f.id == "PC-MCFG-018" for f in ctx.findings)
+
+
+async def test_pc_mcfg_019_wp_config_save(ctx):
+    """AC-3: /wp-config.php.save → PC-MCFG-019 CRITICAL."""
+    async with respx.mock:
+        respx.get("https://example.com/wp-config.php.save").mock(
+            return_value=httpx.Response(
+                200, text="define('DB_PASSWORD','secret');",
+                headers={"content-type": "text/plain"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert any(f.id == "PC-MCFG-019" for f in ctx.findings)
+
+
+async def test_pc_mcfg_020_database_sql(ctx):
+    """AC-4: /database.sql accessible with plaintext → PC-MCFG-020 HIGH."""
+    async with respx.mock:
+        respx.get("https://example.com/database.sql").mock(
+            return_value=httpx.Response(
+                200,
+                text="-- MySQL dump\nCREATE TABLE wp_users",
+                headers={"content-type": "text/plain"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    ids = [f.id for f in ctx.findings]
+    assert "PC-MCFG-020" in ids
+    f = next(f for f in ctx.findings if f.id == "PC-MCFG-020")
+    assert f.severity == Severity.HIGH

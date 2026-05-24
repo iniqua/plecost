@@ -149,3 +149,54 @@ async def test_http_403_block_emits_006(ctx):
     assert finding_006.evidence.get("protection_type") == "WAF/Rate-limiter", (
         "PC-XMLRPC-006 evidence must say WAF/Rate-limiter for HTTP 403 blocks"
     )
+
+
+# AC-6: PC-XMLRPC-007 publishing methods
+
+async def test_pc_xmlrpc_007_publishing_methods_detected(ctx):
+    """AC-6: system.listMethods includes wp.newPost → PC-XMLRPC-007 LOW."""
+    list_methods_response = """<?xml version="1.0"?>
+<methodResponse>
+  <params><param><value><array><data>
+    <value><string>system.listMethods</string></value>
+    <value><string>wp.newPost</string></value>
+    <value><string>metaWeblog.newPost</string></value>
+    <value><string>blogger.newPost</string></value>
+    <value><string>pingback.ping</string></value>
+  </data></array></value></param></params>
+</methodResponse>"""
+    async with respx.mock:
+        respx.get("https://example.com/xmlrpc.php").mock(
+            return_value=httpx.Response(200, text="XML-RPC")
+        )
+        respx.post("https://example.com/xmlrpc.php").mock(
+            return_value=httpx.Response(200, text=list_methods_response)
+        )
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await XMLRPCModule().run(ctx, http)
+    ids = [f.id for f in ctx.findings]
+    assert "PC-XMLRPC-007" in ids
+    from plecost.models import Severity
+    f = next(f for f in ctx.findings if f.id == "PC-XMLRPC-007")
+    assert f.severity == Severity.LOW
+
+
+async def test_pc_xmlrpc_007_not_emitted_when_no_publish_methods(ctx):
+    """AC-6: system.listMethods without publish methods → no PC-XMLRPC-007."""
+    list_methods_response = """<?xml version="1.0"?>
+<methodResponse>
+  <params><param><value><array><data>
+    <value><string>system.listMethods</string></value>
+    <value><string>system.multicall</string></value>
+  </data></array></value></param></params>
+</methodResponse>"""
+    async with respx.mock:
+        respx.get("https://example.com/xmlrpc.php").mock(
+            return_value=httpx.Response(200, text="XML-RPC")
+        )
+        respx.post("https://example.com/xmlrpc.php").mock(
+            return_value=httpx.Response(200, text=list_methods_response)
+        )
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await XMLRPCModule().run(ctx, http)
+    assert not any(f.id == "PC-XMLRPC-007" for f in ctx.findings)

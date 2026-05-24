@@ -542,6 +542,121 @@
       "title": "Objetivo bloqueado — HTTP 403 en sonda previa",
       "description": "La URL objetivo devolvió HTTP 403 en la sonda inicial. El escaneo fue abortado.",
       "remediation": "Verificar que el objetivo es accesible y tienes autorización para escanearlo."
+    },
+    "pc_mcfg_013": {
+      "title": "wp-content/debug.log expuesto",
+      "description": "El log de debug de WordPress en wp-content es accesible públicamente y puede contener rutas de servidor sensibles y datos de errores.",
+      "remediation": "Eliminar el archivo y establecer WP_DEBUG_LOG a false en wp-config.php. Denegar acceso directo via .htaccess."
+    },
+    "pc_mcfg_014": {
+      "title": "Herramienta de base de datos Adminer expuesta",
+      "description": "adminer.php es accesible públicamente y proporciona una interfaz completa de gestión de base de datos. Los atacantes pueden usarla para leer, modificar o exfiltrar todos los datos.",
+      "remediation": "Eliminar adminer.php del webroot inmediatamente. Nunca dejar herramientas de gestión de base de datos accesibles públicamente."
+    },
+    "pc_mcfg_015": {
+      "title": "Backup del editor wp-config.php~ expuesto",
+      "description": "Un archivo de backup del editor de texto wp-config.php~ es accesible públicamente y expone credenciales de base de datos y claves secretas de WordPress.",
+      "remediation": "Eliminar wp-config.php~ inmediatamente. Configurar el editor para no crear archivos de backup en el webroot."
+    },
+    "pc_mcfg_016": {
+      "title": "Backup wp-config.php.old expuesto",
+      "description": "Un archivo de backup wp-config.php.old es accesible públicamente y expone credenciales de base de datos y claves secretas de WordPress.",
+      "remediation": "Eliminar wp-config.php.old inmediatamente. Eliminar todos los backups de configuración del webroot."
+    },
+    "pc_mcfg_017": {
+      "title": "Backup wp-config.php_bak expuesto",
+      "description": "Un archivo de backup wp-config.php_bak es accesible públicamente y expone credenciales de base de datos y claves secretas de WordPress.",
+      "remediation": "Eliminar wp-config.php_bak inmediatamente. Eliminar todos los backups de configuración del webroot."
+    },
+    "pc_mcfg_018": {
+      "title": "Backup wp-config.php.orig expuesto",
+      "description": "Un archivo de backup wp-config.php.orig es accesible públicamente y expone credenciales de base de datos y claves secretas de WordPress.",
+      "remediation": "Eliminar wp-config.php.orig inmediatamente. Eliminar todos los backups de configuración del webroot."
+    },
+    "pc_mcfg_019": {
+      "title": "Backup wp-config.php.save expuesto",
+      "description": "Un archivo de backup wp-config.php.save es accesible públicamente y expone credenciales de base de datos y claves secretas de WordPress.",
+      "remediation": "Eliminar wp-config.php.save inmediatamente. Eliminar todos los backups de configuración del webroot."
+    },
+    "pc_mcfg_020": {
+      "title": "Volcado database.sql expuesto",
+      "description": "Un archivo de volcado de base de datos database.sql es accesible públicamente y puede exponer la base de datos completa de WordPress incluyendo hashes de contraseñas, datos de usuarios y contenido del sitio.",
+      "remediation": "Eliminar database.sql del webroot inmediatamente. Almacenar backups fuera del directorio raíz de documentos."
+    },
+    "pc_dbg_002": {
+      "title": "Revelación de ruta completa via REST API",
+      "description": "La REST API de WordPress filtra la ruta absoluta del sistema de archivos del servidor en su respuesta de error, ayudando a los atacantes a mapear el diseño del servidor.",
+      "remediation": "Establecer WP_DEBUG a false en wp-config.php y asegurarse de que display_errors = Off en php.ini para producción."
+    },
+    "pc_xmlrpc_007": {
+      "title": "Métodos de publicación XML-RPC expuestos",
+      "description": "Los métodos de publicación XML-RPC (wp.newPost, metaWeblog.newPost, blogger.newPost) están expuestos, permitiendo crear contenido via XML-RPC como cualquier usuario autenticado.",
+      "remediation": "Deshabilitar métodos de publicación: add_filter('xmlrpc_methods', function($m){ unset($m['wp.newPost'], $m['metaWeblog.newPost'], $m['blogger.newPost']); return $m; });"
+    },
+    "pc_tth_001": {
+      "title": "Script TimThumb accesible públicamente",
+      "description": "Se encontró un script timthumb.php accesible en el objetivo. TimThumb es una librería obsoleta de redimensionamiento de imágenes con un largo historial de vulnerabilidades críticas incluyendo ejecución remota de código.",
+      "remediation": "Eliminar timthumb.php del servidor. Los temas modernos de WordPress usan el manejo de imágenes nativo y no requieren TimThumb."
+    },
+    "pc_tth_002": {
+      "title": "Versión de TimThumb inferior a 2.8.14 (vulnerable)",
+      "description": "La versión de TimThumb detectada es anterior a 2.8.14, el último parche publicado. Esta versión es vulnerable a múltiples exploits críticos incluyendo ejecución remota de código.",
+      "remediation": "Eliminar timthumb.php inmediatamente. Si el tema/plugin lo requiere, actualizar a una versión que use un TimThumb parcheado o el manejo de imágenes nativo de WordPress."
+    },
+    "pc_tth_003": {
+      "title": "TimThumb encontrado dentro del directorio de plugin",
+      "description": "Se encontró un archivo timthumb.php dentro de un directorio de plugin de WordPress. Los plugins que incluyen TimThumb son un vector de ataque conocido para comprometer sitios WordPress.",
+      "remediation": "Actualizar o eliminar el plugin que incluye TimThumb. Contactar al autor del plugin para solicitar la eliminación de la dependencia de TimThumb."
+    },
+    "pc_emrg_001": {
+      "title": "Script de emergencia /emergency.php accesible",
+      "description": "/emergency.php es accesible públicamente y contiene firmas PHP que sugieren que es un script de administración de WordPress de emergencia que omite la autenticación normal.",
+      "remediation": "Eliminar /emergency.php inmediatamente tras su uso. Nunca dejar scripts de emergencia accesibles en servidores de producción."
+    },
+    "pc_emrg_002": {
+      "title": "Script de emergencia /wp-emergency.php accesible",
+      "description": "/wp-emergency.php es accesible públicamente y contiene firmas PHP que sugieren que es un script de administración de WordPress de emergencia que omite la autenticación normal.",
+      "remediation": "Eliminar /wp-emergency.php inmediatamente tras su uso."
+    },
+    "pc_emrg_003": {
+      "title": "Script de emergencia /reset.php accesible",
+      "description": "/reset.php es accesible públicamente y contiene firmas PHP que sugieren que es un script de restablecimiento de contraseña o acceso de emergencia de WordPress.",
+      "remediation": "Eliminar /reset.php inmediatamente tras su uso."
+    },
+    "pc_emrg_004": {
+      "title": "Script de emergencia /pw-reset.php accesible",
+      "description": "/pw-reset.php es accesible públicamente y contiene firmas PHP que sugieren que es un script de restablecimiento de contraseña de WordPress que omite la autenticación normal.",
+      "remediation": "Eliminar /pw-reset.php inmediatamente tras su uso."
+    },
+    "pc_emrg_005": {
+      "title": "Script de emergencia /emergency-reset.php accesible",
+      "description": "/emergency-reset.php es accesible públicamente y contiene firmas PHP que sugieren que es un script de restablecimiento de emergencia de WordPress que omite la autenticación normal.",
+      "remediation": "Eliminar /emergency-reset.php inmediatamente tras su uso."
+    },
+    "pc_brute_001": {
+      "title": "Credenciales válidas encontradas via fuerza bruta XML-RPC",
+      "description": "El ataque de fuerza bruta via el endpoint XML-RPC encontró pares de credenciales válidos. Un atacante puede usarlos para obtener acceso administrativo completo.",
+      "remediation": "Cambiar las contraseñas encontradas inmediatamente. Deshabilitar XML-RPC si no es necesario. Habilitar 2FA e implementar bloqueo de cuenta."
+    },
+    "pc_brute_002": {
+      "title": "Credenciales válidas encontradas via fuerza bruta en wp-login.php",
+      "description": "El ataque de fuerza bruta via wp-login.php encontró pares de credenciales válidos. Un atacante puede usarlos para obtener acceso administrativo completo.",
+      "remediation": "Cambiar las contraseñas encontradas inmediatamente. Habilitar 2FA. Implementar bloqueo de cuenta y limitación de tasa basada en IP."
+    },
+    "pc_brute_003": {
+      "title": "No se detectó protección contra fuerza bruta en los endpoints de login",
+      "description": "Se realizaron múltiples intentos de credenciales contra los endpoints de login de WordPress sin activar ninguna limitación de tasa o bloqueo. El sitio carece de protección contra fuerza bruta.",
+      "remediation": "Implementar bloqueo de cuenta y limitación de tasa. Usar un plugin de seguridad como Wordfence o limit-login-attempts-reloaded. Deshabilitar XML-RPC si no es necesario."
+    },
+    "pc_brute_004": {
+      "title": "Protección contra fuerza bruta confirmada",
+      "description": "Se detectó limitación de tasa o bloqueo en los endpoints de login de WordPress tras intentos repetidos de autenticación. La protección activa contra fuerza bruta está en funcionamiento.",
+      "remediation": "No se requiere acción. La limitación de tasa es un control de seguridad positivo. Asegurarse de que está correctamente configurada."
+    },
+    "pc_wph_001": {
+      "title": "La versión de WordPress está desactualizada",
+      "description": "La versión de WordPress detectada es anterior a la última versión conocida (6.8.1). Las instalaciones de WordPress desactualizadas pueden ser vulnerables a problemas de seguridad divulgados públicamente.",
+      "remediation": "Actualizar WordPress a la última versión inmediatamente via Panel > Actualizaciones o WP-CLI: wp core update."
     }
   }
 }
