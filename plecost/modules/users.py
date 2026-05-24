@@ -150,6 +150,8 @@ class UsersModule(ScanModule):
             r = await http.get(url)
             if r.status_code != 200:
                 return
+            if len(r.content) > 1_048_576:
+                return
             try:
                 root = ET.fromstring(r.text)
             except ET.ParseError:
@@ -194,6 +196,8 @@ class UsersModule(ScanModule):
             url = f"{ctx.url}/feed/"
             r = await http.get(url)
             if r.status_code != 200:
+                return
+            if len(r.content) > 1_048_576:
                 return
             try:
                 root = ET.fromstring(r.text)
@@ -240,6 +244,8 @@ class UsersModule(ScanModule):
             url = f"{ctx.url}/author-sitemap.xml"
             r = await http.get(url)
             if r.status_code != 200:
+                return
+            if len(r.content) > 1_048_576:
                 return
             try:
                 root = ET.fromstring(r.text)
