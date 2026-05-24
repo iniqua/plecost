@@ -115,6 +115,10 @@ Finding {
 | `magecart`         | Magecart/skimmer script detection              |
 | `webshells`        | Uploaded PHP webshell detection                |
 | `cves`             | CVE matching against detected component versions|
+| `timthumb`         | TimThumb image-resizing script detection       |
+| `emergency_scripts`| Emergency admin script detection               |
+| `wp_hardening`     | WordPress version currency check               |
+| `brute`            | Credential brute force via XML-RPC and wp-login.php |
 
 ### Category taxonomy
 
@@ -153,6 +157,10 @@ Finding {
 | `webshell`                | Uploaded PHP webshell detected in uploads directory             |
 | `waf_detected`            | WAF or CDN identified                                           |
 | `infrastructure`          | Infrastructure-level findings (pre-flight block)                |
+| `timthumb`                | TimThumb script detected (RCE-prone legacy library)             |
+| `emergency_scripts`       | Emergency admin reset/bypass scripts accessible                 |
+| `wp_outdated`             | WordPress version is behind the latest known release            |
+| `brute_force_result`      | Brute force result for BRUTE module (found/not-found/protected) |
 | `other`                   | Finding ID not matched by any rule (should not occur normally)  |
 
 ### Evidence object schemas (by module)
@@ -216,6 +224,50 @@ Evidence keys vary by finding. Common patterns:
 
 # woocommerce
 { "endpoint": string, "record_count": integer }
+
+# timthumb — PC-TTH-001 (script found at root/theme level)
+{ "url": string }
+
+# timthumb — PC-TTH-002 (vulnerable version detected)
+{ "url": string, "version": string }
+
+# timthumb — PC-TTH-003 (script found inside plugin directory)
+{ "url": string, "plugin": string }
+
+# emergency_scripts — PC-EMRG-001 through PC-EMRG-005
+{ "url": string }
+
+# wp_hardening — PC-WPH-001 (version outdated)
+{ "installed_version": string, "latest_version": string }
+
+# brute (BRUTE module) — PC-BRUTE-001 (credentials found via XML-RPC)
+{ "url": string, "username": string, "password_masked": string }
+
+# brute (BRUTE module) — PC-BRUTE-002 (credentials found via wp-login.php)
+{ "url": string, "username": string, "password_masked": string }
+
+# brute (BRUTE module) — PC-BRUTE-003 (no brute force protection)
+{ "endpoints_tested": string[] }
+
+# brute (BRUTE module) — PC-BRUTE-004 (brute force protection confirmed)
+{ "protected_by": string }
+
+# misconfigs extended — PC-MCFG-013 through PC-MCFG-020
+{ "url": string }
+-- PC-MCFG-013: wp-content/debug.log exposed (HIGH)
+-- PC-MCFG-014: adminer.php in root (CRITICAL)
+-- PC-MCFG-015: wp-config.php~ exposed (CRITICAL)
+-- PC-MCFG-016: wp-config.php.old exposed (CRITICAL)
+-- PC-MCFG-017: wp-config.php_bak exposed (CRITICAL)
+-- PC-MCFG-018: wp-config.php.orig exposed (CRITICAL)
+-- PC-MCFG-019: wp-config.php.save exposed (CRITICAL)
+-- PC-MCFG-020: database.sql exposed (HIGH)
+
+# debug_exposure — PC-DBG-002 (Full Path Disclosure via REST API)
+{ "url": string, "path": string }
+
+# xmlrpc — PC-XMLRPC-007 (publication methods enabled)
+{ "methods": string[] }
 ```
 
 ---
