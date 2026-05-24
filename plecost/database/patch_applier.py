@@ -88,7 +88,10 @@ async def apply_patch(patch_data: dict[str, Any], sf: async_sessionmaker[AsyncSe
         deleted = await _apply_deletes(session, deletes, patch_date, upserted_ids)
         if patch_date:
             await _update_last_patch_date(session, patch_date)
-        await session.commit()
+        # AC-4: commit only if something was processed or the upserts list was empty
+        # (a patch with only deletes or only a date update still needs to commit)
+        if upserted > 0 or not upserts:
+            await session.commit()
 
     logger.info("Patch applied: %d upserted, %d soft-deleted", upserted, deleted)
     return upserted, deleted
@@ -154,6 +157,7 @@ async def _apply_upserts(session: AsyncSession, upserts: list[dict[str, Any]]) -
     deduped_records = list(deduped.values())
 
     count = 0
+    failed = 0
     for record in deduped_records:
         # AC-1: remove from rejected_cves before reinserting into normalized_vulns
         await session.execute(
@@ -178,8 +182,23 @@ async def _apply_upserts(session: AsyncSession, upserts: list[dict[str, Any]]) -
         # Flush every UPSERT_BATCH_SIZE to avoid holding too many objects in memory
         if count % UPSERT_BATCH_SIZE == 0:
             logger.debug("Flushed batch at %d records", count)
-            await session.flush()
-    return count
+            # AC-1/AC-2: protect each periodic flush with a SAVEPOINT so a
+            # constraint violation or data-truncation error only rolls back
+            # the current batch, not the entire session.
+            async with session.begin_nested() as sp:
+                try:
+                    await session.flush()
+                except Exception as exc:
+                    await sp.rollback()
+                    # AC-3: subtract the records that were lost in this batch
+                    failed += UPSERT_BATCH_SIZE
+                    logger.warning(
+                        "Batch flush failed at %d records: %s — batch rolled back, continuing",
+                        count,
+                        exc,
+                    )
+    # AC-3: return only the count of records that were successfully staged
+    return count - failed
 
 
 async def _apply_deletes(
