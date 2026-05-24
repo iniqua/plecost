@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import asyncio
 import tempfile
+from unittest.mock import AsyncMock, patch
 import pytest
 import respx
 import httpx
@@ -28,6 +29,14 @@ def ctx():
     c = ScanContext(opts)
     c.is_wordpress = True
     return c
+
+
+@pytest.fixture(autouse=True)
+def no_sleep(monkeypatch):
+    """Patch asyncio.sleep in the brute_force module to avoid 2s delays per attempt."""
+    async def _instant_sleep(_delay):
+        pass
+    monkeypatch.setattr("plecost.modules.brute_force.asyncio.sleep", _instant_sleep)
 
 
 # ---------------------------------------------------------------------------
@@ -173,41 +182,27 @@ async def test_brute_force_activated_by_module_options():
 
 async def test_brute_force_uses_internal_wordlist():
     """AC-9: BruteForceModule must use ~60 internal passwords + username variants."""
-    from plecost.modules.brute_force import BruteForceModule
+    # The internal list is a module-level constant _INTERNAL_PASSWORDS
+    from plecost.modules.brute_force import _INTERNAL_PASSWORDS
 
-    module = BruteForceModule()
-    # The module must have a built-in wordlist with ~60 common passwords
-    internal_list = getattr(module, '_INTERNAL_WORDLIST', None) or getattr(module, 'INTERNAL_PASSWORDS', None)
-    if internal_list is None:
-        # Try to access via a method
-        try:
-            internal_list = module._get_internal_wordlist()
-        except AttributeError:
-            pass
-
-    assert internal_list is not None, (
-        "AC-9: BruteForceModule must have an internal password wordlist attribute"
+    assert _INTERNAL_PASSWORDS is not None, (
+        "AC-9: BruteForceModule must have a module-level _INTERNAL_PASSWORDS constant"
     )
-    assert len(internal_list) >= 50, (
-        f"AC-9: Internal wordlist must have at least ~60 passwords, got {len(internal_list)}"
+    assert len(_INTERNAL_PASSWORDS) >= 50, (
+        f"AC-9: Internal wordlist must have at least ~60 passwords, got {len(_INTERNAL_PASSWORDS)}"
     )
 
 
 async def test_brute_force_adds_username_variants():
     """AC-9: BruteForceModule must add dynamic username variants (e.g. admin123, admin!)."""
-    from plecost.modules.brute_force import BruteForceModule
+    # The module uses module-level _build_dynamic_variants()
+    from plecost.modules.brute_force import _build_dynamic_variants
 
-    module = BruteForceModule()
     username = "testuser"
-
-    try:
-        variants = module._username_variants(username)
-    except AttributeError:
-        # Alternative naming
-        variants = getattr(module, '_get_username_variants', lambda u: [])(username)
+    variants = _build_dynamic_variants(username)
 
     assert len(variants) > 0, (
-        f"AC-9: BruteForceModule must generate username variants for '{username}'"
+        f"AC-9: _build_dynamic_variants must generate variants for '{username}'"
     )
     # Variants should include combinations like testuser123, testuser!
     assert any(username in v for v in variants), (
@@ -267,7 +262,7 @@ async def test_brute_force_external_wordlist_loaded():
 
 async def test_brute_force_external_wordlist_replaces_internal():
     """AC-10: External wordlist replaces internal by default (without --brute-force-combine)."""
-    from plecost.modules.brute_force import BruteForceModule
+    from plecost.modules.brute_force import BruteForceModule, _INTERNAL_PASSWORDS
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
         f.write("unique_external_only_password\n")
@@ -276,16 +271,19 @@ async def test_brute_force_external_wordlist_replaces_internal():
     try:
         module = BruteForceModule()
         # Without combine flag, external should replace internal
-        wordlist = module._build_wordlist(
-            username="admin",
-            wordlist_path=tmpfile,
-            combine=False,
-            deep=False,
+        # _build_password_list takes ctx and usernames
+        opts = ScanOptions(
+            url="https://example.com",
+            brute_force=True,
+            brute_force_wordlist=tmpfile,
+            brute_force_combine=False,
         )
-        internal_list = getattr(module, '_INTERNAL_WORDLIST', [])
+        ctx = ScanContext(opts)
+        ctx.is_wordpress = True
+        wordlist = await module._build_password_list(ctx, ["admin"])
 
         # The wordlist should NOT contain internal-only passwords that aren't in external
-        internal_only = set(internal_list) - {"unique_external_only_password"}
+        internal_only = set(_INTERNAL_PASSWORDS) - {"unique_external_only_password"}
         if internal_only:
             overlap = internal_only.intersection(set(wordlist))
             assert len(overlap) == 0, (
@@ -298,7 +296,7 @@ async def test_brute_force_external_wordlist_replaces_internal():
 
 async def test_brute_force_combine_flag_merges_both_wordlists():
     """AC-10: --brute-force-combine must merge external + internal wordlists."""
-    from plecost.modules.brute_force import BruteForceModule
+    from plecost.modules.brute_force import BruteForceModule, _INTERNAL_PASSWORDS
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
         f.write("unique_external_pass\n")
@@ -306,22 +304,24 @@ async def test_brute_force_combine_flag_merges_both_wordlists():
 
     try:
         module = BruteForceModule()
-        wordlist = module._build_wordlist(
-            username="admin",
-            wordlist_path=tmpfile,
-            combine=True,
-            deep=False,
+        opts = ScanOptions(
+            url="https://example.com",
+            brute_force=True,
+            brute_force_wordlist=tmpfile,
+            brute_force_combine=True,
         )
+        ctx = ScanContext(opts)
+        ctx.is_wordpress = True
+        wordlist = await module._build_password_list(ctx, ["admin"])
+
         assert "unique_external_pass" in wordlist, (
             "AC-10: Combined wordlist must include external passwords"
         )
-        internal_list = getattr(module, '_INTERNAL_WORDLIST', [])
-        if internal_list:
-            # At least some internal passwords should be in the combined list
-            intersection = set(internal_list).intersection(set(wordlist))
-            assert len(intersection) > 0, (
-                "AC-10: Combined wordlist must include internal passwords"
-            )
+        # At least some internal passwords should be in the combined list
+        intersection = set(_INTERNAL_PASSWORDS).intersection(set(wordlist))
+        assert len(intersection) > 0, (
+            "AC-10: Combined wordlist must include internal passwords"
+        )
     finally:
         os.unlink(tmpfile)
 
@@ -337,12 +337,17 @@ async def test_brute_force_external_wordlist_fast_limit():
 
     try:
         module = BruteForceModule()
-        wordlist = module._build_wordlist(
-            username="admin",
-            wordlist_path=tmpfile,
-            combine=False,
+        opts = ScanOptions(
+            url="https://example.com",
+            brute_force=True,
+            brute_force_wordlist=tmpfile,
+            brute_force_combine=False,
             deep=False,
         )
+        ctx = ScanContext(opts)
+        ctx.is_wordpress = True
+        wordlist = await module._build_password_list(ctx, ["admin"])
+
         assert len(wordlist) <= 10000, (
             f"AC-10: Fast mode must cap external wordlist at 10k, got {len(wordlist)}"
         )
@@ -361,12 +366,17 @@ async def test_brute_force_external_wordlist_deep_limit():
 
     try:
         module = BruteForceModule()
-        wordlist = module._build_wordlist(
-            username="admin",
-            wordlist_path=tmpfile,
-            combine=False,
+        opts = ScanOptions(
+            url="https://example.com",
+            brute_force=True,
+            brute_force_wordlist=tmpfile,
+            brute_force_combine=False,
             deep=True,
         )
+        ctx = ScanContext(opts)
+        ctx.is_wordpress = True
+        wordlist = await module._build_password_list(ctx, ["admin"])
+
         assert len(wordlist) <= 50000, (
             f"AC-10: Deep mode must cap external wordlist at 50k, got {len(wordlist)}"
         )
@@ -937,38 +947,33 @@ async def test_run_many_propagates_brute_force_fields():
 # FIX-1: _load_wordlist() rejects non-regular files (ValueError)
 # ---------------------------------------------------------------------------
 
-async def test_load_wordlist_rejects_directory():
+def test_load_wordlist_rejects_directory():
     """FIX-1: _load_wordlist() must reject paths that are not regular files (ValueError)."""
-    from plecost.modules.brute_force import BruteForceModule
-
-    module = BruteForceModule()
+    # _load_wordlist is a module-level sync function, not a method
+    from plecost.modules.brute_force import _load_wordlist
 
     with pytest.raises((ValueError, IsADirectoryError, PermissionError)):
-        await module._load_wordlist("/tmp")  # /tmp is a directory, not a regular file
+        _load_wordlist("/tmp", 100)  # /tmp is a directory, not a regular file
 
 
-async def test_load_wordlist_rejects_device_file():
+def test_load_wordlist_rejects_device_file():
     """FIX-1: _load_wordlist() must raise ValueError for non-regular files like /dev/null."""
-    from plecost.modules.brute_force import BruteForceModule
-
-    module = BruteForceModule()
+    from plecost.modules.brute_force import _load_wordlist
 
     with pytest.raises(ValueError):
-        await module._load_wordlist("/dev/null")
+        _load_wordlist("/dev/null", 100)
 
 
-async def test_load_wordlist_accepts_regular_file():
+def test_load_wordlist_accepts_regular_file():
     """FIX-1: _load_wordlist() must accept regular files without raising."""
-    from plecost.modules.brute_force import BruteForceModule
-
-    module = BruteForceModule()
+    from plecost.modules.brute_force import _load_wordlist
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
         f.write("pass1\npass2\npass3\n")
         tmpfile = f.name
 
     try:
-        result = await module._load_wordlist(tmpfile)
+        result = _load_wordlist(tmpfile, 100)
         assert len(result) == 3, f"Expected 3 passwords, got {len(result)}"
         assert "pass1" in result
     finally:
@@ -1021,18 +1026,18 @@ def test_pc_bru_007_registered_in_findings_registry():
 
 def test_new_finding_ids_in_known_finding_ids():
     """AC-18: New IDs PC-USR-003/004/005, PC-BRU-001/007 must be in KNOWN_FINDING_IDS."""
-    import importlib
-    import sys
+    import importlib.util
+    import pathlib
 
-    # Import the contract test module to check KNOWN_FINDING_IDS
-    spec = importlib.util.spec_from_file_location(
-        "test_finding_ids",
-        "/Users/cr0hn/Dropbox/Projects/plecost/plecost/.claude/worktrees/agent-aaf249ed9fb239b1c/tests/contract/test_finding_ids.py"
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # Resolve the contract test relative to this file's location
+    this_dir = pathlib.Path(__file__).parent.parent  # tests/
+    contract_file = this_dir / "contract" / "test_finding_ids.py"
 
-    known_ids = module.KNOWN_FINDING_IDS
+    spec = importlib.util.spec_from_file_location("test_finding_ids", str(contract_file))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    known_ids = mod.KNOWN_FINDING_IDS
     for finding_id in ["PC-USR-003", "PC-USR-004", "PC-USR-005", "PC-BRU-001", "PC-BRU-007"]:
         assert finding_id in known_ids, (
             f"AC-18: {finding_id} must be in KNOWN_FINDING_IDS in tests/contract/test_finding_ids.py"
