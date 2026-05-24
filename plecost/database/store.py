@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+import logging
 from dataclasses import dataclass
 
 from packaging.version import Version, InvalidVersion
@@ -7,6 +8,8 @@ from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
 
 from plecost.database.models import NormalizedVuln, PluginsWordlist, RejectedCve, ThemesWordlist, MagecartDomain
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -109,6 +112,12 @@ class CVEStore:
             # affected — do NOT report to avoid flooding with historical CVEs
             # (e.g. WordPress 1.x CVEs from 2004 matching WP 7.0).
             if all(r is None for r in [start_i, start_e, end_i, end_e]):
+                logger.debug(
+                    "CVE %s for %s/%s has no version range — skipped (may miss this CVE)",
+                    row.cve_id,
+                    row.software_type,
+                    row.slug,
+                )
                 return False
             return True
         except InvalidVersion:

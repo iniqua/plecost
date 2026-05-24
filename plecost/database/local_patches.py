@@ -49,9 +49,13 @@ async def apply_local_corrections(
 
 def _load_corrections() -> list[dict[str, Any]]:
     """Load correction entries from the bundled corrections.json file."""
-    data: dict[str, Any] = json.loads(_CORRECTIONS_FILE.read_text(encoding="utf-8"))
-    corrections: list[dict[str, Any]] = data.get("corrections", [])
-    return corrections
+    try:
+        data: dict[str, Any] = json.loads(_CORRECTIONS_FILE.read_text(encoding="utf-8"))
+        corrections: list[dict[str, Any]] = data.get("corrections", [])
+        return corrections
+    except (json.JSONDecodeError, OSError) as e:
+        logger.error("Failed to load corrections.json: %s", e)
+        return []
 
 
 async def _delete_by_cve_slug(
