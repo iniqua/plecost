@@ -34,6 +34,21 @@ async def test_brute_module_skips_when_brute_force_false():
     assert ctx.findings == []
 
 
+async def test_brute_module_does_nothing_when_brute_force_false():
+    """AC-9b: brute_force=False → module makes zero HTTP requests and emits no findings."""
+    ctx = _make_ctx(brute_force=False)
+    ctx.xmlrpc_accessible = True  # even with xmlrpc accessible, must still skip
+    async with respx.mock:
+        # Use respx strict mode: any unexpected HTTP call will raise an error,
+        # proving that the module made no requests at all.
+        # respx.mock in strict mode raises httpx.ConnectError for unmatched routes,
+        # so we add NO routes — any request would fail the test.
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await BruteModule().run(ctx, http)
+    # No findings and no HTTP requests made
+    assert ctx.findings == [], "brute_force=False must produce zero findings"
+
+
 async def test_brute_module_skips_when_no_users():
     """AC-9: brute_force=True but no users → no findings."""
     ctx = _make_ctx(brute_force=True, with_users=False)

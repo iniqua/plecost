@@ -119,3 +119,42 @@ async def test_skips_when_not_wordpress():
         async with PlecostHTTPClient(ctx.opts) as http:
             await TimThumbModule().run(ctx, http)
     assert ctx.findings == []
+
+
+# -----------------------------------------------------------------------
+# AC-7b: explicit name for PASO 4 mandatory test
+# -----------------------------------------------------------------------
+
+async def test_timthumb_no_crit_when_version_current():
+    """AC-7b: timthumb >= 2.8.14 → PC-TTH-001 emitted but PC-TTH-002 NOT emitted."""
+    ctx = _make_ctx()
+    async with respx.mock:
+        respx.get("https://example.com/timthumb.php").mock(
+            return_value=httpx.Response(200, text="TimThumb v2.8.14 — the last patched release")
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await TimThumbModule().run(ctx, http)
+    ids = [f.id for f in ctx.findings]
+    assert "PC-TTH-001" in ids, "PC-TTH-001 must be emitted when timthumb signature is present"
+    assert "PC-TTH-002" not in ids, "PC-TTH-002 must NOT be emitted when version >= 2.8.14"
+
+
+# -----------------------------------------------------------------------
+# AC-7c negative: timthumb at root/wp-content does NOT emit PC-TTH-003
+# -----------------------------------------------------------------------
+
+async def test_pc_tth_003_not_emitted_for_non_plugin_location():
+    """AC-7c: timthumb.php found at /timthumb.php (not plugin dir) → no PC-TTH-003."""
+    ctx = _make_ctx()
+    async with respx.mock:
+        respx.get("https://example.com/timthumb.php").mock(
+            return_value=httpx.Response(200, text="TimThumb v2.8.0 image resizer")
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await TimThumbModule().run(ctx, http)
+    # PC-TTH-001 and PC-TTH-002 are expected, but NOT PC-TTH-003
+    ids = [f.id for f in ctx.findings]
+    assert "PC-TTH-001" in ids
+    assert "PC-TTH-003" not in ids, "PC-TTH-003 must only emit when timthumb is inside a plugin directory"

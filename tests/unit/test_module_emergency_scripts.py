@@ -185,3 +185,85 @@ async def test_finding_when_different_size_from_baseline():
             await EmergencyScriptsModule().run(ctx, http)
     ids = [f.id for f in ctx.findings]
     assert "PC-EMRG-001" in ids
+
+
+# -----------------------------------------------------------------------
+# AC-8 negative: soft-404 redirect → no finding (PASO 4 mandatory)
+# -----------------------------------------------------------------------
+
+async def test_emergency_scripts_no_fp_on_soft404_redirect():
+    """AC-8: 200 at different final URL (redirect) → no finding, even with PHP signature in body."""
+    ctx = _make_ctx()
+    # The module checks str(r.url) != url to detect redirects.
+    # We simulate this by having the redirect chain resolve to the homepage URL.
+    # respx does not follow redirects by default in httpx-mock style, but
+    # PlecostHTTPClient uses follow_redirects=True. We mock the 301 directly
+    # and then mock the final destination, so the response URL will differ.
+    async with respx.mock:
+        respx.get("https://example.com/emergency.php").mock(
+            return_value=httpx.Response(
+                301,
+                headers={"location": "https://example.com/"},
+                text="",
+            )
+        )
+        respx.get("https://example.com/").mock(
+            return_value=httpx.Response(
+                200,
+                text="wp_hash_password($x) — homepage soft-404 content",
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await EmergencyScriptsModule().run(ctx, http)
+    assert ctx.findings == [], "Redirect to different URL must not produce a finding"
+
+
+# -----------------------------------------------------------------------
+# AC-8 negative: generic HTML with <form> (PASO 4 mandatory, explicit name)
+# -----------------------------------------------------------------------
+
+async def test_emergency_scripts_no_fp_on_generic_html_with_form():
+    """AC-8: <form>/<input> only (no PHP invariants) → no finding."""
+    ctx = _make_ctx()
+    async with respx.mock:
+        respx.get("https://example.com/emergency.php").mock(
+            return_value=httpx.Response(
+                200,
+                text=(
+                    "<html><body>"
+                    "<form method='post' action='/emergency.php'>"
+                    "<input type='text' name='username'>"
+                    "<input type='password' name='password'>"
+                    "<input type='submit' value='Login'>"
+                    "</form>"
+                    "</body></html>"
+                ),
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await EmergencyScriptsModule().run(ctx, http)
+    assert ctx.findings == [], "<form>/<input> alone must not trigger a finding"
+
+
+# -----------------------------------------------------------------------
+# AC-8 negative: baseline same size (PASO 4 mandatory, explicit name)
+# -----------------------------------------------------------------------
+
+async def test_emergency_scripts_no_fp_on_baseline_same_size():
+    """AC-8: body_size == baseline_size → no finding, even if PHP signature present."""
+    ctx = _make_ctx()
+    # Both baseline and emergency.php return the same body with the PHP signature
+    same_body = "wp_hash_password($x) " + "A" * 200
+    async with respx.mock:
+        respx.get(url__regex=r".*plecost-nonexistent.*").mock(
+            return_value=httpx.Response(200, text=same_body)
+        )
+        respx.get("https://example.com/emergency.php").mock(
+            return_value=httpx.Response(200, text=same_body)
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await EmergencyScriptsModule().run(ctx, http)
+    assert ctx.findings == [], "Same body size as baseline must be treated as soft-404"

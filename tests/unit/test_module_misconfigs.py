@@ -313,3 +313,59 @@ async def test_pc_mcfg_020_database_sql(ctx):
     assert "PC-MCFG-020" in ids
     f = next(f for f in ctx.findings if f.id == "PC-MCFG-020")
     assert f.severity == Severity.HIGH
+
+
+# -----------------------------------------------------------------------
+# AC-3 negative: wp-config variants with HTML soft-404 → no finding
+# -----------------------------------------------------------------------
+
+async def test_pc_mcfg_015_not_triggered_on_html_response(ctx):
+    """AC-3: /wp-config.php~ returns HTML (soft-404) → no PC-MCFG-015."""
+    async with respx.mock:
+        respx.get("https://example.com/wp-config.php~").mock(
+            return_value=httpx.Response(
+                200,
+                text="<html><body>Page not found</body></html>",
+                headers={"content-type": "text/html"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert not any(f.id == "PC-MCFG-015" for f in ctx.findings)
+
+
+async def test_pc_mcfg_016_not_triggered_on_html_response(ctx):
+    """AC-3: /wp-config.php.old returns HTML (soft-404) → no PC-MCFG-016."""
+    async with respx.mock:
+        respx.get("https://example.com/wp-config.php.old").mock(
+            return_value=httpx.Response(
+                200,
+                text="<html><body>Page not found</body></html>",
+                headers={"content-type": "text/html"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert not any(f.id == "PC-MCFG-016" for f in ctx.findings)
+
+
+# -----------------------------------------------------------------------
+# AC-4 negative: database.sql with HTML soft-404 → no finding
+# -----------------------------------------------------------------------
+
+async def test_pc_mcfg_020_not_triggered_on_html_response(ctx):
+    """AC-4: /database.sql returns HTML (soft-404) → no PC-MCFG-020."""
+    async with respx.mock:
+        respx.get("https://example.com/database.sql").mock(
+            return_value=httpx.Response(
+                200,
+                text="<html><body>Page not found</body></html>",
+                headers={"content-type": "text/html"},
+            )
+        )
+        respx.route(url__regex=r".*").mock(return_value=httpx.Response(404))
+        async with PlecostHTTPClient(ctx.opts) as http:
+            await MisconfigsModule().run(ctx, http)
+    assert not any(f.id == "PC-MCFG-020" for f in ctx.findings)
