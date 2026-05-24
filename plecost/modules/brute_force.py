@@ -17,13 +17,19 @@ Rate limiting (AC-13):
   - HTTP 200 with block-strings → stop
   - ConnectError / TransportError → connection_reset → stop
 
+Adaptive rate limiting / circuit breaker (BRU-RL):
+  - Jitter: asyncio.sleep(random.uniform(0.3, 1.5)) between attempts
+  - Circuit breaker: 3 consecutive 429/connection_reset → OPEN(10s) → HALF_OPEN probe
+  - State machine: OPEN→HALF_OPEN probe; if 429: OPEN(20s)→HALF_OPEN; if 429: OPEN(30s)→HALF_OPEN; if 429: EXHAUSTED
+  - EXHAUSTED emits PC-BRU-007 with total_wait_seconds=60
+
 Success detection (AC-11):
   - Primary: "wordpress_logged_in_" in Set-Cookie header
   - Fallback: redirect to /wp-admin/
 
 Concurrency (AC-15):
   - asyncio.Semaphore(1) by default
-  - delay 2000ms OUTSIDE sem block
+  - delay jitter OUTSIDE sem block
   - report_progress() in finally of each attempt
 
 Findings (AC-14):
@@ -35,6 +41,8 @@ Findings (AC-14):
 from __future__ import annotations
 
 import asyncio
+import enum
+import random
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -83,6 +91,94 @@ _BLOCK_STRINGS: tuple[str, ...] = (
     "loginlockdown",
     "wordfence",
 )
+
+
+# ---------------------------------------------------------------------- #
+# Circuit breaker for adaptive rate limiting (BRU-RL)                    #
+# ---------------------------------------------------------------------- #
+
+class _CBState(enum.Enum):
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+    EXHAUSTED = "exhausted"
+
+
+class _RateLimitCircuitBreaker:
+    """Adaptive rate-limiting circuit breaker.
+
+    State machine:
+      CLOSED  → normal operation (event set, no blocking)
+      OPEN    → back-off in progress; all coroutines block on asyncio.Event.wait()
+      HALF_OPEN → probe window; the next attempt is allowed through
+      EXHAUSTED → all retries consumed; emits PC-BRU-007
+
+    Progression of wait times (seconds): 10 → 20 → 30 → EXHAUSTED
+    Total maximum wait before EXHAUSTED: 10+20+30 = 60 s.
+
+    Usage pattern (per attempt):
+      await cb.wait_if_open()
+      try:
+          result = await attempt(...)
+          cb.record_success()
+      except RateLimitSignal:
+          exhausted = await cb.record_rate_limit()
+          if exhausted:
+              emit PC-BRU-007
+              return
+    """
+
+    _WAIT_TIMES: list[int] = [10, 20, 30]  # seconds per opening
+
+    def __init__(self) -> None:
+        self._state: _CBState = _CBState.CLOSED
+        self._open_count: int = 0
+        self._total_wait: int = 0
+        self._resume: asyncio.Event = asyncio.Event()
+        self._resume.set()  # CLOSED = event set = no blocking
+
+    @property
+    def is_exhausted(self) -> bool:
+        return self._state == _CBState.EXHAUSTED
+
+    @property
+    def total_wait_seconds(self) -> int:
+        return self._total_wait
+
+    async def wait_if_open(self) -> None:
+        """Block callers while the circuit is OPEN; pass through when set."""
+        await self._resume.wait()
+
+    async def record_rate_limit(self) -> bool:
+        """Register a 429/connection_reset hit.
+
+        Drives the state machine forward.  Returns True if the circuit is
+        now EXHAUSTED (caller should stop and emit PC-BRU-007).
+        """
+        if self._state == _CBState.EXHAUSTED:
+            return True
+
+        if self._open_count >= len(self._WAIT_TIMES):
+            self._state = _CBState.EXHAUSTED
+            return True
+
+        wait_time = self._WAIT_TIMES[self._open_count]
+        self._total_wait += wait_time
+        self._open_count += 1
+        self._state = _CBState.OPEN
+        self._resume.clear()  # block other coroutines
+
+        await asyncio.sleep(wait_time)
+
+        # Allow one probe attempt
+        self._state = _CBState.HALF_OPEN
+        self._resume.set()
+        return False
+
+    def record_success(self) -> None:
+        """A non-429 response was received — reset to CLOSED."""
+        self._state = _CBState.CLOSED
+        self._resume.set()
 
 
 def _mask_password(pw: str) -> str:
@@ -173,64 +269,116 @@ class BruteForceModule(ScanModule):
         # ---------------------------------------------------------------- #
         login_url = f"{ctx.url}/wp-login.php"
         sem = asyncio.Semaphore(1)  # AC-15: Semaphore(1) by default
+        cb = _RateLimitCircuitBreaker()  # BRU-RL: per-run circuit breaker
         found_credentials: list[dict[str, str]] = []
         rate_limited = False
+        cb_exhausted = False
+        consecutive_rl: list[int] = [0]  # count consecutive rate-limit hits
         total = len(usernames) * len(passwords)
         checked: list[int] = [0]
+        attempts_at_exhaustion: list[int] = [0]
 
-        async def attempt(username: str, pw: str) -> bool | None:
-            """Returns True on success, None on rate-limit, False on fail."""
-            nonlocal rate_limited
+        # _RL_SIGNAL: sentinel returned by attempt() to signal "rate-limited hit,
+        # trigger circuit breaker logic in the outer loop"
+        _RL_SIGNAL = object()
+
+        async def attempt(username: str, pw: str) -> bool | object | None:
+            """Returns True on success, _RL_SIGNAL on rate-limit, None on cb-stop, False on fail."""
+            nonlocal rate_limited, cb_exhausted
+            # BRU-RL: block if circuit is OPEN (no-op for Semaphore(1) but correct for N>1)
+            await cb.wait_if_open()
+            if rate_limited or cb_exhausted:
+                return None
             async with sem:
-                if rate_limited:
+                if rate_limited or cb_exhausted:
                     return None
                 try:
                     result = await self._try_login(http, login_url, username, pw)
+                    # Successful (non-429) response — reset consecutive counter and circuit
+                    consecutive_rl[0] = 0
+                    cb.record_success()
                     return result
                 except (Exception,) as exc:
                     exc_str = str(exc).lower()
                     if any(kw in exc_str for kw in ("connection", "transport", "reset", "eof")):
-                        rate_limited = True
-                        return None
+                        consecutive_rl[0] += 1
+                        return _RL_SIGNAL  # let outer loop decide what to do
                     return False
                 finally:
                     checked[0] += 1
                     ctx.report_progress(self.name, checked[0], total)
-            # AC-15: delay OUTSIDE the sem block
-            # (can't await after exiting with block here; handled below)
 
+        outer_break = False
         for username in usernames:
-            if rate_limited:
+            if rate_limited or cb_exhausted or outer_break:
                 break
             for pw in passwords:
-                if rate_limited:
+                if rate_limited or cb_exhausted:
                     break
                 result = await attempt(username, pw)
                 if result is None:
-                    # Rate limited
-                    if not rate_limited:
-                        rate_limited = True
+                    # cb_exhausted or rate_limited already set — break
                     break
+                if result is _RL_SIGNAL:
+                    if consecutive_rl[0] >= 3:
+                        # BRU-RL: 3 consecutive rate-limit hits → engage circuit breaker
+                        consecutive_rl[0] = 0
+                        attempts_at_exhaustion[0] = checked[0]
+                        exhausted = await cb.record_rate_limit()
+                        if exhausted:
+                            cb_exhausted = True
+                            outer_break = True
+                            break
+                        # Circuit opened, waited, now HALF_OPEN — continue attempts
+                        # (consecutive_rl already reset to 0 above)
+                        continue
+                    else:
+                        # Fewer than 3 consecutive — accumulate and continue
+                        # (will stop when it reaches 3 or when a success resets the counter)
+                        continue
                 if result is True:
                     found_credentials.append({
                         "username": username,
                         "password": _mask_password(pw),
                     })
-                # AC-15: delay OUTSIDE sem block
-                if not rate_limited:
-                    await asyncio.sleep(2.0)
+                # BRU-RL: jitter delay OUTSIDE sem block (replaces fixed 2.0s)
+                if not rate_limited and not cb_exhausted:
+                    await asyncio.sleep(random.uniform(0.3, 1.5))
 
         # ---------------------------------------------------------------- #
         # Emit findings                                                     #
         # ---------------------------------------------------------------- #
+        if cb_exhausted and not found_credentials:
+            # BRU-RL: circuit breaker exhausted after 60s total wait
+            ctx.add_finding(Finding(
+                id="PC-BRU-007", remediation_id="REM-BRU-007",
+                title="Brute force stopped — rate limiting circuit breaker exhausted",
+                severity=Severity.INFO,
+                description=(
+                    "The brute force attempt was stopped because the target rate-limited "
+                    "login attempts exhaustively. The circuit breaker waited a total of "
+                    f"{cb.total_wait_seconds}s across {cb._open_count} back-off window(s) "
+                    "before giving up."
+                ),
+                evidence={
+                    "reason": "circuit_breaker_exhausted",
+                    "total_wait_seconds": cb.total_wait_seconds,
+                    "attempts_made": attempts_at_exhaustion[0] or checked[0],
+                },
+                remediation="Rate limiting is a positive security control. Ensure it is properly configured.",
+                references=[],
+                cvss_score=0.0, module=self.name
+            ))
+            return
+
         if rate_limited and not found_credentials:
-            # F-3: use PC-BRU-007 for rate-limiting (distinct from PC-BRU-003 = no users)
+            # Immediate rate-limit (< 3 consecutive hits); no circuit breaker triggered
             ctx.add_finding(Finding(
                 id="PC-BRU-007", remediation_id="REM-BRU-007",
                 title="Brute force stopped — rate limiting detected",
                 severity=Severity.INFO,
                 description="The brute force attempt was stopped because the target appears to be rate-limiting login attempts.",
-                evidence={"reason": "rate_limit_detected", "attempts": checked[0]},
+                evidence={"reason": "rate_limit_detected", "attempts_made": checked[0]},
                 remediation="Rate limiting is a positive security control. Ensure it is properly configured.",
                 references=[],
                 cvss_score=0.0, module=self.name
