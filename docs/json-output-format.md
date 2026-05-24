@@ -172,7 +172,8 @@ Evidence keys vary by finding. Common patterns:
 { "url": string, "match": string }
 
 # cves
-{ "cve_id": string, "software": string, "version_range": string }
+{ "cve_id": string, "software": string, "version_range": string, "installed_version": string }
+-- installed_version: the detected version of the plugin/theme that matched the CVE range
 
 # misconfigs / debug_exposure / directory_listing
 { "url": string }
@@ -345,12 +346,15 @@ User {
 
 ### Source values
 
-| `source`         | Discovery method                                    |
-|------------------|-----------------------------------------------------|
-| `rest_api`       | `/wp-json/wp/v2/users` endpoint                     |
-| `author_archive` | Author archive URL enumeration (`/?author=N`)       |
-| `rss`            | RSS feed `<dc:creator>` or `<author>` tags          |
-| `oEmbed`         | oEmbed endpoint author field                        |
+| `source`            | Discovery method                                                        |
+|---------------------|-------------------------------------------------------------------------|
+| `rest_api`          | `/wp-json/wp/v2/users` endpoint (paginated, up to 100 pages)            |
+| `author_archive`    | Author archive URL enumeration (`/?author=N`, IDs 1–25 fast / 1–100 deep) |
+| `wp_sitemap`        | WordPress core user sitemap `/wp-sitemap-users-1.xml`                   |
+| `rss_feed`          | RSS feed `<dc:creator>` tags at `/feed/`                                |
+| `yoast_sitemap`     | Yoast SEO author sitemap `/author-sitemap.xml`                          |
+| `oembed`            | oEmbed API (`/wp-json/oembed/1.0/embed`) — only if `author_url` contains `/author/` |
+| `html_author_link`  | Homepage HTML links matching `/author/<slug>/` pattern                  |
 
 ---
 
@@ -494,7 +498,8 @@ All fields are always present in the JSON (no field is omitted). Nullable fields
       "evidence": {
         "cve_id": "CVE-2023-28121",
         "software": "woocommerce-payments",
-        "version_range": "*–5.6.1"
+        "version_range": "*–5.6.1",
+        "installed_version": "3.9.0"
       },
       "remediation": "Update the plugin/theme to the latest version.",
       "references": [
@@ -595,7 +600,7 @@ All fields are always present in the JSON (no field is omitted). Nullable fields
 ## Querying the JSON (usage patterns for AI agents)
 
 **"Is this site vulnerable to a specific CVE?"**
-Search `findings[].evidence.cve_id` for the CVE ID. If present, the installed version is confirmed affected.
+Search `findings[].evidence.cve_id` for the CVE ID. If present, the installed version is confirmed affected. Read `findings[].evidence.installed_version` to see the exact version that triggered the match.
 
 **"What is the highest-severity issue on this site?"**
 Check `summary.critical > 0`, then `summary.high > 0`, etc. For details, filter `findings[]` by `severity == "CRITICAL"`.
