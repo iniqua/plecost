@@ -241,6 +241,42 @@ plecost scan https://target.com
 ```
 
 
+## What's New in v4.5.0
+
+### Brute force: explicit wordlist activation
+
+`--brute-force` alone now **does not try any passwords**. You must explicitly request a password source:
+
+| Before (v4.4) | After (v4.5) |
+|---|---|
+| `--brute-force` → uses internal ~70 passwords silently | `--brute-force` → no passwords; warns with PC-BRU-008 |
+| (no `--brute-force-defaults` flag) | `--brute-force --brute-force-defaults` → internal list |
+
+This prevents accidental brute-force attempts when `--brute-force` is added to a scan without a deliberate wordlist choice.
+
+### run_many() callback propagation
+
+`Scanner.run_many()` now propagates `on_finding`, `on_module_start`, `on_module_done`, and `on_module_progress` callbacks to each per-target Scanner. Previously these callbacks were silently dropped during bulk scans.
+
+### 23 new finding IDs
+
+v4.5.0 adds 23 new permanent finding IDs across new modules:
+
+| Module | New finding IDs | Description |
+|--------|----------------|-------------|
+| `misconfigs` | PC-MCFG-013 – PC-MCFG-020 | Extended misconfiguration checks |
+| `debug_exposure` | PC-DBG-002 | Extended debug checks |
+| `xmlrpc` | PC-XMLRPC-007 | Additional XML-RPC check |
+| `timthumb` | PC-TTH-001, PC-TTH-002, PC-TTH-003 | TimThumb vulnerability detection |
+| `emergency_scripts` | PC-EMRG-001 – PC-EMRG-005 | Emergency script detection |
+| `brute` (XML-RPC) | PC-BRUTE-001 – PC-BRUTE-004 | XML-RPC brute force findings |
+| `wp_hardening` | PC-WPH-001 | WordPress hardening checks |
+| `brute_force` | PC-BRU-008 | No wordlist configured warning |
+
+All IDs are permanent and supported by `plecost explain <ID>`.
+
+---
+
 ## CVE Detection Engine
 
 > **v4.4: CVE engine reliability — 15 database bugs fixed, per-window sync checkpointing, Rich markup escaping.**
@@ -374,6 +410,10 @@ plecost scan https://target.com --quiet
 | `--verbose / -v` | Real-time module progress and findings during scan | off |
 | `--quiet` | Show only HIGH and CRITICAL findings | off |
 | `--module-option` | Module-specific option: `MODULE:KEY=VALUE` (repeatable) | — |
+| `--brute-force` | Enable brute force module (requires `--brute-force-defaults` or `--brute-force-wordlist`) | off |
+| `--brute-force-defaults` | Use built-in password list (~70 passwords + username variants) | off |
+| `--brute-force-wordlist <path>` | External password file (one per line) | — |
+| `--brute-force-combine` | Merge external wordlist with internal list (requires `--brute-force-defaults`) | off |
 
 
 ## Detection Modules
@@ -426,13 +466,39 @@ All seven techniques run concurrently. Users discovered by multiple techniques a
 
 The `brute_force` module is **opt-in** and requires `--brute-force`. It never activates with `--aggressive`.
 
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--brute-force` | Enable brute force. **No passwords are tried by default** — you must also supply `--brute-force-defaults` and/or `--brute-force-wordlist`. |
+| `--brute-force-defaults` | Activate the built-in password list (~70 common passwords + dynamic username variants). Requires `--brute-force`. |
+| `--brute-force-wordlist <path>` | Use an external password file (one password per line). Requires `--brute-force`. |
+| `--brute-force-combine` | Merge external wordlist with the internal list. Only merges internal passwords when `--brute-force-defaults` is also set. |
+
 ```bash
-plecost scan https://target.com --brute-force                             # internal wordlist only
-plecost scan https://target.com --brute-force --brute-force-wordlist passwords.txt  # external wordlist
-plecost scan https://target.com --brute-force --brute-force-wordlist passwords.txt --brute-force-combine  # both
+# Enable brute force with built-in wordlist only
+plecost scan https://target.com --brute-force --brute-force-defaults
+
+# Enable brute force with an external wordlist only
+plecost scan https://target.com --brute-force --brute-force-wordlist passwords.txt
+
+# Combine both (external + internal ~70 common passwords)
+plecost scan https://target.com --brute-force --brute-force-defaults \
+  --brute-force-wordlist passwords.txt --brute-force-combine
 ```
 
-For each detected username, it tests ~63 internal passwords plus dynamic variants (e.g. `username`, `username123`, `username2025`, `username!`). External wordlists are capped at 10 000 lines (fast mode) or 50 000 lines (deep mode).
+**Library API:**
+```python
+ScanOptions(
+    url="https://target.com",
+    brute_force=True,
+    brute_force_use_defaults=True,        # enables built-in ~70 password list
+    brute_force_wordlist="/path/to/list.txt",  # optional external wordlist
+    brute_force_combine=True,             # merge external + internal
+)
+```
+
+For each detected username, `--brute-force-defaults` tests ~70 internal passwords plus dynamic variants (e.g. `username`, `username123`, `username2025`, `username!`). External wordlists are capped at 10 000 lines (fast mode) or 50 000 lines (deep mode).
 
 Login success is detected by the presence of a `wordpress_logged_in_*` cookie in the response (`Set-Cookie` header).
 
@@ -443,6 +509,7 @@ Login success is detected by the presence of a `wordpress_logged_in_*` cookie in
 | `PC-BRU-003` | No WordPress users discovered — brute force skipped | INFO |
 | `PC-BRU-004` | Brute force completed with no valid credentials found | INFO |
 | `PC-BRU-007` | Brute force stopped — target is rate-limiting login attempts | INFO |
+| `PC-BRU-008` | Brute force enabled but no wordlist configured (neither `--brute-force-defaults` nor `--brute-force-wordlist` provided) | INFO |
 
 Passwords in `PC-BRU-001` evidence are masked: first 2 characters + `***` + last character (e.g. `pa***d`). Rate limiting is detected by HTTP 429/403, body strings (`Too many`, `Locked`, `Blocked`, etc.), or a dropped TCP connection.
 
@@ -612,6 +679,71 @@ async def main():
     print(f"WordPress {result.wordpress_version}  |  WAF: {result.waf_detected}")
     for finding in result.findings:
         print(f"[{finding.severity.value}] {finding.id}: {finding.title}")
+
+asyncio.run(main())
+```
+
+### Real-time callbacks
+
+`Scanner` accepts four optional callbacks for real-time progress reporting:
+
+```python
+import asyncio
+from plecost import Scanner, ScanOptions
+
+def on_finding(finding):
+    print(f"[{finding.severity.value}] {finding.id}: {finding.title}")
+
+def on_module_start(module_name: str):
+    print(f"  → Starting module: {module_name}")
+
+def on_module_done(module_name: str):
+    print(f"  ✓ Done: {module_name}")
+
+def on_progress(module_name: str, current: int, total: int):
+    pct = int(current / total * 100) if total else 0
+    print(f"  [{module_name}] {pct}% ({current}/{total})")
+
+async def main():
+    opts = ScanOptions(url="https://target.com")
+    result = await Scanner(
+        opts,
+        on_finding=on_finding,
+        on_module_start=on_module_start,
+        on_module_done=on_module_done,
+        on_module_progress=on_progress,
+    ).run()
+
+asyncio.run(main())
+```
+
+### Bulk scanning with run_many()
+
+`run_many()` scans multiple targets sequentially and propagates all callbacks to each per-target scan:
+
+```python
+import asyncio
+from plecost import Scanner, ScanOptions
+
+findings_by_url: dict[str, list] = {}
+
+def on_finding(finding):
+    findings_by_url.setdefault(finding.module, []).append(finding.id)
+
+async def main():
+    opts = ScanOptions(
+        url="https://placeholder.example",  # overridden per target
+        modules=["fingerprint", "plugins", "cves"],
+        brute_force=True,
+        brute_force_use_defaults=True,
+    )
+    scanner = Scanner(opts, on_finding=on_finding)
+    results = await scanner.run_many([
+        "https://site1.example.com",
+        "https://site2.example.com",
+    ])
+    for result in results:
+        print(f"{result.url}: {result.summary.critical} critical findings")
 
 asyncio.run(main())
 ```

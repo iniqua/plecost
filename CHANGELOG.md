@@ -1,12 +1,17 @@
-## [Unreleased] — 2026-05-24
+## [4.5.0] — 2026-05-24
 
 ### Added
 - **UsersModule — 7 técnicas de enumeración**: REST API con paginación completa (X-WP-TotalPages), author archives 1-25/1-100 IDs con early-stop, /wp-sitemap-users-1.xml (PC-USR-003), RSS `<dc:creator>` (PC-USR-004), Yoast /author-sitemap.xml (PC-USR-005), oEmbed (solo si author_url contiene /author/), y HTML author links
-- **BruteForceModule**: nuevo módulo activado con `--brute-force`. Prueba ~63 contraseñas internas + variantes dinámicas del username. Soporta wordlist externa (`--brute-force-wordlist`), combinación (`--brute-force-combine`), límite 10k/50k líneas. Detección de éxito por cookie `wordpress_logged_in_`. Rate limiting detection (429/403/200+body/ConnectError). Finding PC-BRU-001 con passwords mascaradas.
-- **Nuevos findings**: PC-USR-003 (sitemap), PC-USR-004 (RSS), PC-USR-005 (Yoast sitemap), PC-BRU-001 (credenciales encontradas), PC-BRU-002 (no credenciales), PC-BRU-003 (sin usuarios), PC-BRU-004 (brute force desactivado), PC-BRU-007 (rate limiting detectado)
-- **ScanOptions**: campos `brute_force`, `brute_force_wordlist`, `brute_force_combine` con propagación correcta en `run_many()`
+- **BruteForceModule**: nuevo módulo activado con `--brute-force`. Prueba ~70 contraseñas internas + variantes dinámicas del username con `--brute-force-defaults`. Soporta wordlist externa (`--brute-force-wordlist`), combinación (`--brute-force-combine`), límite 10k/50k líneas. Detección de éxito por cookie `wordpress_logged_in_`. Rate limiting detection (429/403/200+body/ConnectError). Finding PC-BRU-001 con passwords mascaradas.
+- **Nuevos findings**: PC-USR-003 (sitemap), PC-USR-004 (RSS), PC-USR-005 (Yoast sitemap), PC-BRU-001 (credenciales encontradas), PC-BRU-002 (2FA detectado), PC-BRU-003 (sin usuarios), PC-BRU-004 (sin credenciales), PC-BRU-007 (rate limiting detectado), PC-BRU-008 (sin wordlist configurada)
+- **ScanOptions**: campos `brute_force`, `brute_force_use_defaults`, `brute_force_wordlist`, `brute_force_combine` con propagación correcta en `run_many()`
 - **ScanContext**: atributos `xmlrpc_accessible` y `xmlrpc_multicall_available` poblados por XMLRPCModule
-- **CLI**: flags `--brute-force`, `--brute-force-wordlist`, `--brute-force-combine`
+- **CLI**: flags `--brute-force`, `--brute-force-defaults`, `--brute-force-wordlist`, `--brute-force-combine`
+- **run_many() callbacks**: `on_finding`, `on_module_start`, `on_module_done`, `on_module_progress` ahora se propagan al Scanner interno de cada target en scans masivos
+
+### Changed
+- **`--brute-force` ya NO activa la lista interna por defecto**: ahora requiere `--brute-force-defaults` explícito (o `brute_force_use_defaults=True` en la API) para evitar ataques accidentales. Sin wordlist → emite PC-BRU-008 y termina sin hacer ningún intento de credenciales.
+- **`--brute-force-combine` sin `--brute-force-defaults`**: solo usa la wordlist externa; no mezcla contraseñas internas.
 
 ### Fixed
 - **UsersModule — author archives**: errores de red cuentan como miss consecutivo en vez de abortar toda la enumeración
@@ -17,8 +22,8 @@
 - **UsersModule — descriptions**: `', '.join(...)` en vez de Python list repr
 
 ### Tests
-- 35 nuevos tests spec-driven etiquetados por AC (Wave 4a/4b del Quality Loop)
-- Cobertura total: 84.68% (threshold 75%), 406 tests
+- 41 nuevos tests spec-driven etiquetados por AC (Wave 4a/4b + correcciones API)
+- Cobertura total: 85% (threshold 75%), 467 tests
 
 ---
 
