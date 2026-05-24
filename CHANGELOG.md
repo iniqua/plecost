@@ -1,3 +1,27 @@
+## [Unreleased] — 2026-05-24
+
+### Added
+- **UsersModule — 7 técnicas de enumeración**: REST API con paginación completa (X-WP-TotalPages), author archives 1-25/1-100 IDs con early-stop, /wp-sitemap-users-1.xml (PC-USR-003), RSS `<dc:creator>` (PC-USR-004), Yoast /author-sitemap.xml (PC-USR-005), oEmbed (solo si author_url contiene /author/), y HTML author links
+- **BruteForceModule**: nuevo módulo activado con `--brute-force`. Prueba ~63 contraseñas internas + variantes dinámicas del username. Soporta wordlist externa (`--brute-force-wordlist`), combinación (`--brute-force-combine`), límite 10k/50k líneas. Detección de éxito por cookie `wordpress_logged_in_`. Rate limiting detection (429/403/200+body/ConnectError). Finding PC-BRU-001 con passwords mascaradas.
+- **Nuevos findings**: PC-USR-003 (sitemap), PC-USR-004 (RSS), PC-USR-005 (Yoast sitemap), PC-BRU-001 (credenciales encontradas), PC-BRU-002 (no credenciales), PC-BRU-003 (sin usuarios), PC-BRU-004 (brute force desactivado), PC-BRU-007 (rate limiting detectado)
+- **ScanOptions**: campos `brute_force`, `brute_force_wordlist`, `brute_force_combine` con propagación correcta en `run_many()`
+- **ScanContext**: atributos `xmlrpc_accessible` y `xmlrpc_multicall_available` poblados por XMLRPCModule
+- **CLI**: flags `--brute-force`, `--brute-force-wordlist`, `--brute-force-combine`
+
+### Fixed
+- **UsersModule — author archives**: errores de red cuentan como miss consecutivo en vez de abortar toda la enumeración
+- **BruteForceModule — path traversal**: `_load_wordlist()` valida que el path sea un archivo regular antes de abrirlo
+- **UsersModule — paginación REST**: cap a 100 páginas máximo para evitar DoS contra el propio scanner por target malicioso
+- **BruteForceModule — ID collision**: PC-BRU-007 para rate-limiting; PC-BRU-003 exclusivo para "sin usuarios"
+- **UsersModule — RSS dedup**: guard de deduplicación compara `username` (no `display_name`)
+- **UsersModule — descriptions**: `', '.join(...)` en vez de Python list repr
+
+### Tests
+- 35 nuevos tests spec-driven etiquetados por AC (Wave 4a/4b del Quality Loop)
+- Cobertura total: 84.68% (threshold 75%), 406 tests
+
+---
+
 ## [4.4.0] — 2026-05-23
 
 ### Fixed
