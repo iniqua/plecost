@@ -234,6 +234,14 @@ result = await Scanner(ScanOptions(url="https://target.com")).run()
 - mypy no está instalado globalmente — ejecutar con `source .venv/bin/activate && python3 -m mypy plecost/ --ignore-missing-imports`
 - Las anotaciones "Event loop is closed" en CI son warnings pre-existentes de aiosqlite — no son fallos; CI pasa igualmente
 
+## plecost-db (repo hermano)
+- Ruta: `/Users/cr0hn/Dropbox/Projects/plecost/plecost-db` — repo separado, git independiente
+- Tests: `python3 -m pytest tests/unit -q --tb=short` desde la raíz de plecost-db
+- Pre-existing failure: `test_incremental_updates_sync_date` — ignorar como regresión (igual que `test_i18n.py::test_t_returns_spanish_string` en este repo)
+- `process_nvd_batch(vulns, sf, plugin_slugs, theme_slugs, collected=None, http_client=None)` — `collected` se deduplica por `(cve_id,slug)` con `_collected_seen`; `http_client` reutiliza el cliente httpx del caller para la KEV fetch
+- CISA KEV URL: `https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json` — campo JSON: `vulnerabilities[*].cveID`
+- `has_exploit` ya se muestra en el terminal reporter de plecost main (`reporters/terminal.py`) — no es un pending item
+
 ## License
 - PolyForm Noncommercial License 1.0.0 — free for non-commercial use; commercial use requires contacting cr0hn@cr0hn.com
 - Do NOT change to MIT or any open source license without explicit authorization
