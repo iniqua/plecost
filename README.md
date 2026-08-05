@@ -31,6 +31,7 @@
 - [Architecture](#architecture)
 - [Troubleshooting](#troubleshooting)
 - [Local Test Environment](#local-test-environment)
+- [Who's Using Plecost in Production](#whos-using-plecost-in-production)
 - [License](#license)
 
 ---
@@ -40,6 +41,8 @@
 Plecost detects vulnerabilities in WordPress installations — core, plugins, and themes — and correlates findings against a daily-updated local CVE database. It runs as a CLI tool, a Python library, or inside task queues like Celery, with a consistent and automation-friendly output format.
 
 **No Ruby. No API key. No subscription. No data sent to third parties on every scan.**
+
+**Used in production by** [Astrópalo](https://astropalo.com/) — [see who's using Plecost](#whos-using-plecost-in-production).
 
 
 ## Plecost vs WPScan
@@ -917,6 +920,30 @@ See [`tests/dvwp/README.md`](tests/dvwp/README.md) for full details.
 > **Warning:** For local/isolated use only. Never expose to the internet.
 
 
+## Who's Using Plecost in Production
+
+Plecost runs inside commercial products, under a commercial license:
+
+<table>
+  <tr>
+    <td align="center" width="260">
+      <a href="https://astropalo.com/">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Plecost/plecost/main/docs/assets/astropalo-logo-dark.png">
+          <img src="https://raw.githubusercontent.com/Plecost/plecost/main/docs/assets/astropalo-logo.png" alt="Astrópalo" width="200">
+        </picture>
+      </a>
+      <br>
+      <sub>Cybersecurity and continuous web compliance<br>monitoring (ENS, LSSI, GDPR, accessibility)</sub>
+    </td>
+  </tr>
+</table>
+
+Companies running Plecost in production are listed here at their own request. Publishing your security stack is a disclosure decision, and many organizations prefer not to make it — so this list is shorter than reality by design.
+
+Running Plecost in production and want your logo here? **cr0hn@cr0hn.com**
+
+
 ## License
 
 Plecost is distributed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).
@@ -926,3 +953,11 @@ Plecost is distributed under the [PolyForm Noncommercial License 1.0.0](https://
 **Requires a commercial license for:** scanning-as-a-service, inclusion in a commercial product, or any use generating direct or indirect revenue.
 
 For commercial licensing: **cr0hn@cr0hn.com** (Dani) · **ffranz@mrlooquer.com** (Fran)
+
+### Commercial Licensees
+
+Organizations currently holding a commercial license for Plecost:
+
+| Organization | Product |
+|---|---|
+| [Astrópalo](https://astropalo.com/) | Cybersecurity and web compliance monitoring (ENS, LSSI, GDPR, accessibility) |
