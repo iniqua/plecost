@@ -9,8 +9,8 @@ from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity, WooCommerceInfo
 from plecost.modules.base import ScanModule
 
-_VERSION_RE = re.compile(r"Stable tag:\s*([\d.]+)", re.I)
-_DIR_LISTING_RE = re.compile(r"<title>\s*index of", re.I)
+_VERSION_RE = re.compile(r"Stable tag:\s*([\d.]+)", re.IGNORECASE)
+_DIR_LISTING_RE = re.compile(r"<title>\s*index of", re.IGNORECASE)
 
 
 class WooCommerceModule(ScanModule):
@@ -123,9 +123,8 @@ class WooCommerceModule(ScanModule):
                         ns = data.get("namespace", "")
                         if ns and ns not in api_namespaces:
                             api_namespaces.append(ns)
-                        if "wc/store/v1" in (ns or ""):
-                            if "blocks" not in active_plugins:
-                                active_plugins.append("blocks")
+                        if "wc/store/v1" in (ns or "") and "blocks" not in active_plugins:
+                            active_plugins.append("blocks")
                     except (ValueError, KeyError):
                         pass
                     ctx.add_finding(Finding(
@@ -183,7 +182,7 @@ class WooCommerceModule(ScanModule):
                     try:
                         data = r.json()
                         namespaces = data.get("namespaces", [])
-                        wc_ns = [n for n in namespaces if n.startswith("wc/") or n.startswith("wc-")]
+                        wc_ns = [n for n in namespaces if n.startswith(("wc/", "wc-"))]
                         if wc_ns:
                             for ns in wc_ns:
                                 if ns not in api_namespaces:

@@ -1,16 +1,18 @@
 from __future__ import annotations
+
 import asyncio
 import re
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
-from plecost.models import Theme, Finding, Severity
+from plecost.models import Finding, Severity, Theme
 from plecost.modules.base import ScanModule
 
-_THEME_PATH_RE = re.compile(r'/wp-content/themes/([a-z0-9_-]+)/', re.I)
-_CSS_VER_RE = re.compile(r'Version:\s*([\d.]+)', re.I)
+_THEME_PATH_RE = re.compile(r'/wp-content/themes/([a-z0-9_-]+)/', re.IGNORECASE)
+_CSS_VER_RE = re.compile(r'Version:\s*([\d.]+)', re.IGNORECASE)
 _QVER_RE = re.compile(r'\?ver=([\d.]+)')
 # Patterns that only appear in a real WordPress theme style.css
-_STYLE_VALID_RE = re.compile(r'(Theme\s+Name:|Version:|Author:|Text\s+Domain:)', re.I)
+_STYLE_VALID_RE = re.compile(r'(Theme\s+Name:|Version:|Author:|Text\s+Domain:)', re.IGNORECASE)
 
 
 class ThemesModule(ScanModule):
@@ -75,9 +77,8 @@ class ThemesModule(ScanModule):
                         exists = r.status_code == 200 or (baseline_is_404 and r.status_code == 403)
                     if exists:
                         ver = None
-                        if r.status_code == 200:
-                            if m := _CSS_VER_RE.search(r.text):
-                                ver = m.group(1)
+                        if r.status_code == 200 and (m := _CSS_VER_RE.search(r.text)):
+                            ver = m.group(1)
                         if slug not in found:
                             found[slug] = ver
                         elif ver:

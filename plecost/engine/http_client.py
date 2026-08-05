@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 import asyncio
 import random
 from typing import Any
+
 import httpx
+
 from plecost.models import ScanOptions
 
 _USER_AGENTS = [
@@ -46,7 +49,7 @@ class PlecostHTTPClient:
         await self._stealth_delay()
         return await self._client.head(url, **kwargs)
 
-    async def __aenter__(self) -> "PlecostHTTPClient":
+    async def __aenter__(self) -> PlecostHTTPClient:
         await self._client.__aenter__()
         return self
 

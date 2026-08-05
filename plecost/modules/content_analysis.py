@@ -1,14 +1,16 @@
 from __future__ import annotations
+
 import re
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
 
-_SKIMMER_RE = re.compile(r'(magecart|skimmer|cc-number|cardnumber)', re.I)
-_IFRAME_RE = re.compile(r'<iframe[^>]+src=["\']https?://([^"\']+)["\']', re.I)
-_SECRET_RE = re.compile(r'api[_-]?key\s*[=:]\s*["\'][A-Za-z0-9]{20,}', re.I)
-_SCRIPT_SRC_RE = re.compile(r'<script[^>]+src=["\']([^"\']+)["\']', re.I)
+_SKIMMER_RE = re.compile(r'(magecart|skimmer|cc-number|cardnumber)', re.IGNORECASE)
+_IFRAME_RE = re.compile(r'<iframe[^>]+src=["\']https?://([^"\']+)["\']', re.IGNORECASE)
+_SECRET_RE = re.compile(r'api[_-]?key\s*[=:]\s*["\'][A-Za-z0-9]{20,}', re.IGNORECASE)
+_SCRIPT_SRC_RE = re.compile(r'<script[^>]+src=["\']([^"\']+)["\']', re.IGNORECASE)
 
 # Domains that are legitimate and should not trigger PC-CNT-002
 _TRUSTED_IFRAME_DOMAINS = frozenset({

@@ -1,16 +1,18 @@
 from __future__ import annotations
+
 import asyncio
 import re
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Plugin
 from plecost.modules.base import ScanModule
 
-_PLUGIN_PATH_RE = re.compile(r'/wp-content/plugins/([a-z0-9_-]+)/', re.I)
+_PLUGIN_PATH_RE = re.compile(r'/wp-content/plugins/([a-z0-9_-]+)/', re.IGNORECASE)
 _VER_RE = re.compile(r'[Ss]table\s+tag:\s*([\d.]+)')
 _QVER_RE = re.compile(r'\?ver=([\d.]+)')
 # Patterns that only appear in a real WordPress plugin readme.txt
-_README_VALID_RE = re.compile(r'(===\s+\S|Stable\s+tag:|Contributors:|Plugin\s+Name:)', re.I)
+_README_VALID_RE = re.compile(r'(===\s+\S|Stable\s+tag:|Contributors:|Plugin\s+Name:)', re.IGNORECASE)
 
 
 class PluginsModule(ScanModule):
@@ -73,9 +75,8 @@ class PluginsModule(ScanModule):
                         exists = r.status_code == 200 or (baseline_is_404 and r.status_code == 403)
                     if exists:
                         ver = None
-                        if r.status_code == 200:
-                            if m := _VER_RE.search(r.text):
-                                ver = m.group(1)
+                        if r.status_code == 200 and (m := _VER_RE.search(r.text)):
+                            ver = m.group(1)
                         if slug not in found:
                             found[slug] = ver
                         elif ver:

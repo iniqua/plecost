@@ -11,13 +11,13 @@ Finding:
 """
 from __future__ import annotations
 
-from packaging.version import Version, InvalidVersion
+from packaging.version import InvalidVersion, Version
 
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
+from plecost.i18n import t
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
-from plecost.i18n import t
 
 KNOWN_LATEST_VERSION = "7.0"  # Last verified: 2026-05-24
 

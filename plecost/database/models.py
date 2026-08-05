@@ -1,5 +1,6 @@
 from __future__ import annotations
-from sqlalchemy import String, Float, Boolean, Integer, Text, Index, UniqueConstraint
+
+from sqlalchemy import Boolean, Float, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 

@@ -1,13 +1,16 @@
 from __future__ import annotations
+
 from importlib.metadata import version as pkg_version
+
 from rich import box
 from rich.console import Console, Group
 from rich.live import Live
 from rich.markup import escape as markup_escape
-from rich.table import Table
 from rich.panel import Panel
-from plecost.models import Finding, ScanResult, Severity
+from rich.table import Table
+
 from plecost.i18n import t
+from plecost.models import Finding, ScanResult, Severity
 
 try:
     _PLECOST_VERSION = pkg_version("plecost")

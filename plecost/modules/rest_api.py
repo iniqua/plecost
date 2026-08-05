@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 import re
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
 
-_REST_LINK_RE = re.compile(r'rel=["\']https://api\.w\.org/["\']', re.I)
+_REST_LINK_RE = re.compile(r'rel=["\']https://api\.w\.org/["\']', re.IGNORECASE)
 
 
 class RESTAPIModule(ScanModule):

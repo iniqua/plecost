@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 import re
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
 
-_PHP_ERROR_RE = re.compile(r'<b>(Notice|Warning|Fatal error|Parse error)</b>:', re.I)
+_PHP_ERROR_RE = re.compile(r'<b>(Notice|Warning|Fatal error|Parse error)</b>:', re.IGNORECASE)
 
 # AC-5: Full Path Disclosure via REST API — matches absolute server paths in response body
 _SERVER_PATH_RE = re.compile(r'/(?:var|home|srv|www|opt|usr)/[^"<\s]{3,}')

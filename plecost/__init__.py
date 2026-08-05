@@ -1,4 +1,4 @@
-from plecost.scanner import Scanner
 from plecost.models import ScanOptions, ScanResult
+from plecost.scanner import Scanner
 
-__all__ = ["Scanner", "ScanOptions", "ScanResult"]
+__all__ = ["ScanOptions", "ScanResult", "Scanner"]

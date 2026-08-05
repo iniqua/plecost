@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 import asyncio
 import re
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
@@ -12,7 +14,7 @@ from plecost.modules.base import ScanModule
 # faultCode=403 → wrong credentials but method is functional (no protection)
 _FAULT_CODE_RE = re.compile(
     r'<name>faultCode</name>\s*<value>\s*<(?:int|i4)>\s*(-?\d+)',
-    re.S
+    re.DOTALL
 )
 
 _LIST_METHODS_PAYLOAD = """<?xml version="1.0"?>

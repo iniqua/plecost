@@ -1,39 +1,40 @@
 from __future__ import annotations
+
 import dataclasses
 import time
 import uuid
 from collections.abc import Callable
 from datetime import datetime
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.engine.scheduler import Scheduler
-from plecost.models import ScanOptions, ScanResult, ScanSummary, Severity
-from plecost.modules.fingerprint import FingerprintModule
-from plecost.modules.waf import WAFModule
-from plecost.modules.plugins import PluginsModule
-from plecost.modules.themes import ThemesModule
-from plecost.modules.users import UsersModule
-from plecost.modules.xmlrpc import XMLRPCModule
-from plecost.modules.rest_api import RESTAPIModule
-from plecost.modules.misconfigs import MisconfigsModule
-from plecost.modules.directory_listing import DirectoryListingModule
-from plecost.modules.http_headers import HTTPHeadersModule
-from plecost.modules.ssl_tls import SSLTLSModule
-from plecost.modules.debug_exposure import DebugExposureModule
-from plecost.modules.content_analysis import ContentAnalysisModule
+from plecost.models import Finding, ScanOptions, ScanResult, ScanSummary, Severity
 from plecost.modules.auth import AuthModule
+from plecost.modules.base import ScanModule
+from plecost.modules.brute import BruteModule
+from plecost.modules.brute_force import BruteForceModule
+from plecost.modules.content_analysis import ContentAnalysisModule
+from plecost.modules.cves import CVEsModule
+from plecost.modules.debug_exposure import DebugExposureModule
+from plecost.modules.directory_listing import DirectoryListingModule
+from plecost.modules.emergency_scripts import EmergencyScriptsModule
+from plecost.modules.fingerprint import FingerprintModule
+from plecost.modules.http_headers import HTTPHeadersModule
+from plecost.modules.magecart import MagecartModule
+from plecost.modules.misconfigs import MisconfigsModule
+from plecost.modules.plugins import PluginsModule
+from plecost.modules.rest_api import RESTAPIModule
+from plecost.modules.ssl_tls import SSLTLSModule
+from plecost.modules.themes import ThemesModule
+from plecost.modules.timthumb import TimThumbModule
+from plecost.modules.users import UsersModule
+from plecost.modules.waf import WAFModule
+from plecost.modules.webshells import WebshellsModule
 from plecost.modules.woocommerce import WooCommerceModule
 from plecost.modules.wp_ecommerce import WPECommerceModule
-from plecost.modules.magecart import MagecartModule
-from plecost.modules.webshells import WebshellsModule
-from plecost.modules.cves import CVEsModule
-from plecost.modules.brute_force import BruteForceModule
-from plecost.modules.timthumb import TimThumbModule
-from plecost.modules.emergency_scripts import EmergencyScriptsModule
 from plecost.modules.wp_hardening import WPHardeningModule
-from plecost.modules.brute import BruteModule
-from plecost.modules.base import ScanModule
-from plecost.models import Finding
+from plecost.modules.xmlrpc import XMLRPCModule
 
 
 def _build_summary(findings: list[Finding]) -> ScanSummary:
@@ -117,8 +118,9 @@ class Scanner:
         theme_wl: list[str] = []
         store = None
         try:
-            from plecost.database.store import CVEStore
             from pathlib import Path
+
+            from plecost.database.store import CVEStore
             db_url = self._opts.db_url or f"sqlite+aiosqlite:///{Path.home() / '.plecost' / 'db' / 'plecost.db'}"
             store = CVEStore.from_url(db_url)
             cve_mod = CVEsModule(store)

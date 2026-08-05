@@ -1,12 +1,14 @@
 from __future__ import annotations
+
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
-from sqlalchemy import delete, select
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
-from plecost.database.models import NormalizedVuln, RejectedCve, DbMetadata, MagecartDomain
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from plecost.database.models import DbMetadata, MagecartDomain, NormalizedVuln, RejectedCve
 
 METADATA_KEY_LAST_PATCH = "last_patch_date"
 UPSERT_BATCH_SIZE = 2_000
@@ -126,26 +128,26 @@ def _build_values(record: dict[str, Any]) -> dict[str, Any]:
     references = record.get("references")
     if references is None:
         references = []
-    return dict(
-        cve_id=record["cve_id"],
-        software_type=record["software_type"],
-        slug=record["slug"],
-        cpe_vendor=record.get("cpe_vendor", ""),
-        cpe_product=record.get("cpe_product", ""),
-        match_confidence=record.get("match_confidence", 1.0),
-        version_start_incl=record.get("version_start_incl"),
-        version_start_excl=record.get("version_start_excl"),
-        version_end_incl=record.get("version_end_incl"),
-        version_end_excl=record.get("version_end_excl"),
-        cvss_score=record.get("cvss_score"),
-        severity=record.get("severity", "MEDIUM"),
-        title=record.get("title", ""),
-        description=record.get("description", ""),
-        remediation=record.get("remediation", ""),
-        references_json=json.dumps(references),
-        has_exploit=has_exploit,
-        published_at=record.get("published_at", ""),
-    )
+    return {
+        "cve_id": record["cve_id"],
+        "software_type": record["software_type"],
+        "slug": record["slug"],
+        "cpe_vendor": record.get("cpe_vendor", ""),
+        "cpe_product": record.get("cpe_product", ""),
+        "match_confidence": record.get("match_confidence", 1.0),
+        "version_start_incl": record.get("version_start_incl"),
+        "version_start_excl": record.get("version_start_excl"),
+        "version_end_incl": record.get("version_end_incl"),
+        "version_end_excl": record.get("version_end_excl"),
+        "cvss_score": record.get("cvss_score"),
+        "severity": record.get("severity", "MEDIUM"),
+        "title": record.get("title", ""),
+        "description": record.get("description", ""),
+        "remediation": record.get("remediation", ""),
+        "references_json": json.dumps(references),
+        "has_exploit": has_exploit,
+        "published_at": record.get("published_at", ""),
+    }
 
 
 async def _apply_upserts(session: AsyncSession, upserts: list[dict[str, Any]]) -> int:
@@ -209,7 +211,7 @@ async def _apply_deletes(
 ) -> int:
     """Move deleted CVEs to rejected_cves table instead of physical delete."""
     count = 0
-    now = patch_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    now = patch_date or datetime.now(UTC).strftime("%Y-%m-%d")
     skip = upserted_ids or set()
     for cve_id in cve_ids:
         # AC-2: skip cve_ids that were also upserted in this patch (upsert wins)
@@ -242,8 +244,7 @@ async def _update_last_patch_date(session: AsyncSession, date: str) -> None:
     row = await session.get(DbMetadata, METADATA_KEY_LAST_PATCH)
     if row:
         # Only update if new date is more recent
-        if date > row.value:
-            row.value = date
+        row.value = max(row.value, date)
     else:
         session.add(DbMetadata(key=METADATA_KEY_LAST_PATCH, value=date))
 

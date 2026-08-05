@@ -1,17 +1,19 @@
 from __future__ import annotations
+
 import asyncio
 import re
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
+from plecost.i18n import t
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
-from plecost.i18n import t
 
 # PHP source code patterns — if found, wp-config.php is truly exposed
-_PHP_SOURCE_RE = re.compile(r'(define\s*\(|DB_PASSWORD|DB_HOST|DB_NAME|\$table_prefix)', re.I)
+_PHP_SOURCE_RE = re.compile(r'(define\s*\(|DB_PASSWORD|DB_HOST|DB_NAME|\$table_prefix)', re.IGNORECASE)
 
 # Adminer signature: body must contain "class Adminer" to avoid FPs
-_ADMINER_SIGNATURE_RE = re.compile(r'class Adminer', re.I)
+_ADMINER_SIGNATURE_RE = re.compile(r'class Adminer', re.IGNORECASE)
 
 # install.php: only flag if the active installation form is present (language-independent HTML)
 # A healthy "Already installed" page has no such input field.
@@ -165,7 +167,7 @@ class MisconfigsModule(ScanModule):
         path: str, finding_id: str, rem_id: str, severity: Severity,
         title_key: str, description_key: str, remediation_key: str,
         php_source_check: bool, plaintext_check: bool,
-        content_signature: "re.Pattern[str] | None" = None,
+        content_signature: re.Pattern[str] | None = None,
     ) -> None:
         url = ctx.url + path
         try:

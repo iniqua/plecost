@@ -1,9 +1,11 @@
 from __future__ import annotations
+
+import asyncio
 import json
 import re
-import asyncio
 import xml.etree.ElementTree as ET
 from typing import Any
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity, User

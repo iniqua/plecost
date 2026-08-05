@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import asyncio
 import hashlib
 import json
@@ -6,6 +7,7 @@ import logging
 import random
 from pathlib import Path
 from urllib.parse import urlparse
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -159,9 +161,8 @@ def _make_headers(token: str | None, url: str = "") -> dict[str, str]:
     a token is present (backwards compatibility).
     """
     headers: dict[str, str] = {"Accept": "application/json"}
-    if token:
-        if not url or _is_github_url(url):
-            headers["Authorization"] = f"Bearer {token}"
+    if token and (not url or _is_github_url(url)):
+        headers["Authorization"] = f"Bearer {token}"
     return headers
 
 

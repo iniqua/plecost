@@ -46,6 +46,24 @@ markers = [
 target-version = "py311"
 line-length = 100
 
+[tool.ruff.lint]
+# Rules that conflict with deliberate project conventions. Ruff expands its
+# default rule set between releases, so these are pinned explicitly rather than
+# left to whatever the installed version happens to enable.
+ignore = [
+    "BLE001",    # blind except: detectors run under asyncio.gather(return_exceptions=True)
+    "S110",      # try-except-pass: same convention — a failed probe is not an error
+    "RUF012",    # mutable class defaults: modules declare wordlists as class attributes
+    "ASYNC230",  # blocking open() in async: CLI download paths, not the scan event loop
+    "B008",      # function call in argument default: required by Typer's option syntax
+    "DTZ005",    # naive datetime: scan timestamps are local by design
+    "DTZ007",
+    "DTZ011",
+    "PYI034",    # __aenter__ return type: returns self, annotated as the concrete class
+    "PYI036",    # __aexit__ signature: *args: Any keeps mypy strict happy
+    "SIM115",    # open() without context manager: CLI output file kept open for the run
+]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true

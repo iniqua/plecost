@@ -1,10 +1,16 @@
 from __future__ import annotations
+
 import asyncio
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.webshells.base import BaseDetector
-from plecost.modules.webshells.wordlists import WEBSHELL_PATHS_FAST, WEBSHELL_PATHS_CORE, WEBSHELL_PATHS_EXTENDED
+from plecost.modules.webshells.wordlists import (
+    WEBSHELL_PATHS_CORE,
+    WEBSHELL_PATHS_EXTENDED,
+    WEBSHELL_PATHS_FAST,
+)
 
 _PREFLIGHT_PATH = "/plecost-probe-nonexistent.php"
 _ALLOWED_CONTENT_TYPES = {"text/html", "text/plain", "application/x-httpd-php"}

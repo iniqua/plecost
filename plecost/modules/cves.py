@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 from rich.markup import escape as markup_escape
+
+from plecost.database.store import CVEStore, VulnerabilityRecord
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, PluginVuln, Severity
 from plecost.modules.base import ScanModule
-from plecost.database.store import CVEStore, VulnerabilityRecord
 
 _SEVERITY_MAP = {
     "CRITICAL": Severity.CRITICAL,

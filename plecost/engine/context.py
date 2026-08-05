@@ -1,6 +1,17 @@
 from __future__ import annotations
+
 from collections.abc import Callable
-from plecost.models import ScanOptions, Finding, Plugin, Theme, User, WooCommerceInfo, WPECommerceInfo, MagecartInfo
+
+from plecost.models import (
+    Finding,
+    MagecartInfo,
+    Plugin,
+    ScanOptions,
+    Theme,
+    User,
+    WooCommerceInfo,
+    WPECommerceInfo,
+)
 
 
 class ScanContext:

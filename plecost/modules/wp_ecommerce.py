@@ -5,19 +5,19 @@ import re
 
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
+from plecost.i18n import t
 from plecost.models import Finding, Severity, WPECommerceInfo
 from plecost.modules.base import ScanModule
-from plecost.i18n import t
 
-_VERSION_RE = re.compile(r'Stable tag:\s*([\d.]+)', re.I)
-_DIR_LISTING_RE = re.compile(r'<title>\s*index of', re.I)
+_VERSION_RE = re.compile(r'Stable tag:\s*([\d.]+)', re.IGNORECASE)
+_DIR_LISTING_RE = re.compile(r'<title>\s*index of', re.IGNORECASE)
 _SQL_ERROR_RE = re.compile(
     r'(you have an error in your sql syntax|mysql_fetch|wpdb error|warning.*mysql)',
-    re.I,
+    re.IGNORECASE,
 )
 _INJECT_RE = re.compile(
     r'(__wakeup|unserialize\(\)|class.*evil|fatal error.*unserialized)',
-    re.I,
+    re.IGNORECASE,
 )
 
 

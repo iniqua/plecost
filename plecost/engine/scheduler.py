@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 import asyncio
 from collections.abc import Callable
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.modules.base import ScanModule

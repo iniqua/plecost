@@ -1,15 +1,17 @@
 from __future__ import annotations
+
 import asyncio
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.modules.base import ScanModule
 from plecost.modules.webshells.base import BaseDetector
-from plecost.modules.webshells.detectors.known_paths import KnownPathsDetector
-from plecost.modules.webshells.detectors.uploads_php import UploadsPhpDetector
-from plecost.modules.webshells.detectors.mu_plugins import MuPluginsDetector
-from plecost.modules.webshells.detectors.response_fp import ResponseFingerprintDetector
 from plecost.modules.webshells.detectors.checksums import ChecksumsDetector
 from plecost.modules.webshells.detectors.fake_plugins import FakePluginRestDetector
+from plecost.modules.webshells.detectors.known_paths import KnownPathsDetector
+from plecost.modules.webshells.detectors.mu_plugins import MuPluginsDetector
+from plecost.modules.webshells.detectors.response_fp import ResponseFingerprintDetector
+from plecost.modules.webshells.detectors.uploads_php import UploadsPhpDetector
 
 
 class WebshellsModule(ScanModule):

@@ -18,15 +18,15 @@ import re
 
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
+from plecost.i18n import t
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
-from plecost.i18n import t
 
 # Signature: response body must contain one of these to confirm it is timthumb
-_SIGNATURE_RE = re.compile(r'TimThumb|Not a valid src', re.I)
+_SIGNATURE_RE = re.compile(r'TimThumb|Not a valid src', re.IGNORECASE)
 
 # Extract version from response body
-_VERSION_RE = re.compile(r'TimThumb\s+v?([\d.]+)', re.I)
+_VERSION_RE = re.compile(r'TimThumb\s+v?([\d.]+)', re.IGNORECASE)
 
 # Last patched version
 _LAST_SECURE_VERSION = "2.8.14"

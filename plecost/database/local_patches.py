@@ -89,26 +89,26 @@ async def _upsert_entry(session: AsyncSession, entry: dict[str, Any]) -> None:
         )
     )
     existing = result.scalar_one_or_none()
-    values: dict[str, Any] = dict(
-        cve_id=entry["cve_id"],
-        software_type=entry["software_type"],
-        slug=entry["slug"],
-        cpe_vendor=entry.get("cpe_vendor", ""),
-        cpe_product=entry.get("cpe_product", ""),
-        match_confidence=entry.get("match_confidence", 1.0),
-        version_start_incl=entry.get("version_start_incl"),
-        version_start_excl=entry.get("version_start_excl"),
-        version_end_incl=entry.get("version_end_incl"),
-        version_end_excl=entry.get("version_end_excl"),
-        cvss_score=entry.get("cvss_score"),
-        severity=entry.get("severity", "MEDIUM"),
-        title=entry.get("title", ""),
-        description=entry.get("description", ""),
-        remediation=entry.get("remediation", ""),
-        references_json=json.dumps(entry.get("references", [])),
-        has_exploit=entry.get("has_exploit", False),
-        published_at=entry.get("published_at", ""),
-    )
+    values: dict[str, Any] = {
+        "cve_id": entry["cve_id"],
+        "software_type": entry["software_type"],
+        "slug": entry["slug"],
+        "cpe_vendor": entry.get("cpe_vendor", ""),
+        "cpe_product": entry.get("cpe_product", ""),
+        "match_confidence": entry.get("match_confidence", 1.0),
+        "version_start_incl": entry.get("version_start_incl"),
+        "version_start_excl": entry.get("version_start_excl"),
+        "version_end_incl": entry.get("version_end_incl"),
+        "version_end_excl": entry.get("version_end_excl"),
+        "cvss_score": entry.get("cvss_score"),
+        "severity": entry.get("severity", "MEDIUM"),
+        "title": entry.get("title", ""),
+        "description": entry.get("description", ""),
+        "remediation": entry.get("remediation", ""),
+        "references_json": json.dumps(entry.get("references", [])),
+        "has_exploit": entry.get("has_exploit", False),
+        "published_at": entry.get("published_at", ""),
+    }
     if existing:
         for k, v in values.items():
             setattr(existing, k, v)

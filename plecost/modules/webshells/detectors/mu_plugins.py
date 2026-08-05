@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 import asyncio
 import base64
 import secrets
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity

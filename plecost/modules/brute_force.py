@@ -44,15 +44,11 @@ import asyncio
 import enum
 import random
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
-
-if TYPE_CHECKING:
-    pass
 
 # ---------------------------------------------------------------------- #
 # Internal password list (~60 common passwords)                          #
@@ -298,7 +294,7 @@ class BruteForceModule(ScanModule):
                     consecutive_rl[0] = 0
                     cb.record_success()
                     return result
-                except (Exception,) as exc:
+                except Exception as exc:
                     exc_str = str(exc).lower()
                     if any(kw in exc_str for kw in ("connection", "transport", "reset", "eof")):
                         consecutive_rl[0] += 1

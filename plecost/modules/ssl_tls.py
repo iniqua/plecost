@@ -1,9 +1,11 @@
 from __future__ import annotations
+
+import httpx
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
-import httpx
 
 
 class SSLTLSModule(ScanModule):

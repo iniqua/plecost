@@ -27,16 +27,16 @@ import re
 
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
+from plecost.i18n import t
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
-from plecost.i18n import t
 
 # PHP invariant signatures — ONLY use PHP-specific patterns (F-2 fix)
 # <form> and <input> are excluded: they appear in WordPress theme headers
 # on soft-404 pages, causing massive false positives.
 _SIGNATURES: list[re.Pattern[str]] = [
-    re.compile(r'wp_hash_password\s*\(', re.I),
-    re.compile(r'update_user_meta\s*\(', re.I),
+    re.compile(r'wp_hash_password\s*\(', re.IGNORECASE),
+    re.compile(r'update_user_meta\s*\(', re.IGNORECASE),
 ]
 
 # (path, finding_id, rem_id)

@@ -1,14 +1,16 @@
 from __future__ import annotations
+
 import re
+
 from plecost.engine.context import ScanContext
 from plecost.engine.http_client import PlecostHTTPClient
 from plecost.models import Finding, Severity
 from plecost.modules.base import ScanModule
 
-_META_RE = re.compile(r'<meta[^>]+name=["\']generator["\'][^>]+content=["\']WordPress\s*([\d.]+)', re.I)
+_META_RE = re.compile(r'<meta[^>]+name=["\']generator["\'][^>]+content=["\']WordPress\s*([\d.]+)', re.IGNORECASE)
 _VER_RE = re.compile(r'[Vv]ersion[:\s]+([\d.]+)')
 _GENERATOR_FEED_RE = re.compile(r'<generator>.*?/([\d.]+)</generator>')
-_LINK_API_RE = re.compile(r'rel=["\']https://api\.w\.org/["\']', re.I)
+_LINK_API_RE = re.compile(r'rel=["\']https://api\.w\.org/["\']', re.IGNORECASE)
 
 # WordPress-specific paths: a non-404 response on any of these indicates WordPress.
 # We use these ONLY when the baseline probe confirms that the server returns 404
@@ -73,20 +75,19 @@ class FingerprintModule(ScanModule):
         """Detect WordPress version via /readme.html."""
         try:
             r = await http.get(ctx.url + "/readme.html")
-            if r.status_code == 200:
-                if m := _VER_RE.search(r.text):
-                    ctx.is_wordpress = True
-                    ctx.wordpress_version = m.group(1)
-                    ctx.add_finding(Finding(
-                        id="PC-WP-002", remediation_id="REM-WP-002",
-                        title="WordPress version disclosed via readme.html",
-                        severity=Severity.LOW,
-                        description=f"WordPress version {m.group(1)} found in /readme.html.",
-                        evidence={"url": ctx.url + "/readme.html"},
-                        remediation="Delete /readme.html from the server.",
-                        references=[], cvss_score=None, module=self.name
-                    ))
-                    return True
+            if r.status_code == 200 and (m := _VER_RE.search(r.text)):
+                ctx.is_wordpress = True
+                ctx.wordpress_version = m.group(1)
+                ctx.add_finding(Finding(
+                    id="PC-WP-002", remediation_id="REM-WP-002",
+                    title="WordPress version disclosed via readme.html",
+                    severity=Severity.LOW,
+                    description=f"WordPress version {m.group(1)} found in /readme.html.",
+                    evidence={"url": ctx.url + "/readme.html"},
+                    remediation="Delete /readme.html from the server.",
+                    references=[], cvss_score=None, module=self.name
+                ))
+                return True
         except Exception:
             pass
         return False
@@ -95,11 +96,14 @@ class FingerprintModule(ScanModule):
         """Detect WordPress version via RSS feed generator tag."""
         try:
             r = await http.get(ctx.url + "/feed/")
-            if r.status_code == 200 and "generator" in r.text:
-                if m := _GENERATOR_FEED_RE.search(r.text):
-                    ctx.is_wordpress = True
-                    ctx.wordpress_version = m.group(1)
-                    return True
+            if (
+                r.status_code == 200
+                and "generator" in r.text
+                and (m := _GENERATOR_FEED_RE.search(r.text))
+            ):
+                ctx.is_wordpress = True
+                ctx.wordpress_version = m.group(1)
+                return True
         except Exception:
             pass
         return False

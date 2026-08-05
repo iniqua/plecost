@@ -1,13 +1,20 @@
 from __future__ import annotations
+
 import json
 import logging
 from dataclasses import dataclass
 
-from packaging.version import Version, InvalidVersion
-from sqlalchemy import select, desc
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
+from packaging.version import InvalidVersion, Version
+from sqlalchemy import desc, select
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
-from plecost.database.models import NormalizedVuln, PluginsWordlist, RejectedCve, ThemesWordlist, MagecartDomain
+from plecost.database.models import (
+    MagecartDomain,
+    NormalizedVuln,
+    PluginsWordlist,
+    RejectedCve,
+    ThemesWordlist,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +45,9 @@ class CVEStore:
         self._engine = engine
 
     @classmethod
-    def from_url(cls, db_url: str) -> "CVEStore":
+    def from_url(cls, db_url: str) -> CVEStore:
         import os
+
         from plecost.database.engine import make_engine, make_session_factory
         if db_url.startswith("sqlite"):
             # Extract path from sqlite+aiosqlite:///path or sqlite:///path
@@ -185,7 +193,7 @@ class CVEStore:
             result = await session.execute(q)
             return list(result.scalars().all())
 
-    async def get_magecart_domains(self, domains: list[str]) -> list["MagecartDomain"]:
+    async def get_magecart_domains(self, domains: list[str]) -> list[MagecartDomain]:
         """Return MagecartDomain rows matching the given domains (active only)."""
         if not domains:
             return []
@@ -193,7 +201,7 @@ class CVEStore:
             result = await session.execute(
                 select(MagecartDomain).where(
                     MagecartDomain.domain.in_(domains),
-                    MagecartDomain.is_active == True,  # noqa: E712
+                    MagecartDomain.is_active.is_(True),
                 )
             )
             return list(result.scalars().all())

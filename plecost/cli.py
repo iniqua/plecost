@@ -1,16 +1,19 @@
 from __future__ import annotations
+
 import asyncio
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, IO, List, Optional
+from typing import IO, TYPE_CHECKING, Any
+
 import httpx
 import typer
 from rich.console import Console
-from plecost.models import ScanOptions
+
 from plecost.i18n import set_language, t
+from plecost.models import ScanOptions
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 app = typer.Typer(name="plecost", help="The best black-box WordPress security scanner.")
 console = Console()
@@ -20,7 +23,7 @@ console = Console()
 # File lock helpers (AC-1 / G-024)
 # ---------------------------------------------------------------------------
 
-def _acquire_db_lock(lock_path: Path) -> "IO[Any]":
+def _acquire_db_lock(lock_path: Path) -> IO[Any]:
     """Acquire an exclusive file lock to prevent concurrent update-db runs.
 
     Raises RuntimeError immediately if another process holds the lock.
@@ -45,7 +48,7 @@ def _acquire_db_lock(lock_path: Path) -> "IO[Any]":
     return lock_file
 
 
-def _release_db_lock(lock_file: "IO[Any]", lock_path: Path) -> None:
+def _release_db_lock(lock_file: IO[Any], lock_path: Path) -> None:
     """Release the exclusive file lock and delete the lockfile."""
     try:
         if sys.platform != "win32":
@@ -75,7 +78,7 @@ _ALL_MODULE_NAMES = [
 ]
 
 
-def _parse_module_options(raw: List[str]) -> dict[str, dict[str, str]]:
+def _parse_module_options(raw: list[str]) -> dict[str, dict[str, str]]:
     """Parse --module-option values like 'woocommerce:mode=semi-active' into a nested dict."""
     result: dict[str, dict[str, str]] = {}
     for item in raw:
@@ -91,26 +94,26 @@ def _parse_module_options(raw: List[str]) -> dict[str, dict[str, str]]:
 
 @app.command()
 def scan(
-    url: Optional[str] = typer.Argument(None, help="Target WordPress URL"),
-    targets: Optional[str] = typer.Option(None, "--targets", "-T", help="File with one URL per line"),
-    user: Optional[str] = typer.Option(None, "--user", "-u", help="WordPress username"),
-    password: Optional[str] = typer.Option(None, "--password", "-p", help="WordPress password"),
-    proxy: Optional[str] = typer.Option(None, help="Proxy URL (http://host:port or socks5://host:port)"),
+    url: str | None = typer.Argument(None, help="Target WordPress URL"),
+    targets: str | None = typer.Option(None, "--targets", "-T", help="File with one URL per line"),
+    user: str | None = typer.Option(None, "--user", "-u", help="WordPress username"),
+    password: str | None = typer.Option(None, "--password", "-p", help="WordPress password"),
+    proxy: str | None = typer.Option(None, help="Proxy URL (http://host:port or socks5://host:port)"),
     concurrency: int = typer.Option(10, help="Number of concurrent requests"),
     timeout: int = typer.Option(10, help="Request timeout in seconds", envvar="PLECOST_TIMEOUT"),
-    modules: Optional[str] = typer.Option(None, help="Comma-separated list of modules to run"),
-    skip_modules: Optional[str] = typer.Option(None, help="Comma-separated list of modules to skip"),
+    modules: str | None = typer.Option(None, help="Comma-separated list of modules to run"),
+    skip_modules: str | None = typer.Option(None, help="Comma-separated list of modules to skip"),
     stealth: bool = typer.Option(False, help="Stealth mode: random UA, slower"),
     aggressive: bool = typer.Option(False, help="Aggressive mode: max concurrency"),
-    output: Optional[str] = typer.Option(None, "-o", "--output", help="Save JSON report to file", envvar="PLECOST_OUTPUT"),
+    output: str | None = typer.Option(None, "-o", "--output", help="Save JSON report to file", envvar="PLECOST_OUTPUT"),
     random_user_agent: bool = typer.Option(False, "--random-user-agent", "--rua"),
     verify_ssl: bool = typer.Option(True, help="Verify SSL certificates"),
     force: bool = typer.Option(False, help="Continue even if WordPress not detected"),
     deep: bool = typer.Option(False, "--deep", help="Deep mode: scan full plugin/theme wordlist (default: top 150 plugins, top 50 themes)"),
     quiet: bool = typer.Option(False, help="Only show HIGH and CRITICAL findings"),
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Show real-time module progress and findings during scan"),
-    db_url: Optional[str] = typer.Option(None, "--db-url", help="CVE database URL (sqlite+aiosqlite:/// or postgresql+asyncpg://)", envvar="PLECOST_DB_URL"),
-    module_option: List[str] = typer.Option(
+    db_url: str | None = typer.Option(None, "--db-url", help="CVE database URL (sqlite+aiosqlite:/// or postgresql+asyncpg://)", envvar="PLECOST_DB_URL"),
+    module_option: list[str] = typer.Option(
         [],
         "--module-option",
         help=(
@@ -118,10 +121,10 @@ def scan(
             "Example: --module-option woocommerce:mode=semi-active"
         ),
     ),
-    lang: Optional[str] = typer.Option(None, "--lang", "-L", help="Language for output (en, es). Overrides PLECOST_LANG env var and system locale.", envvar="PLECOST_LANG"),
+    lang: str | None = typer.Option(None, "--lang", "-L", help="Language for output (en, es). Overrides PLECOST_LANG env var and system locale.", envvar="PLECOST_LANG"),
     brute_force: bool = typer.Option(False, "--brute-force", help="Enable brute force login attacks (requires discovered usernames)"),
     brute_force_defaults: bool = typer.Option(False, "--brute-force-defaults", help="Use built-in password list for brute force (requires --brute-force)"),
-    brute_force_wordlist: Optional[str] = typer.Option(None, "--brute-force-wordlist", help="Path to external password wordlist for brute force"),
+    brute_force_wordlist: str | None = typer.Option(None, "--brute-force-wordlist", help="Path to external password wordlist for brute force"),
     brute_force_combine: bool = typer.Option(False, "--brute-force-combine", help="Combine external wordlist with internal password list"),
 ) -> None:
     """Scan a WordPress site for security vulnerabilities."""
@@ -150,9 +153,9 @@ def scan(
     except ImportError:
         pass
 
-    from plecost.scanner import Scanner
-    from plecost.reporters.terminal import TerminalReporter, VerboseDisplay
     from plecost.reporters.json_reporter import JSONReporter
+    from plecost.reporters.terminal import TerminalReporter, VerboseDisplay
+    from plecost.scanner import Scanner
 
     has_critical = False
     for i, target_url in enumerate(urls):
@@ -227,7 +230,7 @@ def scan(
         raise typer.Exit(code=1)
 
 
-async def _get_metadata(sf: "async_sessionmaker[AsyncSession]", key: str) -> "str | None":
+async def _get_metadata(sf: async_sessionmaker[AsyncSession], key: str) -> str | None:
     from plecost.database.models import DbMetadata
 
     async with sf() as session:
@@ -235,7 +238,7 @@ async def _get_metadata(sf: "async_sessionmaker[AsyncSession]", key: str) -> "st
         return str(row.value) if row else None
 
 
-async def _set_metadata(sf: "async_sessionmaker[AsyncSession]", key: str, value: str) -> None:
+async def _set_metadata(sf: async_sessionmaker[AsyncSession], key: str, value: str) -> None:
     from plecost.database.models import DbMetadata
 
     async with sf() as session:
@@ -262,7 +265,7 @@ async def _apply_sqlite_migrations(conn: Any) -> None:
             await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {definition}"))
 
 
-async def _sync_active_installs(sf: "async_sessionmaker[AsyncSession]") -> None:
+async def _sync_active_installs(sf: async_sessionmaker[AsyncSession]) -> None:
     """
     Populate active_installs for PluginsWordlist and ThemesWordlist by calling the
     WordPress.org public API. Only updates slugs already present in the DB (AC-5).
@@ -270,6 +273,7 @@ async def _sync_active_installs(sf: "async_sessionmaker[AsyncSession]") -> None:
     Uses paginated requests (100 per page, max 50 pages) per AC-2/AC-8.
     """
     from sqlalchemy import select, update
+
     from plecost.database.models import PluginsWordlist, ThemesWordlist
 
     _MAX_PAGES = 50
@@ -277,7 +281,7 @@ async def _sync_active_installs(sf: "async_sessionmaker[AsyncSession]") -> None:
 
     async def _fetch_and_update(
         client: httpx.AsyncClient,
-        session_factory: "async_sessionmaker[AsyncSession]",
+        session_factory: async_sessionmaker[AsyncSession],
         api_url_template: str,
         items_key: str,
         model: type,
@@ -355,7 +359,7 @@ async def _sync_active_installs(sf: "async_sessionmaker[AsyncSession]") -> None:
         console.print(f"[yellow]Warning: could not sync active_installs from WP.org: {exc}[/yellow]")
 
 
-async def _clean_low_confidence_records(sf: "async_sessionmaker[AsyncSession]") -> int:
+async def _clean_low_confidence_records(sf: async_sessionmaker[AsyncSession]) -> int:
     """
     Remove normalized_vulns records where match_confidence=0.5 and slug is not
     in any known wordlist. These are fallback records from the old pipeline that
@@ -363,6 +367,7 @@ async def _clean_low_confidence_records(sf: "async_sessionmaker[AsyncSession]") 
     Returns the number of records deleted.
     """
     from sqlalchemy import delete, select
+
     from plecost.database.models import NormalizedVuln, PluginsWordlist, ThemesWordlist
 
     async with sf() as session:
@@ -390,7 +395,7 @@ async def _clean_low_confidence_records(sf: "async_sessionmaker[AsyncSession]") 
         return deleted
 
 
-async def _sync_cisa_kev(sf: "async_sessionmaker[AsyncSession]") -> None:
+async def _sync_cisa_kev(sf: async_sessionmaker[AsyncSession]) -> None:
     """Update has_exploit=True for CVEs listed in the CISA Known Exploited Vulnerabilities catalog.
 
     AC-3 / G-004: Called after _sync_active_installs at the end of _update_db_async.
@@ -398,6 +403,7 @@ async def _sync_cisa_kev(sf: "async_sessionmaker[AsyncSession]") -> None:
     without crashing.
     """
     from sqlalchemy import update as sa_update
+
     from plecost.database.models import NormalizedVuln
 
     _KEV_URL = (
@@ -428,7 +434,7 @@ async def _sync_cisa_kev(sf: "async_sessionmaker[AsyncSession]") -> None:
         console.print(f"[yellow]Warning: CISA KEV sync failed: {exc}[/yellow]")
 
 
-async def _update_db_async(db_path: Path, token: "str | None", force_full: bool) -> None:
+async def _update_db_async(db_path: Path, token: str | None, force_full: bool) -> None:
     import json
     import tempfile
 
@@ -572,13 +578,13 @@ async def _update_db_async(db_path: Path, token: "str | None", force_full: bool)
 
 @app.command("update-db")
 def update_db(
-    db_url: Optional[str] = typer.Option(
+    db_url: str | None = typer.Option(
         None,
         "--db-url",
         envvar="PLECOST_DB_URL",
         help="Database URL. Default: sqlite at ~/.plecost/db/plecost.db",
     ),
-    github_token: Optional[str] = typer.Option(
+    github_token: str | None = typer.Option(
         None, "--token", envvar="GITHUB_TOKEN",
         help="GitHub token for higher rate limit on downloads",
     ),
@@ -632,7 +638,7 @@ app.add_typer(modules_app, name="modules")
 
 @modules_app.command("list")
 def modules_list(
-    lang: Optional[str] = typer.Option(None, "--lang", "-L", help="Language for output (en, es).", envvar="PLECOST_LANG"),
+    lang: str | None = typer.Option(None, "--lang", "-L", help="Language for output (en, es).", envvar="PLECOST_LANG"),
 ) -> None:
     """List all available scanner modules."""
     if lang:
@@ -1304,7 +1310,7 @@ _FINDINGS_REGISTRY: dict[str, dict[str, Any]] = {
 @app.command("explain")
 def explain(
     finding_id: str = typer.Argument(..., help="Finding ID (e.g. PC-XMLRPC-002)"),
-    lang: Optional[str] = typer.Option(None, "--lang", "-L", help="Language for output (en, es).", envvar="PLECOST_LANG"),
+    lang: str | None = typer.Option(None, "--lang", "-L", help="Language for output (en, es).", envvar="PLECOST_LANG"),
 ) -> None:
     """Show detailed information and remediation for a finding ID."""
     if lang:
